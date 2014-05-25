@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html ng-app="BlogSyncer">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Blog Syncer of justWapps</title>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script><!-- load jquery -->
+    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.0.8/angular.min.js"></script><!-- load angular -->
+    <script src="./javascripts/core.js"></script>
+</head>
+<body ng-controller="mainController">
+    <div>
+        <h1>Blog Syncer</h1>
+    </div>
+    <div>
+        {{auth}}
+    </div>
+    <div>
+        <form>
+            <button type="submit" ng-click="goAuth()">Oauth with Wordpress</button>
+        </form>
+    </div>
+</body>
+</html>
