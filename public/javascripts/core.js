@@ -17,27 +17,30 @@ bs.config(function ($routeProvider) {
         });
 });
 
-bs.controller('homeCtrl', function ($scope) {
-    $scope.message = '당신의 블로그 글들을 동기화 시킵니다.';
+bs.controller('homeCtrl', function ($scope, $http) {
+    $scope.username = '당신';
+    $scope.message = '의 블로그 글들을 동기화 시킵니다.';
+    $scope.signstat = 'Sign in';
+
+    console.log('Start homeCtrl');
+
+    $http.get('/user')
+            .success(function (data) {
+              if (data == 'NAU')  {
+                  console.log('NAU');
+              }
+              else {
+                  $scope.signstat = 'Sign out';
+                  $scope.username = data;
+                  console.log('Change username, signstat');
+              }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
 });
 
 bs.controller('signinCtrl', function ($scope, $http) {
     $scope.message = 'Please sign in';
-
-    $scope.goAuth = function () {
-        $http.get('/api/wordpress')
-            .success( function(data) {
-                if (data == 'NAU') {
-                    location.href = 'api/wordpress/authorize';
-                }
-                else {
-                    $scope.auth = data;
-                    window.alert(JSON.stringify($scope.auth));
-                }
-            })
-            .error(function(data){
-                console.log('Error: '+ data);
-            });
-    }
 });
 

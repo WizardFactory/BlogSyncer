@@ -1,18 +1,17 @@
 /**
- *
- * Created by aleckim on 2014. 5. 15..
+ * Created by aleckim on 2014. 7. 14..
  */
 
 var userdb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
-var WordpressStrategy = require('passport-wordpress').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
 
 var router = express.Router();
 
-var WORDPRESS_CLIENT_ID = "35169";
-var WORDPRESS_CLIENT_SECRET = "giyzfEzoqkuwmjxuWT5Tz7E16NtKkud0zT4otmX9xNDH4AJE6mc3U5dGepYrPd5A";
+var FACEBOOK_CLIENT_ID = "1447794722165916";
+var FACEBOOK_CLIENT_SECRET = "adf699b010b780c8808b3ebeb755e5ab";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -22,24 +21,24 @@ passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
-passport.use(new WordpressStrategy({
-        clientID: WORDPRESS_CLIENT_ID,
-        clientSecret: WORDPRESS_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/wordpress/authorized",
+passport.use(new FacebookStrategy({
+        clientID: FACEBOOK_CLIENT_ID,
+        clientSecret: FACEBOOK_CLIENT_SECRET,
+        callbackURL: "http://www.justwapps.com/facebook/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
 //        console.log("accessToken:" + accessToken);
 //        console.log("refreshToken:" + refreshToken);
-//        console.log("profile:"+JSON.stringify(profile));
-        var provider = {
-            "providerName":profile.provider,
-            "accessToken":accessToken,
-            "refreshToken":refreshToken,
-            "providerId":profile._json.ID,
-            "displayName":profile.displayName
-        };
+//        console.log("profile:" + JSON.stringify(profile));
 
+        var provider = {
+            "providerName": profile.provider,
+            "accessToken": accessToken,
+            "refreshToken": refreshToken,
+            "providerId": profile.id,
+            "displayName": profile.displayName
+        };
         var user = {};
 
         if (req.user) {
@@ -63,11 +62,11 @@ passport.use(new WordpressStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('wordpress')
+    passport.authenticate('facebook')
 );
 
 router.get('/authorized',
-    passport.authenticate('wordpress', { failureRedirect: '/#signin' }),
+    passport.authenticate('facebook', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
         console.log('Successful!');
@@ -76,4 +75,3 @@ router.get('/authorized',
 );
 
 module.exports = router;
-

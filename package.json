@@ -1,17 +1,47 @@
 {
   "name": "blogsyncer-app",
-  "version": "0.0.1",
+  "version": "0.0.2",
+  "description": "sync between blogs",
+  "keywords": [
+     "oauth",
+     "blog"
+  ],
+  "author" : {
+      "name": "Wizard Factory",
+      "email": "wzd@wizardfactory.net",
+      "url": "http://www.wizardfactory.net"
+  },
+  "repository": {
+      "type": "git",
+      "url": "git://github.com/WizardFactory/BlogSyncer.git"
+  },
+  "bugs": {
+      "url": "http://github.com/WizardFactory/BlogSyncer/issues"
+  },
+  "licenses": [
+      {
+          "type": "MIT",
+          "url": "http://www.opensource.org/licenses/MIT"
+      }
+  ],
   "private": true,
   "scripts": {
     "start": "node ./bin/www"
   },
   "dependencies": {
     "express": "~4.2.0",
+    "express-session": "~1.2.1",
     "static-favicon": "~1.0.0",
     "morgan": "~1.0.0",
     "cookie-parser": "~1.0.1",
     "body-parser": "~1.0.0",
     "debug": "~0.7.4",
-    "wordpressrest": "~0.0.26"
+    "passport": "~0.2.0",
+    "passport-wordpress": "~0.0.3",
+    "passport-google-oauth": "~0.1.5",
+    "passport-facebook": "~1.0.3",
+    "passport-tumblr": "~0.1.2",
+    "passport-twitter": "~1.0.2",
+    "passport-kakao": "~0.0.2"
   }
 }
