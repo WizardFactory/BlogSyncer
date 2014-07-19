@@ -27,6 +27,19 @@ var testProvider1 = {
     "data":"t_dummy"
 };
 
+
+var testProviderForFindorCreate = {
+    "providerName":"google",
+    "providerId":"3377",
+    "data":"t_dummy"
+};
+
+var testProviderForFindorCreate2 = {
+    "providerName":"google",
+    "providerId":"3378",
+    "data":"t_dummy"
+};
+
 describe('userdb', function () {
     describe('Function', function () {
         it('add user', function () {
@@ -55,5 +68,26 @@ describe('userdb', function () {
            assert.equal(userdb.findProvider(testUser1.id, testProvider1.providerName).providerName
                , testProvider1.providerName, "Fail to find provider by providerName " + testProvider1.providerName)  ;
         });
+
+        it ('find user without session of findOrCreate', function () {
+            assert.equal(userdb.findOrCreate(undefined, testProvider1).id
+                , testUser1.id, "Fail to find user without session by provider " + testProvider1.providerName)  ;
+        });
+
+        it ('find user with session of findOrCreate', function () {
+            assert.equal(userdb.findOrCreate(testUser1, testProvider1).id
+                , testUser1.id, "Fail to find user without session by provider " + testProvider1.providerName)  ;
+        });
+
+        it ('create user test of findOrCreate', function () {
+            assert.equal(userdb.findOrCreate(undefined, testProviderForFindorCreate).id
+                , 3, "Fail to create user by provider " + testProviderForFindorCreate.providerName)  ;
+        });
+
+        it ('add provider test of findOrCreate', function () {
+            assert.equal(userdb.findOrCreate(testUser1, testProviderForFindorCreate2).id
+                , testUser1.id, "Fail to add provider by provider " + testProviderForFindorCreate2.providerName)  ;
+        });
+
     });
 });
