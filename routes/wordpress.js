@@ -40,21 +40,7 @@ passport.use(new WordpressStrategy({
             "displayName":profile.displayName
         };
 
-        var user = {};
-
-        if (req.user) {
-            user = userdb.addProvider(req.user.id, provider);
-            console.log("add new provider");
-            console.log("user:" + JSON.stringify(user));
-        }
-        else {
-            user = userdb.findUserByProvider(provider);
-            if (user == null) {
-                user = userdb.addUser(provider);
-            }
-            console.log("user:" + JSON.stringify(user));
-
-        }
+        var user = userdb.findOrCreate(req.user, provider);
 
         process.nextTick(function () {
             return done(null, user);

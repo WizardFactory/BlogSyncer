@@ -10,9 +10,12 @@ var session = require('express-session');
 
 var userdb = require('./models/userdb');
 
-var wordpress = require('./routes/wordpress');
 var facebook = require('./routes/facebook');
+var google = require('./routes/google');
+var kakao = require('./routes/kakao');
 var tumblr = require('./routes/tumblr');
+var twitter = require('./routes/twitter');
+var wordpress = require('./routes/wordpress');
 
 var app = express();
 
@@ -27,15 +30,19 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use('/facebook', facebook);
-app.use('/wordpress', wordpress);
+app.use('/google', google);
+app.use('/kakao', kakao);
 app.use('/tumblr', tumblr);
+app.use('/twitter', twitter);
+app.use('/wordpress', wordpress);
 
 app.use('/user', function (req, res) {
    if (!req.user) {
         res.write('NAU');
    }
    else {
-       res.write(req.user.providers[0].displayName);
+       console.log('user ' + JSON.stringify(req.user));
+       res.write(JSON.stringify(req.user));
    }
    res.end();
 });

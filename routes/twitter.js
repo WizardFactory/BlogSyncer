@@ -1,17 +1,17 @@
 /**
- * Created by aleckim on 2014. 7. 5..
+ * Created by aleckim on 2014. 7. 19..
  */
 
 var userdb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
-var TumblrStrategy = require('passport-tumblr').Strategy;
+var TwitterStrategy = require('passport-twitter').Strategy;
 
 var router = express.Router();
 
-var TUMBLR_CONSUMER_KEY = "bYI8NrFCwVUI5JLm2Zq0XfhKEczy85xr5jcYR8PpgjsEumIvog";
-var TUMBLR_CONSUMER_SECRET = "OCFgDboa9bgNtr4lZvxDiMMgXigiNdJyTSkHNdd1lDdwDq8TBU";
+var TWITTER_CONSUMER_KEY = "jvA2oAAGMZGgVePR68GPq6SJe";
+var TWITTER_CONSUMER_SECRET = "qVoX0GwzwCtmR9Lf4yxGgUNlTxm6qTaaK8NfCAZeMZHUiwIOJP";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -21,10 +21,10 @@ passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
-passport.use(new TumblrStrategy({
-        consumerKey: TUMBLR_CONSUMER_KEY,
-        consumerSecret: TUMBLR_CONSUMER_SECRET,
-        callbackURL: "http://www.justwapps.com/tumblr/authorized",
+passport.use(new TwitterStrategy({
+        consumerKey: TWITTER_CONSUMER_KEY,
+        consumerSecret: TWITTER_CONSUMER_SECRET,
+        callbackURL: "http://www.justwapps.com/twitter/authorized",
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
@@ -48,11 +48,11 @@ passport.use(new TumblrStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('tumblr')
+    passport.authenticate('twitter')
 );
 
 router.get('/authorized',
-    passport.authenticate('tumblr', { failureRedirect: '/#signin' }),
+    passport.authenticate('twitter', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
         console.log('Successful!');
@@ -61,3 +61,4 @@ router.get('/authorized',
 );
 
 module.exports = router;
+

@@ -88,13 +88,13 @@
     {
         background-color            : #f1631b;
     }
-    .button.wordpress
+    .button.Wordpress
     {
         background-color            : #1e8cbe;
         color                       : white;
         /*background-image            : url('/images/mobile-icon-toolbar-wordpress_2x.png');*/
     }
-    .button.wordpress:hover
+    .button.Wordpress:hover
     {
         background-color            : #1e8cbe;
     }
@@ -114,20 +114,13 @@
     <h2 class="form-signin-heading">{{ message }}</h2>
     <div align="left">
         <div style="padding:10px;">
-            <div>
-                <a class="button wordpress" href="/wordpress/authorize">Sign in with Wordpress</a>
-
-                <a class="button tistory" href="/tistory/authorize">Sign in with Tistory</a>
-
-                <a class="button google" href="/google/authorize">Sign in with Google</a>
-
-                <a class="button facebook" href="/facebook/authorize">Sign in with Facebook</a>
-
-                <a class="button tumblr" href="/tumblr/authorize">Sign in with tumblr</a>
-
-                <a class="button twitter" href="/twitter/authorize">Sign in with twitter</a>
-
-                <a class="button kakao" href="/kakao/authorize">Sign in with kakao</a>
+            <div ng-repeat="provider in user.providers">
+                <a class="button {{ provider.providerName }}" >{{ provider.providerName }} : {{provider.displayName}}</a>
+            </div>
+        </div>
+        <div style="padding:10px;">
+            <div ng-repeat="provider in providers">
+                <a class="button {{ provider }}" ng-href="/{{ provider }}/authorize">Sign in with {{ provider }}</a>
             </div>
         </div>
     </div>

@@ -183,6 +183,31 @@ userdb.findProvider = function (id, providerName) {
     return null;
 };
 
+userdb.findOrCreate = function (req_user, provider) {
+    var user = {};
+
+    if (req_user) {
+        user = userdb.findUserByProvider(provider);
+        if (user == null) {
+            user = userdb.addProvider(req_user.id, provider);
+            console.log("add new provider");
+            console.log("user:" + JSON.stringify(user));
+        }
+        else {
+            console.log("Already has provider") ;
+        }
+    }
+    else {
+        user = userdb.findUserByProvider(provider);
+        if (user == null) {
+            user = userdb.addUser(provider);
+        }
+        console.log("user:" + JSON.stringify(user));
+    }
+
+    return user;
+};
+
 module.exports = userdb;
 
 

@@ -1,17 +1,17 @@
 /**
- * Created by aleckim on 2014. 7. 14..
+ * Created by aleckim on 2014. 7. 19..
  */
 
 var userdb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
-var FacebookStrategy = require('passport-facebook').Strategy;
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
 var router = express.Router();
 
-var FACEBOOK_CLIENT_ID = "1447794722165916";
-var FACEBOOK_CLIENT_SECRET = "adf699b010b780c8808b3ebeb755e5ab";
+var GOOGLE_CLIENT_ID = "983607775835-j47q6oj8qsupdiem0solc9hrsg0u0vlg.apps.googleusercontent.com";
+var GOOGLE_CLIENT_SECRET = "jZjb-jTiu10z1KiFmurcCu2a";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -21,10 +21,10 @@ passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
-passport.use(new FacebookStrategy({
-        clientID: FACEBOOK_CLIENT_ID,
-        clientSecret: FACEBOOK_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/facebook/authorized",
+passport.use(new GoogleStrategy({
+        clientID: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        callbackURL: "http://www.justwapps.com/google/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
@@ -49,11 +49,11 @@ passport.use(new FacebookStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('facebook')
+    passport.authenticate('google')
 );
 
 router.get('/authorized',
-    passport.authenticate('facebook', { failureRedirect: '/#signin' }),
+    passport.authenticate('google', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
         console.log('Successful!');
