@@ -23,6 +23,11 @@ bs.config(function ($routeProvider) {
             templateUrl : '../home.html',
             controller : 'homeCtrl'
         })
+        // route for blog page
+        .when('/blog', {
+            templateUrl : '../blog.html',
+            controller : 'blogCtrl'
+        })
         // route for sign in page
         .when('/signin', {
             templateUrl : '../signin.html',
