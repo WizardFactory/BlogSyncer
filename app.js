@@ -16,6 +16,7 @@ var kakao = require('./routes/kakao');
 var tumblr = require('./routes/tumblr');
 var twitter = require('./routes/twitter');
 var wordpress = require('./routes/wordpress');
+var wordpress = require('./routes/tistory');
 
 var app = express();
 
@@ -35,6 +36,7 @@ app.use('/kakao', kakao);
 app.use('/tumblr', tumblr);
 app.use('/twitter', twitter);
 app.use('/wordpress', wordpress);
+app.use('/tistory', wordpress);
 
 app.use('/user', function (req, res) {
    if (!req.user) {

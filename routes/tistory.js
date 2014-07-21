@@ -1,16 +1,17 @@
 /**
- * Created by aleckim on 2014. 7. 19..
+ * Created by aleckim on 2014. 7. 20..
  */
 
 var userdb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
-var KakaoStrategy = require('passport-kakao').Strategy;
+var TistoryStrategy = require('passport-tistory').Strategy;
 
 var router = express.Router();
 
-var KAKAO_CLIENT_ID = "d76e3616d42d5a2507183f717aff6579";
+var TISTORY_CLIENT_ID = "790c21e5390770f3463d9b428fab8622";
+var TISTORY_CLIENT_SECRET = "790c21e5390770f3463d9b428fab86225dff8f624e5d52c94ce86e2eb85a106696450c6e";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -20,22 +21,23 @@ passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
-passport.use(new KakaoStrategy({
-        clientID: KAKAO_CLIENT_ID,
-        callbackURL: "http://www.justwapps.com/kakao/authorized",
+passport.use(new TistoryStrategy({
+        clientID: TISTORY_CLIENT_ID,
+        clientSecret: TISTORY_CLIENT_SECRET,
+        callbackURL: "http://www.justwapps.com/tistory/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
 //        console.log("accessToken:" + accessToken);
 //        console.log("refreshToken:" + refreshToken);
-//        console.log("profile:" + JSON.stringify(profile));
+        console.log("profile:" + JSON.stringify(profile));
 
         var provider = {
-            "providerName": profile.provider,
+            "providerName": 'tistory',
             "accessToken": accessToken,
             "refreshToken": refreshToken,
-            "providerId": profile.id,
-            "displayName": profile.username
+            "providerId": profile.userId,
+            "displayName": profile.item.nickname
         };
 
         var user = userdb.findOrCreate(req.user, provider);
@@ -47,11 +49,11 @@ passport.use(new KakaoStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('kakao')
+    passport.authenticate('tistory')
 );
 
 router.get('/authorized',
-    passport.authenticate('kakao', { failureRedirect: '/#signin' }),
+    passport.authenticate('tistory', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
         console.log('Successful!');
