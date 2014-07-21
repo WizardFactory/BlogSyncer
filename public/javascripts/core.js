@@ -36,6 +36,7 @@ bs.controller('homeCtrl', function ($scope, $http, User) {
     $scope.signstat = 'Sign in';
     console.log('Start homeCtrl');
 
+
     $http.get('/user')
             .success(function (data) {
               if (data == 'NAU')  {

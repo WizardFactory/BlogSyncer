@@ -8,7 +8,7 @@
   ],
   "author" : {
       "name": "Wizard Factory",
-      "email": "wzd@wizardfactory.net",
+      "email": "wizards@wizardfactory.net",
       "url": "http://www.wizardfactory.net"
   },
   "repository": {
@@ -42,6 +42,7 @@
     "passport-facebook": "~1.0.3",
     "passport-tumblr": "~0.1.2",
     "passport-twitter": "~1.0.2",
-    "passport-kakao": "~0.0.2"
+    "passport-kakao": "~0.0.2",
+    "passport-tistory": "~0.1.0"
   }
 }
