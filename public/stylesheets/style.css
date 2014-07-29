@@ -194,3 +194,43 @@ body {
         width: 700px;
     }
 }
+
+/*
+ * For Combobox
+*/
+.multiselect {
+    width: 110px;
+    max-height: 300px;
+    position: relative;
+}
+.multiselect-wrapper {
+    margin: 0;
+    /*background: #fff;*/
+    border: 1px solid #aaa;
+    box-shadow: 0 4px 5px rgba(0,0,0,.15);
+    z-index: 1010;
+    width: 100%;
+    padding: 0px;
+    border-radius: 4px;
+    margin-top: 1px;
+    position: absolute;
+
+}
+.multiselect ul{
+    list-style-type: none;
+    overflow: auto;
+    width: 100%;
+    max-height: 200px;
+    padding: 0px;
+}
+
+.multiselect .btn {
+    width: 110px;
+}
+
+.multiselect li {
+    padding: 0px 0px 0px 0px;
+    margin: 0px 0px 0px 0px;
+    width: 100%;
+}
+

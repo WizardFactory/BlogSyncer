@@ -39,6 +39,8 @@ bs.controller('homeCtrl', function ($scope, $http, User) {
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = 'Sign in';
+    // add select
+    $scope.options = [{"Value":1,"Display":"블로그 등록"},{"Value":2,"Display":"동기화 설정"},{"Value":3,"Display":"동기 히스토리"},{"Value":4,"Display":"피드백 모음"}]
     console.log('Start homeCtrl');
 
 
@@ -72,4 +74,46 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
         $scope.message = 'Please sign in';
     }
 });
+
+bs.directive('multiselect',['$document', function($document){
+
+    return {
+        restrict: 'E',
+        require: '?ngModel',
+        scope: {
+            choices: '=',
+            selected: '='
+        },
+        templateUrl: 'multiselect.html',
+        replace: true,
+        link: function(scope, element, attr){
+            scope.isVisible = false;
+            scope.isChecked = function(item){
+                if(scope.selected.indexOf(item) !== -1){
+                    return true;
+                }
+                return false;
+            };
+            scope.toggleChaeck = function(item){
+                if(!scope.isChecked(item)){
+                    scope.selected.push(item);
+                }else{
+                    scope.selected.splice(scope.selected.indexOf(item), 1);
+                }
+            };
+            scope.toggleSelect = function(){
+                scope.isVisible = !scope.isVisible;
+            }
+
+            element.bind('click', function(event) {
+                event.stopPropagation();
+            });
+
+            $document.bind('click', function(){
+                scope.isVisible = false;
+                scope.$apply();
+            });
+        }
+    };
+}]);
 
