@@ -1,9 +1,11 @@
 <div class="multiselect">
-    <button class="btn" ng-click="toggleSelect()"><span class="pull-left">Blog</span>&nbsp;<span class="caret pull-right"></span></button>
+    <button class="btn" ng-click="toggleSelect()">
+        <span class="pull-left">Blog</span>&nbsp;<span class="caret pull-right"></span>
+    </button>
     <div class="multiselect-wrapper" ng-show="isVisible">
         <ul>
             <li ng-repeat="c in choices | filter: searchText">
-                <label>{{c.Display}}</label>
+                <a href="#{{c.Route}}">{{c.Display}}</a>
             </li>
         </ul>
     </div>

@@ -3,6 +3,7 @@
  */
 var bs = angular.module("BlogSyncer", ['ngRoute']);
 
+// define service
 bs.factory('User', function () {
     var user = {};
 
@@ -16,6 +17,7 @@ bs.factory('User', function () {
     };
 });
 
+// setting module
 bs.config(function ($routeProvider) {
     $routeProvider
         // route for cover page
@@ -24,8 +26,20 @@ bs.config(function ($routeProvider) {
             controller : 'homeCtrl'
         })
         // route for blog page
-        .when('/blog', {
-            templateUrl : '../blog.html',
+        .when('/blogRegister', {
+            templateUrl : '../blog/registerBlog.html',
+            controller : 'blogCtrl'
+        })
+        .when('/blogSetSync', {
+            templateUrl : '../blog/setSync.html',
+            controller : 'blogCtrl'
+        })
+        .when('/blogHistorySync', {
+            templateUrl : '../blog/historySync.html',
+            controller : 'blogCtrl'
+        })
+        .when('/blogCollectFeedback', {
+            templateUrl : '../blog/collectFeedback.html',
             controller : 'blogCtrl'
         })
         // route for sign in page
@@ -40,9 +54,9 @@ bs.controller('homeCtrl', function ($scope, $http, User) {
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = 'Sign in';
     // add select
-    $scope.options = [{"Value":1,"Display":"블로그 등록"},{"Value":2,"Display":"동기화 설정"},{"Value":3,"Display":"동기 히스토리"},{"Value":4,"Display":"피드백 모음"}]
+    $scope.options = [{"Route":"/blogRegister","Display":"블로그 등록"},{"Route":"/blogSetSync","Display":"동기화 설정"},
+        {"Route":"/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blogCollectFeedback","Display":"피드백 모음"}]
     console.log('Start homeCtrl');
-
 
     $http.get('/user')
             .success(function (data) {
@@ -78,7 +92,7 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
 bs.directive('multiselect',['$document', function($document){
 
     return {
-        restrict: 'E',
+        restrict: 'E',              // Element name
         require: '?ngModel',
         scope: {
             choices: '=',
@@ -94,7 +108,7 @@ bs.directive('multiselect',['$document', function($document){
                 }
                 return false;
             };
-            scope.toggleChaeck = function(item){
+            scope.toggleCheck = function(item){
                 if(!scope.isChecked(item)){
                     scope.selected.push(item);
                 }else{
