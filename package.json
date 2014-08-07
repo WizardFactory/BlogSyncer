@@ -36,6 +36,7 @@
     "cookie-parser": "~1.0.1",
     "body-parser": "~1.0.0",
     "debug": "~0.7.4",
+    "request": "~2.39.0",
     "passport": "~0.2.0",
     "passport-wordpress": "~0.0.3",
     "passport-google-oauth": "~0.1.5",
