@@ -6,6 +6,8 @@ var userdb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
+var tumblr = require('tumblr');
+
 var TumblrStrategy = require('passport-tumblr').Strategy;
 
 var router = express.Router();
@@ -59,5 +61,63 @@ router.get('/authorized',
         res.redirect('/#');
     }
 );
+
+
+router.get('/info', function (req, res) {
+    if (!req.user) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+    }
+    else {
+        var p = userdb.findProvider(req.user.id, "tumblr");
+        var oauth = {
+            consumer_key: TUMBLR_CONSUMER_KEY,
+            consumer_secret: TUMBLR_CONSUMER_SECRET,
+            token: p.token,
+            token_secret: p.tokenSecret
+        };
+
+        var user = new tumblr.User(oauth);
+
+        user.info(function(error, response) {
+            if (error) {
+                throw new Error(error);
+            }
+            console.log(response.user);
+            res.send(response.user);
+        });
+
+    }
+});
+
+router.get('/posts/:blogName', function (req, res) {
+    if (!req.user) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+    }
+    else {
+        var p = userdb.findProvider(req.user.id, "tumblr");
+        var oauth = {
+            consumer_key: TUMBLR_CONSUMER_KEY,
+            consumer_secret: TUMBLR_CONSUMER_SECRET,
+            token: p.token,
+            token_secret: p.tokenSecret
+        };
+
+        var blog_name = req.params.blogName;
+
+        var blog = new tumblr.Blog(blog_name, oauth);
+
+        blog.text(function(error, response) {
+            if (error) {
+                throw new Error(error);
+            }
+            console.log(response.posts);
+            res.send(response.posts);
+        });
+    }
+});
 
 module.exports = router;

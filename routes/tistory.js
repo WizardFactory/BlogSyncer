@@ -4,6 +4,8 @@
 
 var userdb = require('../models/userdb');
 
+var request = require('request');
+
 var express = require('express');
 var passport = require('passport');
 var TistoryStrategy = require('passport-tistory').Strategy;
@@ -12,6 +14,7 @@ var router = express.Router();
 
 var TISTORY_CLIENT_ID = "790c21e5390770f3463d9b428fab8622";
 var TISTORY_CLIENT_SECRET = "790c21e5390770f3463d9b428fab86225dff8f624e5d52c94ce86e2eb85a106696450c6e";
+var API_TISTORY_COM = "https://www.tistory.com/apis/";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -28,8 +31,8 @@ passport.use(new TistoryStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//        console.log("accessToken:" + accessToken);
-//        console.log("refreshToken:" + refreshToken);
+        console.log("accessToken:" + accessToken);
+        console.log("refreshToken:" + refreshToken);
         console.log("profile:" + JSON.stringify(profile));
 
         var provider = {
@@ -60,5 +63,46 @@ router.get('/authorized',
         res.redirect('/#');
     }
 );
+
+router.get('/info', function (req, res) {
+    if (!req.user) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+    }
+    else {
+        var p = userdb.findProvider(req.user.id, "tistory");
+
+        var api_url = API_TISTORY_COM+"blog/info?access_token="+ p.accessToken+"&output=json";
+
+        console.log(api_url);
+        request.get(api_url, function (err, response, data) {
+            console.log(data);
+            res.send(data);
+        });
+    }
+});
+
+router.get('/post/list/:simpleName', function (req, res) {
+    if (!req.user) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.redirect("/#/signin");
+    }
+    else {
+        var p = userdb.findProvider(req.user.id, "tistory");
+        var blog_name = req.params.simpleName;
+        var api_url = API_TISTORY_COM+"post/list?access_token="+ p.accessToken;
+        api_url = api_url + "&targetUrl=" + blog_name;
+        api_url = api_url + "&output=json";
+
+        console.log(api_url);
+        request.get(api_url, function (err, response, data) {
+            console.log(data);
+            res.send(data);
+        });
+    }
+});
 
 module.exports = router;
