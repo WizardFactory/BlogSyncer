@@ -84,7 +84,7 @@ router.get('/me', function (req, res) {
     }
 });
 
-router.get('/posts:blog_id', function (req, res) {
+router.get('/posts/:blog_id', function (req, res) {
     if (!req.user) {
        console.log('You have to login first!');
        res.send('You have to login first!');
