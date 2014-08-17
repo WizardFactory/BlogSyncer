@@ -13,15 +13,6 @@ function postdb() {
 
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
 
-postdb.blogs = [];
-/*
-    [
-        { "providerName":"wordpress", "site_id":"thewzd" },
-        { "providerName":"wordpress", "site_id":"wzdfac" },
-        { "providerName":"tumblr", "site_id":"thewzd" },
-        { "providerName":"tumblr", "site_id":"wzdfac"}
-    ];
- */
 postdb.posts = [];
 /*
    [
