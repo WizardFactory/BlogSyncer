@@ -9,6 +9,7 @@ var express = require('express');
 var passport = require('passport');
 var request = require('request');
 var WordpressStrategy = require('passport-wordpress').Strategy;
+var childm = require('./childmanager');
 
 var router = express.Router();
 
@@ -43,6 +44,7 @@ passport.use(new WordpressStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
+        childm.sendMessage(user, 'findOrCreate');
 
         process.nextTick(function () {
             return done(null, user);

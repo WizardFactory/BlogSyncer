@@ -9,6 +9,7 @@ var request = require('request');
 var express = require('express');
 var passport = require('passport');
 var TistoryStrategy = require('passport-tistory').Strategy;
+var childm = require('./childmanager');
 
 var router = express.Router();
 
@@ -44,6 +45,7 @@ passport.use(new TistoryStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
+        childm.sendMessage(user, 'findOrCreate');
 
         process.nextTick(function () {
             return done(null, user);
