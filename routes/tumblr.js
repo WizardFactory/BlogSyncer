@@ -62,62 +62,126 @@ router.get('/authorized',
     }
 );
 
+getUserId = function (req) {
+    var userid = 0;
+
+    if (req.user) {
+        userid = req.user.id;
+    }
+    else if (req.query.userid)
+    {
+       //this request form child process;
+       userid = req.query.userid;
+    }
+
+    return userid;
+};
 
 router.get('/info', function (req, res) {
-    if (!req.user) {
+    var user_id = getUserId(req);
+    if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
         res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user.id, "tumblr");
-        var oauth = {
-            consumer_key: TUMBLR_CONSUMER_KEY,
-            consumer_secret: TUMBLR_CONSUMER_SECRET,
-            token: p.token,
-            token_secret: p.tokenSecret
-        };
 
-        var user = new tumblr.User(oauth);
+    var p = userdb.findProvider(user_id, "tumblr");
+    var oauth = {
+        consumer_key: TUMBLR_CONSUMER_KEY,
+        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        token: p.token,
+        token_secret: p.tokenSecret
+    };
 
-        user.info(function(error, response) {
-            if (error) {
-                throw new Error(error);
-            }
-            console.log(response.user);
-            res.send(response.user);
-        });
+    var user = new tumblr.User(oauth);
 
-    }
+    user.info(function(error, response) {
+        if (error) {
+            throw new Error(error);
+        }
+        console.log(response.user);
+        res.send(response.user);
+    });
+
+    return;
 });
 
 router.get('/posts/:blogName', function (req, res) {
-    if (!req.user) {
+    var user_id = getUserId(req);
+    if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
         res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user.id, "tumblr");
-        var oauth = {
-            consumer_key: TUMBLR_CONSUMER_KEY,
-            consumer_secret: TUMBLR_CONSUMER_SECRET,
-            token: p.token,
-            token_secret: p.tokenSecret
-        };
 
-        var blog_name = req.params.blogName;
+    var p = userdb.findProvider(user_id, "tumblr");
+    var oauth = {
+        consumer_key: TUMBLR_CONSUMER_KEY,
+        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        token: p.token,
+        token_secret: p.tokenSecret
+    };
 
-        var blog = new tumblr.Blog(blog_name, oauth);
+    var blog_name = req.params.blogName;
 
-        blog.text(function(error, response) {
-            if (error) {
-                throw new Error(error);
-            }
-            console.log(response.posts);
-            res.send(response.posts);
-        });
+    var blog = new tumblr.Blog(blog_name, oauth);
+
+    blog.text(function(error, response) {
+        if (error) {
+            throw new Error(error);
+        }
+        console.log(response.posts);
+        res.send(response.posts);
+    });
+});
+
+
+router.get('/bot_bloglist', function (req, res) {
+
+    console.log(req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
+
+    var p = userdb.findProvider(user_id, "tumblr");
+    var oauth = {
+        consumer_key: TUMBLR_CONSUMER_KEY,
+        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        token: p.token,
+        token_secret: p.tokenSecret
+    };
+
+    var user = new tumblr.User(oauth);
+
+    user.info(function(error, response) {
+        if (error) {
+            throw new Error(error);
+        }
+        console.log(response.user);
+
+        var send_data = {};
+        send_data.provider = p;
+        send_data.blogs = [];
+
+        var blogs = response.user.blogs;
+        console.log('blogs length=' + blogs.length);
+
+        for (var i=0;i<blogs.length;i++) {
+            send_data.blogs.push({"blog_id":blogs[i].name, "blog_title":blogs[i].title, "blog_url":blogs[i].url});
+        }
+
+        res.send(send_data);
+    });
 });
 
 module.exports = router;
