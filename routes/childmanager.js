@@ -62,9 +62,10 @@ childmanager.sendMessage = function(user, message) {
     }
 
     if (i == len) {
-        var msg = 'Fail to find process of userid='+id;
+        var msg = 'Fail to find process of userid='+user.id;
         console.log (msg);
-        return -1;
+        this.createChild(user);
+        child = this.childs[i];
     }
 
     console.log('child msg='+message+' user.id = '+child.user.id + ' port='+child.port);

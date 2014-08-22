@@ -8,6 +8,7 @@ var express = require('express');
 var passport = require('passport');
 var request = require('request');
 var KakaoStrategy = require('passport-kakao').Strategy;
+var childm = require('./childmanager');
 
 var router = express.Router();
 
@@ -41,6 +42,7 @@ passport.use(new KakaoStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
+        childm.sendMessage(user, 'findOrCreate');
 
         process.nextTick(function () {
             return done(null, user);

@@ -205,7 +205,6 @@ userdb.findProviderId = function (id, providerId) {
 };
 
 //it have to be moved controller
-var childm = require('../routes/childmanager');
 
 userdb.findOrCreate = function (req_user, provider) {
     var user = {};
@@ -216,7 +215,6 @@ userdb.findOrCreate = function (req_user, provider) {
             user = userdb.addProvider(req_user.id, provider);
             console.log("add new provider");
             console.log("user:" + JSON.stringify(user));
-            childm.sendMessage(user, 'findOrCreate');
         }
         else {
             console.log("Already has provider") ;
@@ -228,8 +226,6 @@ userdb.findOrCreate = function (req_user, provider) {
             user = userdb.addUser(provider);
 
             console.log('userdb: createChild of user='+user.id);
-            childm.createChild(user);
-            childm.sendMessage(user, 'findOrCreate');
         }
         console.log("user:" + JSON.stringify(user));
     }

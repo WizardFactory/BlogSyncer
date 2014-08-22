@@ -9,6 +9,7 @@ var passport = require('passport');
 var tumblr = require('tumblr');
 
 var TumblrStrategy = require('passport-tumblr').Strategy;
+var childm = require('./childmanager');
 
 var router = express.Router();
 
@@ -42,6 +43,7 @@ passport.use(new TumblrStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
+        childm.sendMessage(user, 'findOrCreate');
 
         process.nextTick(function () {
             return done(null, user);
