@@ -61,56 +61,115 @@ router.get('/authorized',
     }
 );
 
+getUserId = function (req) {
+    var userid = 0;
+
+    if (req.user) {
+        userid = req.user.id;
+    }
+    else if (req.query.userid)
+    {
+       //this request form child process;
+       userid = req.query.userid;
+    }
+
+    return userid;
+};
+
 router.get('/me', function (req, res) {
-    if (!req.user) {
+    var user_id = getUserId(req);
+    if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user.id, "kakao");
 
-        var api_url = API_KAKAO_COM+"/v1/user/me";
+    var p = userdb.findProvider(user_id, "kakao");
 
-        console.log(api_url);
+    var api_url = API_KAKAO_COM+"/v1/user/me";
 
-        request.get(api_url, {
-                json: true,
-                headers: {
-                    "authorization": "Bearer " + p.accessToken
-                }
-            }, function (err, response, data) {
-                console.log(data);
-                res.send(data);
-        });
-    }
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        console.log(data);
+        res.send(data);
+    });
+
 });
 
 router.get('/mystories', function (req, res) {
-    if (!req.user) {
+    var user_id = getUserId(req);
+    if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user.id, "kakao");
 
-        var api_url = API_KAKAO_COM+"/v1/api/story/mystories";
+    var p = userdb.findProvider(user_id, "kakao");
 
-        console.log(api_url);
+    var api_url = API_KAKAO_COM+"/v1/api/story/mystories";
 
-        request.get(api_url, {
-                json: true,
-                headers: {
-                    "authorization": "Bearer " + p.accessToken
-                }
-            }, function (err, response, data) {
-                console.log(data);
-                res.send(data);
-        });
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        console.log(data);
+        res.send(data);
+    });
+});
+
+router.get('/bot_bloglist', function (req, res) {
+
+    console.log(req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
+
+    var p = userdb.findProvider(user_id, "kakao");
+
+    var api_url = API_KAKAO_COM+"/v1/user/me";
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        console.log(data);
+        var nickname = data.properties.nickname;
+        var blog_url = "stroy.kakao.com/" + nickname;
+        var send_data = {};
+        send_data.provider = p;
+        send_data.blogs = [];
+        send_data.blogs.push({"blog_id":nickname, "blog_title":nickname, "blog_url":blog_url});
+/*
+ { "provider":object, "blogs":
+ [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
+ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
+ */
+        res.send(send_data);
+    });
 });
 
 module.exports = router;

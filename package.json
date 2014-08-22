@@ -1,6 +1,5 @@
 {
   "name": "blogsyncer-app",
-  "version": "0.0.2",
   "description": "sync between blogs",
   "keywords": [
      "oauth",
@@ -45,6 +44,7 @@
     "passport-twitter": "~1.0.2",
     "passport-kakao": "~0.0.2",
     "passport-tistory": "~0.1.0",
-    "tumblr": "~0.4.1"
+    "tumblr": "~0.4.1",
+    "socket.io": "~1.0.6"
   }
 }
