@@ -192,5 +192,3 @@ router.get('/synclists', function (req, res) {
 
 module.exports = router;
 
-
-

@@ -113,7 +113,6 @@ router.get('/mystories', function (req, res) {
         console.log(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
-
         return;
     }
 

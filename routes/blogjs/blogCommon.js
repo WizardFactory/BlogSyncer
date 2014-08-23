@@ -6,6 +6,7 @@ var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
 function getWPPosts(req, res) {
 
     var user_id = getUserId(req);
+
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -14,8 +15,9 @@ function getWPPosts(req, res) {
         return;
     }
 
-    var blog_id = 72408697;//64797719;//req.params.blog_id;
-
+    //var p = userdb.findProviderId(user_id, req.query.providerid);
+    var p = userdb.findProvider(req.user.id, "Wordpress");
+    var blog_id = p.providerId;
     var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
 
     console.log(api_url);
@@ -38,7 +40,7 @@ function getWPComments(req, res) {
     }
     else {
         var p = userdb.findProvider(req.user.id, "Wordpress");
-        var blog_id = 72408697;//64797719;//req.params.blog_id;                // FIX ME
+        var blog_id = p.providerId;
         var posts_id = req.params.postsID;
         var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts/"+posts_id+"/replies";
         //var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/comments";
