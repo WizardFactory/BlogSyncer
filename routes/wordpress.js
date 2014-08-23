@@ -3,7 +3,8 @@
  * Created by aleckim on 2014. 5. 15..
  */
 
-var userdb = require('../models/userdb');
+var userdb      = require('../models/userdb');
+var blogCommon  = require('./blogjs/blogCommon');
 
 var express = require('express');
 var passport = require('passport');
@@ -15,7 +16,6 @@ var router = express.Router();
 var WORDPRESS_CLIENT_ID = "35169";
 var WORDPRESS_CLIENT_SECRET = "giyzfEzoqkuwmjxuWT5Tz7E16NtKkud0zT4otmX9xNDH4AJE6mc3U5dGepYrPd5A";
 var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
-var wordpressProvider = {};
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -42,10 +42,6 @@ passport.use(new WordpressStrategy({
             "providerId":profile._json.ID,
             "displayName":profile.displayName
         };
-
-        //It's need to extend for wordpress
-        wordpressProvider = provider;
-        wordpressProvider.primary_blog = profile._json.primary_blog;
 
         var user = userdb.findOrCreate(req.user, provider);
 
@@ -74,12 +70,14 @@ router.get('/me', function (req, res) {
        res.send('You have to login first!');
     }
     else {
-        var api_url = API_WORDPRESS_COM+"/me";
+        var api_url = blogCommon.API_WORDPRESS_COM+"/me";
+        var p = userdb.findProvider(req.user.id, "Wordpress");
+
         console.log(api_url);
         request.get(api_url, {
                 json: true,
                 headers: {
-                    "authorization": "Bearer " + wordpressProvider.accessToken
+                    "authorization": "Bearer " + p.accessToken
                 }
             }, function (err, response, data) {
                 console.log(data);
@@ -88,26 +86,8 @@ router.get('/me', function (req, res) {
     }
 });
 
-router.get('/posts', function (req, res) {
-    if (!req.user) {
-       console.log('You have to login first!');
-       res.send('You have to login first!');
-    }
-    else {
-        var api_url = API_WORDPRESS_COM+"/sites/"+wordpressProvider.primary_blog+"/posts";
-
-        console.log(api_url);
-
-        request.get(api_url, {
-           json: true,
-           headers: {
-               "authorization": "Bearer " + wordpressProvider.accessToken
-           }
-        }, function (err, response, data) {
-            console.log(data);
-            res.send(data);
-        });
-    }
+router.get('/posts/:blog_id', function (req, res) {
+    blogCommon.getWPPosts(req, res);
 });
 
 router.get('/synclists', function (req, res) {
@@ -116,14 +96,16 @@ router.get('/synclists', function (req, res) {
        res.send('You have to login first!');
     }
     else {
-        var api_url = API_WORDPRESS_COM+"/sites/"+wordpressProvider.primary_blog+"/posts";
+        var p = userdb.findProvider(req.user.id, "Wordpress");
+        var blog_id = 64797719;
+        var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
 
         //console.log(api_url);
 
         request.get(api_url, {
            json: true,
            headers: {
-               "authorization": "Bearer " + wordpressProvider.accessToken
+               "authorization": "Bearer " + p.accessToken
            }
         }, function (err, response, data) {
             //console.log(data);
@@ -146,4 +128,6 @@ router.get('/synclists', function (req, res) {
 });
 
 module.exports = router;
+
+
 

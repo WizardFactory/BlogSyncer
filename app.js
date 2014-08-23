@@ -17,6 +17,7 @@ var tumblr = require('./routes/tumblr');
 var twitter = require('./routes/twitter');
 var wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
+var blogRoutes = require('./routes/blogRoutes');
 
 var app = express();
 
@@ -37,6 +38,11 @@ app.use('/tumblr', tumblr);
 app.use('/twitter', twitter);
 app.use('/Wordpress', wordpress);
 app.use('/tistory', tistory);
+app.use('/blog', blogRoutes);
+
+app.get('*', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
 
 app.use('/user', function (req, res) {
    if (!req.user) {
@@ -47,6 +53,11 @@ app.use('/user', function (req, res) {
        res.write(JSON.stringify(req.user));
    }
    res.end();
+});
+
+app.use('/logout', function (req, res) {
+    req.logout();
+    res.redirect("/#");
 });
 
 /// catch 404 and forward to error handler
@@ -79,6 +90,5 @@ app.use(function(err, req, res, next) {
         error: {}
     });
 });
-
 
 module.exports = app;
