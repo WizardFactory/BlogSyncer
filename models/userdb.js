@@ -163,8 +163,9 @@ userdb.findUserByProvider = function (provider) {
     return null;
 };
 
+/* 동일한 provider를 여러개 가지는 경우 provider id로 찾아야 한다. by dhkim2 */
 userdb.findProvider = function (id, providerName) {
-    //console.log("Find id= " + id + " provider= " + provider);
+    //console.log("Find id= " + id + " providerName= " + providerName);
 
     for (var i=0; i<this.users.length; i++) {
         if (this.users[i].id == id) {
@@ -182,6 +183,28 @@ userdb.findProvider = function (id, providerName) {
 
     return null;
 };
+
+userdb.findProviderId = function (id, providerId) {
+    //console.log("Find id= " + id + " providerId= " + providerId);
+
+    for (var i=0; i<this.users.length; i++) {
+        if (this.users[i].id == id) {
+            for (var j=0; j<this.users[i].providers.length; j++) {
+                if (this.users[i].providers[j].providerId == providerId) {
+                    return this.users[i].providers[j];
+                }
+            }
+
+            console.log("There is id, but fail to find provider by provider");
+        }
+    }
+
+    console.log("Fail to find provider by providerName");
+
+    return null;
+};
+
+//it have to be moved controller
 
 userdb.findOrCreate = function (req_user, provider) {
     var user = {};
@@ -201,6 +224,8 @@ userdb.findOrCreate = function (req_user, provider) {
         user = userdb.findUserByProvider(provider);
         if (user == null) {
             user = userdb.addUser(provider);
+
+            console.log('userdb: createChild of user='+user.id);
         }
         console.log("user:" + JSON.stringify(user));
     }

@@ -5,7 +5,8 @@ var bs = angular.module("BlogSyncer", ['ngRoute']);
 
 // define service
 bs.factory('User', function () {
-    var user = {};
+    var user= {};
+    var port = -1;
 
     return {
         getUser: function () {
@@ -13,6 +14,15 @@ bs.factory('User', function () {
         },
         setUser: function (usr) {
            user = usr;
+        },
+        getChildPort: function() {
+           console.log('getChildPort port='+port);
+           return port;
+        },
+        setChildPort: function(prt) {
+            console.log('setChildPort port='+prt);
+            port = prt;
+            console.log('port='+port);
         }
     };
 });
@@ -50,6 +60,7 @@ bs.config(function ($routeProvider) {
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
+
     var postsID = 0;
 
     $http.get('/blog/blogCollectFeedback/posts/' + postsID + '/comments/')
@@ -97,6 +108,35 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
 
 
 bs.controller('homeCtrl', function ($scope, $http, User) {
+
+    $scope.user = User.getUser();
+    $scope.child_port = User.getChildPort();
+    //set/get Child port is not working now.
+    $scope.child_port = 20149;
+    $scope.title = "Blog 등록~!";
+
+    if (!$scope.user.id) {
+        console.log('you have to signin~');
+    }
+
+    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
+    var childio = io.connect(child_url);
+    console.log('child_url='+child_url);
+
+    childio.on('connect', function () {
+        childio.emit('blog', {msg: 'getSites'});
+    });
+    childio.on('sites', function(data){
+        console.log(data);
+        $scope.blog_list = data;
+    });
+
+});
+
+bs.controller('homeCtrl', function ($q, $scope, $http, User) {
+    $scope.user = User.getUser();
+
+
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = 'Sign in';
@@ -107,22 +147,68 @@ bs.controller('homeCtrl', function ($scope, $http, User) {
 
     console.log('Start homeCtrl');
 
-    $http.get('/user')
+
+    if (!$scope.user.id) {
+        var httpGet = function() {
+            var deferred = $q.defer();
+            $http.get('/user')
+                .success(function (data) {
+                    if (data == 'NAU') {
+                        console.log('NAU');
+                    }
+                    else {
+                        var user = data;
+                        User.setUser(user);
+                        $scope.signstat = 'My account';
+                        $scope.username = user.providers[0].displayName;
+                        console.log('Change username, signstat');
+                    }
+                    deferred.resolve();
+                })
+                .error(function (data) {
+                    window.alert('Error: ' + data);
+                });
+
+            return deferred.promise;
+        };
+
+        var firsttime_skip = 0;
+        httpGet()
+            .then(function () {
+                console.log('user id = '+ User.getUser().id);
+                if (User.getUser().id) {
+                    console.log('get_child_port');
+                    if (firsttime_skip) {
+                        $http.get('/user/child_port')
+                            .success(function (data) {
+                                console.log(User.getUser());
+                                console.log('recv child_port =' + data.child_port);
+                                User.setChildPort(data.child_port);
+                            })
+                            .error(function (data) {
+                                window.alert('Error: ' + data);
+                            });
+                    }
+                    else {
+                        firsttime_skip = 1;
+                    }
+                }
+                else {
+                    console.log('you have to signin~');
+                }
+            });
+    }
+    else
+    {
+        $http.get('/child_port')
             .success(function (data) {
-              if (data == 'NAU')  {
-                  console.log('NAU');
-              }
-              else {
-                  var user = data;
-                  User.setUser(user);
-                  $scope.signstat = 'My account';
-                  $scope.username = user.providers[0].displayName;
-                  console.log('Change username, signstat');
-              }
+                console.log('recv child_port =' + data.child_port);
+                return data;
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
             });
+    }
 });
 
 bs.controller('signinCtrl', function ($scope, $http, User) {

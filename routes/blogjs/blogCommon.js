@@ -4,28 +4,31 @@ var request     = require('request');
 var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
 
 function getWPPosts(req, res) {
-    if (!req.user) {
-        console.log('You have to login first!');
-        res.send('You have to login first!');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user.id, "Wordpress");
-        var blog_id = 72408697;//64797719;//req.params.blog_id;
 
-        var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
+    var blog_id = 72408697;//64797719;//req.params.blog_id;
 
-        console.log(api_url);
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
 
-        request.get(api_url, {
-            json: true,
-            headers: {
-                "authorization": "Bearer " + p.accessToken
-            }
-        }, function (err, response, data) {
-            console.log(data);
-            res.send(data);
-        });
-    }
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        console.log(data);
+        res.send(data);
+    });
 }
 
 function getWPComments(req, res) {
