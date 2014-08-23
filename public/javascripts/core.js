@@ -60,6 +60,75 @@ bs.config(function ($routeProvider) {
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
+	$scope.user = User.getUser();
+    $scope.child_port = User.getChildPort();
+    //set/get Child port is not working now.
+    $scope.child_port = 20149;
+    $scope.title = "Blog 등록~!";
+
+    if (!$scope.user.id) {
+        console.log('you have to signin~');
+    }
+
+    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
+    var childio = io.connect(child_url);
+    console.log('child_url='+child_url);
+
+    childio.on('connect', function () {
+        childio.emit('blog', {msg: 'getSites'});
+    });
+    childio.on('sites', function(data){
+        console.log(data);
+        $scope.blog_list = data;
+    });
+
+	// About blogCollectFeedback
+    var postsID = 0;
+
+    $http.get('/blog/blogCollectFeedback/posts')
+        .success(function (data) {
+            console.log("success posts");
+            if (data == 'NAU') {
+                console.log('NAU');
+            }
+            else {
+                postsID = data.posts[0].ID;
+
+                $scope.title = data.posts[0].title;
+
+                console.log(data);
+                console.log(postsID);
+
+                $http.get('/blog/blogCollectFeedback/posts/'+ postsID + '/comments' );
+            }
+        })
+        .error(function (data) {
+            window.alert('Error: ' + data);
+       });
+
+    $http.get('/blog/blogCollectFeedback/posts/' + postsID + '/comments/')
+        .success(function (data) {
+            console.log("success comments");
+            if (data == 'NAU') {
+                console.log('NAU');
+            }
+            else {
+                var comments = data.comments[0].content;
+
+                $scope.comments = comments;
+
+                console.log(data);
+                console.log(comments);
+            }
+        })
+        .error(function (data) {
+            window.alert('Error: ' + data);
+        });
+});
+
+
+bs.controller('homeCtrl', function ($scope, $http, User) {
+
     $scope.user = User.getUser();
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
@@ -90,9 +159,11 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = 'Sign in';
-    // add select
+
+    // add DropDown Blog
     $scope.options = [{"Route":"/blogRegister","Display":"블로그 등록"},{"Route":"/blogSetSync","Display":"동기화 설정"},
         {"Route":"/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blogCollectFeedback","Display":"피드백 모음"}]
+
     console.log('Start homeCtrl');
 
 
