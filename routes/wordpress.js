@@ -36,11 +36,20 @@ passport.use(new WordpressStrategy({
 //        console.log("accessToken:" + accessToken);
 //        console.log("refreshToken:" + refreshToken);
         console.log("profile:"+JSON.stringify(profile));
+        var providerId;
+        //if user didn't set blog for oauth, token_site_id set to false
+        if (profile._json.token_site_id != false) {
+            providerId = profile._json.token_site_id;
+        }
+        else {
+            providerId = profile._json.primary_blog;
+        }
+
         var provider = {
             "providerName":profile.provider,
             "accessToken":accessToken,
             "refreshToken":refreshToken,
-            "providerId":profile._json.token_site_id, //it is not user id
+            "providerId":providerId, //it is not user id
             "displayName":profile.displayName
         };
 
@@ -120,7 +129,13 @@ router.get('/bot_bloglist', function (req, res) {
         res.redirect("/#/signin");
         return;
     }
-
+    if (req.query.providerId == false) {
+        var errorMsg = 'User:'+user_id+' didnot have blog!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
     var p = userdb.findProviderId(user_id, req.query.providerid);
 
     var api_url = API_WORDPRESS_COM+"/sites/"+p.providerId;
