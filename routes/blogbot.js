@@ -12,6 +12,9 @@ function blogbot() {
 
 blogbot.getandpush = function() {
     console.log("start get blog of user" + this.user.id);
+    //
+    //getposts(provider)
+    //
 };
 
 blogbot.start = function (user) {
@@ -83,6 +86,27 @@ blogbot.getSites = function () {
     console.log('blogbot.getSites');
     return blogdb.sites;
 };
+
+blogbot.getPosts = function(provider) {
+   //get count
+   //for until count
+   //get post
+   //findorcreate postdb
+   //
+};
+
+//blogbot.add_posts_from_new_blog = function(blog) {
+// get count
+// while until count
+// get post
+// add post to postdb
+//};
+
+//blogbot.check_new_posts_of_blog = function(blog) {
+//};
+
+//blogbot.push_post_to_blog = function(blog) {
+//};
 
 module.exports = blogbot;
 

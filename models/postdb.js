@@ -14,6 +14,7 @@ function postdb() {
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
 
 postdb.posts = [];
+/* posts[] -> id, title, categories[], tags[], modified, post_infos_per_blog[]-> blog, post_info */
 /*
    [
         {
@@ -22,7 +23,7 @@ postdb.posts = [];
             "categories":"ttt",
             "tags":["xxxx","bbb"],
             "modified": "2014-08-07T13:22:12+09:00",
-            "providers": [
+            "post_infos_per_blog": [
                 {
                     "providerName":"wordpress", "site_id":2313, "post_id":123,"post_url":"http://www.xxx.yy",
                     "comment_count":3, "like_count":3, "is_reblogged":2

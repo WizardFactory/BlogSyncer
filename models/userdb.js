@@ -11,6 +11,7 @@ function userdb() {
 }
 
 userdb.users = [];
+/* users[] -> id, providers[] */
 /*
    [
         {

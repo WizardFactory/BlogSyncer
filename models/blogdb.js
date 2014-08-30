@@ -10,7 +10,7 @@ function blogdb() {
 }
 
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
-
+/* 1user -> sites[] -> provider,blogs[] -> posts[] */
 blogdb.sites = [];
 /*
  [
