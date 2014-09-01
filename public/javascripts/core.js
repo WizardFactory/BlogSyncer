@@ -82,75 +82,29 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
         $scope.blog_list = data;
     });
 
-	// About blogCollectFeedback
+    // About blogCollectFeedback
     var postsID = 0;
 
-    $http.get('/blog/blogCollectFeedback/posts')
-        .success(function (data) {
-            console.log("success posts");
-            if (data == 'NAU') {
-                console.log('NAU');
-            }
-            else {
-                postsID = data.posts[0].ID;
-
-                $scope.title = data.posts[0].title;
-
-                console.log(data);
-                console.log(postsID);
-
-                $http.get('/blog/blogCollectFeedback/posts/'+ postsID + '/comments' );
-            }
-        })
-        .error(function (data) {
-            window.alert('Error: ' + data);
-       });
-
-    $http.get('/blog/blogCollectFeedback/posts/' + postsID + '/comments/')
-        .success(function (data) {
-            console.log("success comments");
-            if (data == 'NAU') {
-                console.log('NAU');
-            }
-            else {
-                var comments = data.comments[0].content;
-
-                $scope.comments = comments;
-
-                console.log(data);
-                console.log(comments);
-            }
-        })
-        .error(function (data) {
-            window.alert('Error: ' + data);
+    childio.on('connect', function(data){
+        childio.emit('blog', {msg: 'getPosts'});
+    });
+    childio.on('posts', function(data, callback){
+        postID = data.posts[0].ID;
+        $scope.$apply(function() {
+            $scope.title = data.posts[0].title;
         });
-});
-
-
-bs.controller('homeCtrl', function ($scope, $http, User) {
-
-    $scope.user = User.getUser();
-    $scope.child_port = User.getChildPort();
-    //set/get Child port is not working now.
-    $scope.child_port = 20149;
-    $scope.title = "Blog 등록~!";
-
-    if (!$scope.user.id) {
-        console.log('you have to signin~');
-    }
-
-    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-    var childio = io.connect(child_url);
-    console.log('child_url='+child_url);
-
-    childio.on('connect', function () {
-        childio.emit('blog', {msg: 'getSites'});
-    });
-    childio.on('sites', function(data){
-        console.log(data);
-        $scope.blog_list = data;
     });
 
+    childio.on('connect', function(data){
+        var messages = { msg : 'getComments', postID : postsID };
+        childio.emit('blog', messages );
+    });
+    childio.on('comments', function(data){
+        var comments = data.comments[0].content;
+        $scope.$apply(function() {
+            $scope.comments = comments;
+        });
+    });
 });
 
 bs.controller('homeCtrl', function ($q, $scope, $http, User) {
