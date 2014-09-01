@@ -5,6 +5,7 @@
 
 var request = require('request');
 var blogdb = require('../models/blogdb');
+var blogCommon  = require('./blogjs/blogCommon');
 
 function blogbot() {
 
@@ -83,6 +84,46 @@ blogbot.getSites = function () {
     console.log('blogbot.getSites');
     return blogdb.sites;
 };
+
+blogbot.getPosts = function (socket) {
+    console.log('blogbot.getPosts : '+ this.user.id);
+    var userID = this.user.id;
+    console.log(this.user);
+    var p = this.user.providers[0];
+    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts";
+    url = url + "?userid=" + this.user.id;
+    url = url + "&providerid=" + p.providerId;
+    console.log("url="+url);
+    request.get(url, function (err, response, data) {
+        if(err) {
+            console.log("Cannot get Posts : " + err);
+        }
+        console.log("[blogbot.getPosts]" + data);
+        var jsonData = JSON.parse( data);
+        console.log(jsonData);
+        socket.emit('posts', jsonData);
+    });
+}
+
+blogbot.getComments = function (socket, postID) {
+    console.log('blogbot.getComments : '+ this.user.id);
+    var userID = this.user.id;
+    console.log(this.user);
+    var p = this.user.providers[0];
+    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts/"+postID+"/comments";
+    url = url + "?userid=" + this.user.id;
+    url = url + "&providerid=" + p.providerId;
+    console.log("url="+url);
+    request.get(url, function (err, response, data) {
+        if(err) {
+            console.log("Cannot get getComments : " + err);
+        }
+        console.log("[blogbot.getComments]" + data);
+        var jsonData = JSON.parse(data);
+        console.log(jsonData);
+        socket.emit('comments', jsonData);
+    });
+}
 
 module.exports = blogbot;
 
