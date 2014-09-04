@@ -4,9 +4,12 @@ var socketio = require('socket.io');
 var io;
 var blog_socket;
 
-send_run_event = function () {
+send_run_event = function (child_process) {
    console.log('called send_run_event');
-   process.send('runEvent');
+   //console.log(child_process);
+   //var msg_object = {"msg":'runEvent'};
+   //child_process.send(msg_object);
+   blogbot.getandpush();
 };
 
 open_child_socket = function (port) {
@@ -36,13 +39,13 @@ open_child_socket = function (port) {
 
 process.on('message', function (m, server) {
     console.log(m);
-    console.log(m.msg);
+    //console.log(m.msg);
 
     if (m.msg === 'start') {
         open_child_socket(m.port);
         blogbot.start(m.user);
         //console.log(this);
-        this.intarval = setInterval(send_run_event, 1000*60); //1 min
+        this.intarval = setInterval(send_run_event, 1000*10, this); //1 min
     }
     else if (m.msg === 'stop') {
         blogbot.stop();
@@ -51,9 +54,9 @@ process.on('message', function (m, server) {
     else if (m.msg === 'findOrCreate') {
         blogbot.findOrCreate(m.user);
     }
-    else if (m.msg == 'runEvent') {
-        blogbot.getandpush();
-    }
+//    else if (m.msg == 'runEvent') {
+//        blogbot.getandpush();
+//    }
     else if (m.msg == 'getSites') {
         var sites = blogbot.getSites(m.user);
         console.log(server);

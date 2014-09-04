@@ -49,7 +49,7 @@ passport.use(new WordpressStrategy({
             "providerName":profile.provider,
             "accessToken":accessToken,
             "refreshToken":refreshToken,
-            "providerId":providerId, //it is not user id
+            "providerId":providerId, //it is not user id(it's blog_id)
             "displayName":profile.displayName
         };
 
@@ -114,7 +114,36 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/posts/:blog_id', function (req, res) {
+<<<<<<< HEAD
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+
+    var p = userdb.findProviderId(user_id, blog_id);
+
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        console.log(data);
+        res.send(data);
+    });
+=======
     blogCommon.getWPPosts(req, res);
+>>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 });
 
 router.get('/bot_bloglist', function (req, res) {
@@ -165,7 +194,9 @@ router.get('/bot_bloglist', function (req, res) {
     });
 });
 
-router.get('/synclists', function (req, res) {
+router.get('/bot_posts/:blog_id/:offset', function (req, res) {
+    console.log("Wordpress: "+ req.url + ' : this is called by bot');
+
     var user_id = getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
@@ -175,11 +206,15 @@ router.get('/synclists', function (req, res) {
         return;
     }
 
-    var p = userdb.findProvider(user_id, "Wordpress");
-    var blog_id = 64797719;
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
+    var blog_id = req.params.blog_id;
+    var offset = req.params.offset;
+    var p = userdb.findProviderId(user_id, blog_id);
 
-    //console.log(api_url);
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    api_url = api_url + "/posts";
+    api_url = api_url + "/?offset=" + offset;
+
+    console.log(api_url);
 
     request.get(api_url, {
         json: true,
@@ -188,22 +223,89 @@ router.get('/synclists', function (req, res) {
         }
     }, function (err, response, data) {
         //console.log(data);
-
-        var posts = [];
-        for (var i = 0; i<data.posts.length; i++)
-        {
-            var post = {
-                ID:data.posts[i].ID,
-                title:data.posts[i].title,
-                modified:data.posts[i].modified,
-                URL:data.posts[i].URL
-            };
-            posts.push(post);
+        //for (var i=0; i<data.posts.length;i++) {
+        //    console.log('post_id='+data.posts[i].ID);
+        //}
+        if (!data.posts) {
+           console.log('Fail to get posts');
+           return;
         }
-        console.log(posts);
-        res.send(posts);
+
+        var send_data = {};
+        send_data.provider_name = 'Wordpress';
+        send_data.blog_id = data.posts[0].site_ID;
+        send_data.post_count = data.posts.length;
+        send_data.posts = [];
+
+        for (var i = 0; i<data.posts.length; i++) {
+            var raw_post = data.posts[i];
+            var send_post = {};
+            send_post.title = raw_post.title;
+            send_post.modified = raw_post.modified;
+            send_post.id = raw_post.ID;
+            send_post.url = raw_post.URL;
+            send_post.categories = [];
+            send_post.tags = [];
+            var j=0;
+            if (raw_post.categories) {
+                var category_arr = Object.keys(raw_post.categories);
+                for (j=0; j<category_arr.length; j++) {
+                    send_post.categories.push(category_arr[j]);
+                }
+//                console.log('category-raw');
+//                console.log(category_arr);
+//                console.log('category-send');
+//                console.log(send_post.categories);
+            }
+            if (raw_post.tags) {
+                var tag_arr = Object.keys(raw_post.tags);
+                for (j=0; j<tag_arr.length; j++) {
+                    send_post.tags.push(tag_arr[j]);
+                }
+//                console.log('tag-raw');
+//                console.log(tag_arr);
+//                console.log('tags-send');
+//                console.log(send_post.tags);
+            }
+            send_data.posts.push(send_post);
+        }
+        res.send(send_data);
     });
 });
+
+router.get('/bot_post_count/:blog_id', function (req, res) {
+
+    console.log("Wordpress: "+ req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    var p = userdb.findProviderId(user_id, blog_id);
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        var send_data = {};
+        console.log(data.post_count);
+        send_data.provider_name = 'Wordpress';
+        send_data.blog_id = data.ID;
+        send_data.post_count = data.post_count;
+        res.send(send_data);
+    });
+ });
 
 module.exports = router;
 

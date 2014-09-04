@@ -10,7 +10,7 @@ function blogdb() {
 }
 
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
-
+/* 1user -> sites[] -> provider,blogs[] -> posts[] */
 blogdb.sites = [];
 /*
  [
@@ -69,7 +69,22 @@ blogdb.findSiteByProvider = function (providerName) {
     return null;
 };
 
-blogdb.addBlog = function (site, new_blogs) {
+blogdb.find_blog_by_blog_id = function (site, blog_id) {
+    for (var i = 0; i<site.blogs.length; i++) {
+       if (site.blogs[i].blog_id == blog_id)  {
+           break;
+       }
+    }
+
+    if (i == site.blogs.length) {
+        console.log ('Fail to find blog_id='+blog_id);
+        return null;
+    }
+
+    return site.blogs[i];
+};
+
+blogdb.change_new_blogs = function (site, new_blogs) {
     site.blogs.length = 0;
     site.blogs = new_blogs;
 };
