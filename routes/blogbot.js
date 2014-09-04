@@ -188,7 +188,7 @@ blogbot.getPosts = function (socket) {
             console.log("Cannot get Posts : " + err);
         }
         console.log("[blogbot.getPosts]" + data);
-        var jsonData = JSON.parse( data);
+        var jsonData = JSON.parse(data);
         console.log(jsonData);
         socket.emit('posts', jsonData);
     });
