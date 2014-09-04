@@ -60,10 +60,6 @@ app.use('/Wordpress', Wordpress);
 app.use('/tistory', tistory);
 app.use('/blog', blogRoutes);
 
-//app.get('*', function(req, res) {
-//    res.redirect('/#' + req.originalUrl);
-//});
-
 app.use('/user', function (req, res) {
    if (!req.user) {
         res.write('NAU');

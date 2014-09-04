@@ -8,6 +8,22 @@ var blogCommon  = require('./blogjs/blogCommon');
 var app = express();
 var router = express.Router();
 
+router.get('/blogRegister', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
+
+router.get('/blogSetSync', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
+
+router.get('/blogHistorySync', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
+
+router.get('/blogCollectFeedback', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
+
 // Get Posts
 router.get('/blogCollectFeedback/posts', function(req, res) {
     blogCommon.getWPPosts(req, res);

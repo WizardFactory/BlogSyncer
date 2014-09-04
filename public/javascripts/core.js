@@ -36,19 +36,19 @@ bs.config(function ($routeProvider) {
             controller : 'homeCtrl'
         })
         // route for blog page
-        .when('/blogRegister', {
+        .when('/blog/blogRegister', {
             templateUrl : '../blog/registerBlog.html',
             controller : 'blogCtrl'
         })
-        .when('/blogSetSync', {
+        .when('/blog/blogSetSync', {
             templateUrl : '../blog/setSync.html',
             controller : 'blogCtrl'
         })
-        .when('/blogHistorySync', {
+        .when('/blog/blogHistorySync', {
             templateUrl : '../blog/historySync.html',
             controller : 'blogCtrl'
         })
-        .when('/blogCollectFeedback', {
+        .when('/blog/blogCollectFeedback', {
             templateUrl : '../blog/collectFeedback.html',
             controller : 'blogCtrl'
         })
@@ -115,8 +115,8 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     $scope.signstat = 'Sign in';
 
     // add DropDown Blog
-    $scope.options = [{"Route":"/blogRegister","Display":"블로그 등록"},{"Route":"/blogSetSync","Display":"동기화 설정"},
-        {"Route":"/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blogCollectFeedback","Display":"피드백 모음"}]
+    $scope.options = [{"Route":"/blog/blogRegister","Display":"블로그 등록"},{"Route":"/blog/blogSetSync","Display":"동기화 설정"},
+        {"Route":"/blog/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blog/blogCollectFeedback","Display":"피드백 모음"}]
 
     console.log('Start homeCtrl');
 
