@@ -37,6 +37,7 @@ var tumblr = require('./routes/tumblr');
 var twitter = require('./routes/twitter');
 var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
+var blogRoutes = require('./routes/blogRoutes');
 
 var app = express();
 
@@ -57,6 +58,11 @@ app.use('/tumblr', tumblr);
 app.use('/twitter', twitter);
 app.use('/Wordpress', Wordpress);
 app.use('/tistory', tistory);
+app.use('/blog', blogRoutes);
+
+app.get('*', function(req, res) {
+    res.redirect('/#' + req.originalUrl);
+});
 
 
 app.use('/user', function (req, res) {

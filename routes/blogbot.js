@@ -5,7 +5,11 @@
 
 var request = require('request');
 var blogdb = require('../models/blogdb');
+<<<<<<< HEAD
 var postdb = require('../models/postdb');
+=======
+var blogCommon  = require('./blogjs/blogCommon');
+>>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 
 function blogbot() {
 
@@ -101,6 +105,7 @@ blogbot.getSites = function () {
     return blogdb.sites;
 };
 
+<<<<<<< HEAD
 blogbot.update_post_db = function(site) {
     console.log('update_post_db');
     console.log(site);
@@ -173,6 +178,47 @@ blogbot.add_posts_from_new_blog = function(provider, blog) {
 //  send post to blog without current blog
 //  if get error retry post
 //};
+=======
+blogbot.getPosts = function (socket) {
+    console.log('blogbot.getPosts : '+ this.user.id);
+    var userID = this.user.id;
+    console.log(this.user);
+    var p = this.user.providers[0];
+    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts";
+    url = url + "?userid=" + this.user.id;
+    url = url + "&providerid=" + p.providerId;
+    console.log("url="+url);
+    request.get(url, function (err, response, data) {
+        if(err) {
+            console.log("Cannot get Posts : " + err);
+        }
+        console.log("[blogbot.getPosts]" + data);
+        var jsonData = JSON.parse( data);
+        console.log(jsonData);
+        socket.emit('posts', jsonData);
+    });
+}
+
+blogbot.getComments = function (socket, postID) {
+    console.log('blogbot.getComments : '+ this.user.id);
+    var userID = this.user.id;
+    console.log(this.user);
+    var p = this.user.providers[0];
+    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts/"+postID+"/comments";
+    url = url + "?userid=" + this.user.id;
+    url = url + "&providerid=" + p.providerId;
+    console.log("url="+url);
+    request.get(url, function (err, response, data) {
+        if(err) {
+            console.log("Cannot get getComments : " + err);
+        }
+        console.log("[blogbot.getComments]" + data);
+        var jsonData = JSON.parse(data);
+        console.log(jsonData);
+        socket.emit('comments', jsonData);
+    });
+}
+>>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 
 module.exports = blogbot;
 

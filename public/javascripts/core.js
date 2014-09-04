@@ -60,7 +60,7 @@ bs.config(function ($routeProvider) {
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
-    $scope.user = User.getUser();
+	$scope.user = User.getUser();
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
     $scope.child_port = 20149;
@@ -82,6 +82,29 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
         $scope.blog_list = data;
     });
 
+    // About blogCollectFeedback
+    var postsID = 0;
+
+    childio.on('connect', function(data){
+        childio.emit('blog', {msg: 'getPosts'});
+    });
+    childio.on('posts', function(data, callback){
+        postID = data.posts[0].ID;
+        $scope.$apply(function() {
+            $scope.title = data.posts[0].title;
+        });
+    });
+
+    childio.on('connect', function(data){
+        var messages = { msg : 'getComments', postID : postsID };
+        childio.emit('blog', messages );
+    });
+    childio.on('comments', function(data){
+        var comments = data.comments[0].content;
+        $scope.$apply(function() {
+            $scope.comments = comments;
+        });
+    });
 });
 
 bs.controller('homeCtrl', function ($q, $scope, $http, User) {
@@ -90,9 +113,11 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = 'Sign in';
-    // add select
+
+    // add DropDown Blog
     $scope.options = [{"Route":"/blogRegister","Display":"블로그 등록"},{"Route":"/blogSetSync","Display":"동기화 설정"},
         {"Route":"/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blogCollectFeedback","Display":"피드백 모음"}]
+
     console.log('Start homeCtrl');
 
 

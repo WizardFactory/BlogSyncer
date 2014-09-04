@@ -3,7 +3,8 @@
  * Created by aleckim on 2014. 5. 15..
  */
 
-var userdb = require('../models/userdb');
+var userdb      = require('../models/userdb');
+var blogCommon  = require('./blogjs/blogCommon');
 
 var express = require('express');
 var passport = require('passport');
@@ -113,6 +114,7 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/posts/:blog_id', function (req, res) {
+<<<<<<< HEAD
     var user_id = getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
@@ -139,6 +141,9 @@ router.get('/posts/:blog_id', function (req, res) {
         console.log(data);
         res.send(data);
     });
+=======
+    blogCommon.getWPPosts(req, res);
+>>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 });
 
 router.get('/bot_bloglist', function (req, res) {

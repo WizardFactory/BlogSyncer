@@ -25,6 +25,14 @@ open_child_socket = function (port) {
                 var sites = blogbot.getSites();
                 socket.emit('sites', sites);
             }
+            else if(data.msg == 'getPosts') {
+                console.log('recv msg =' + data.msg);
+                blogbot.getPosts(socket);
+            }
+            else if(data.msg == 'getComments') {
+                console.log('recv msg =' + data.msg + " postID : "+data.postID);
+                blogbot.getComments(socket, data.postID);
+            }
         });
     });
 };
