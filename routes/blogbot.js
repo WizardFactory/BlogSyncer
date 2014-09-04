@@ -5,11 +5,8 @@
 
 var request = require('request');
 var blogdb = require('../models/blogdb');
-<<<<<<< HEAD
 var postdb = require('../models/postdb');
-=======
 var blogCommon  = require('./blogjs/blogCommon');
->>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 
 function blogbot() {
 
@@ -105,7 +102,6 @@ blogbot.getSites = function () {
     return blogdb.sites;
 };
 
-<<<<<<< HEAD
 blogbot.update_post_db = function(site) {
     console.log('update_post_db');
     console.log(site);
@@ -126,7 +122,7 @@ blogbot.add_post_to_db = function(recv_posts) {
         }
     }
 
-    //postdb.saveFile();
+    postdb.saveFile();
 
     return;
 };
@@ -178,7 +174,6 @@ blogbot.add_posts_from_new_blog = function(provider, blog) {
 //  send post to blog without current blog
 //  if get error retry post
 //};
-=======
 blogbot.getPosts = function (socket) {
     console.log('blogbot.getPosts : '+ this.user.id);
     var userID = this.user.id;
@@ -218,7 +213,6 @@ blogbot.getComments = function (socket, postID) {
         socket.emit('comments', jsonData);
     });
 }
->>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 
 module.exports = blogbot;
 
