@@ -141,7 +141,6 @@ router.get('/posts/:blogName', function (req, res) {
     });
 });
 
-
 router.get('/bot_bloglist', function (req, res) {
 
     console.log(req.url + ' : this is called by bot');
@@ -185,5 +184,109 @@ router.get('/bot_bloglist', function (req, res) {
         res.send(send_data);
     });
 });
+
+router.get('/bot_posts/:blog_id/:offset', function (req, res) {
+    console.log("tumblr: "+ req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+    var offset = req.params.offset;
+    var p = userdb.findProvider(user_id, "tumblr");
+    var oauth = {
+        consumer_key: TUMBLR_CONSUMER_KEY,
+        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        token: p.token,
+        token_secret: p.tokenSecret
+    };
+
+    var blog_url = blog_id + '.tumblr.com';
+    var blog = new tumblr.Blog(blog_url, oauth);
+    var start_index = offset.split("-")[0];
+    console.log('offset=' + start_index);
+    blog.posts({offset: start_index}, function(error, response) {
+        if (error) {
+            throw new Error(error);
+        }
+        //console.log(response);
+
+        var send_data = {};
+        send_data.provider_name = 'tumblr';
+        send_data.blog_id = response.posts[0].blog_name;
+        send_data.post_count = response.posts.length;
+        send_data.posts = [];
+
+        for (var i = 0; i<response.posts.length; i++) {
+            var raw_post = response.posts[i];
+            var send_post = {};
+            send_post.title = raw_post.title;
+            send_post.modified = raw_post.date;
+            send_post.id = raw_post.id;
+            send_post.url = raw_post.post_url;
+            //tumblr does not support categories
+//            send_post.categories = [];
+//            for (var j=0;j<raw_post.categories.length;j++) {
+//                send_post.categories.push(raw_post.categories[j]);
+//            }
+            send_post.tags = [];
+            for (var j=0;j<raw_post.tags.length;j++) {
+                send_post.tags.push(raw_post.tags[j]);
+            }
+//            console.log('tags-send');
+//            console.log(send_post.tags);
+
+            send_data.posts.push(send_post);
+        }
+        res.send(send_data);
+    });
+});
+
+router.get('/bot_post_count/:blog_id', function (req, res) {
+
+    console.log("tumblr: "+ req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+    var p = userdb.findProvider(user_id, "tumblr");
+    var oauth = {
+        consumer_key: TUMBLR_CONSUMER_KEY,
+        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        token: p.token,
+        token_secret: p.tokenSecret
+    };
+
+    var blog_url = blog_id + '.tumblr.com';
+    var blog = new tumblr.Blog(blog_url, oauth);
+
+    blog.info(function(error, response) {
+        if (error) {
+            throw new Error(error);
+        }
+        //console.log(response);
+        var send_data = {};
+        send_data.provider_name = 'tumblr';
+        send_data.blog_id = response.blog.name;
+        send_data.post_count = response.blog.posts;
+
+        res.send(send_data);
+    });
+
+    return;
+ });
 
 module.exports = router;
