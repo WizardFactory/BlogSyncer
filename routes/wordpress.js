@@ -114,36 +114,7 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/posts/:blog_id', function (req, res) {
-<<<<<<< HEAD
-    var user_id = getUserId(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-        return;
-    }
-
-    var blog_id = req.params.blog_id;
-
-    var p = userdb.findProviderId(user_id, blog_id);
-
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
-
-    console.log(api_url);
-
-    request.get(api_url, {
-        json: true,
-        headers: {
-            "authorization": "Bearer " + p.accessToken
-        }
-    }, function (err, response, data) {
-        console.log(data);
-        res.send(data);
-    });
-=======
     blogCommon.getWPPosts(req, res);
->>>>>>> dc476003d8631a2c5d1e3ef81afa31e3aa207fdb
 });
 
 router.get('/bot_bloglist', function (req, res) {
