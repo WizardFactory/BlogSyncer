@@ -13,6 +13,7 @@ function postdb() {
 
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
 
+postdb.last_update_time = {};
 postdb.posts = [];
 /* posts[] -> id, title, categories[], tags[], modified, infos[]-> blog, post_info */
 /*
@@ -22,13 +23,14 @@ postdb.posts = [];
             "title":"XXXX",
             "categories":"ttt",
             "tags":["xxxx","bbb"],
-            "modified": "2014-08-07T13:22:12+09:00",
             "infos": [
                 {
                     "provider_name":"wordpress", "blog_id":2313, "post_id":123,"post_url":"http://www.xxx.yy",
+                    "modified": "2014-08-07T13:22:12+09:00",
                 },
                 {
                     "provider_name":"wordpress", "blog_id":2314, "post_id":789,"post_url":"http://www.xxx.bb",
+                    "modified": "2014-08-07T13:22:12+09:00",
                 },
             ]
         }
@@ -94,8 +96,24 @@ postdb.find_post_by_id = function(post_id) {
 
 };
 
-postdb.find_post_by_post_id_of_blog = function(post_id, blog_id, provider_name) {
+postdb.find_post_by_post_id_of_blog = function(provider_name, blog_id, post_id) {
 
+    var foundit = false;
+
+    return foundit;
+
+    for (var i = 0; i<postdb.posts.length; i++) {
+        var infos = postdb.posts[i].infos;
+        for (var j = 0; j<infos.length; j++) {
+           if (infos[j].provider_name == provider_name && infos[j].blog_id == blog_id && infos[j].post_id == post_id) {
+               console.log('posts index=' + i + ' infos index='+j);
+               foundit = true;
+               break;
+           }
+        }
+    }
+
+    return foundit;
 };
 
 postdb.add_postinfo = function(post, provider_name, blog_id, new_post) {
@@ -108,11 +126,17 @@ postdb.add_postinfo = function(post, provider_name, blog_id, new_post) {
     postinfo.modified = new_post.modified;
 
     if (new_post.categories) {
+        if (!post.categories) {
+            post.categories = [];
+        }
         for (var i = 0;i<new_post.categories.length;i++) {
             post.categories.push(new_post.categories[i]);
         }
     }
     if (new_post.tags) {
+        if (!post.tags) {
+            post.tags = [];
+        }
         for (var i = 0;i<new_post.tags.length;i++) {
             post.tags.push(new_post.tags[i]);
         }
