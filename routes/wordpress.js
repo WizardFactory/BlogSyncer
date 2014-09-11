@@ -148,6 +148,11 @@ router.get('/bot_bloglist', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
+        var _ref;
+        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
+            err = "" + response.statusCode + " " + data.meta.msg;
+            console.log(err);
+        }
         //console.log(data);
         var blog_id = data.ID;
         var blog_title = data.name;
@@ -165,7 +170,81 @@ router.get('/bot_bloglist', function (req, res) {
     });
 });
 
-router.get('/bot_posts/:blog_id/:offset', function (req, res) {
+router.post('/bot_posts/new/:blog_id', function (req, res) {
+    console.log('Wordpress ' + req.url);
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+    var p = userdb.findProviderId(user_id, blog_id);
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id +"/posts/new";
+
+    console.log(api_url);
+
+    request.post(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        },
+        form: req.body
+    }, function (err, response, data) {
+        var _ref;
+        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
+            err = "" + response.statusCode + " " ;
+            console.log(err);
+        }
+       //add post info
+       var send_data = {};
+        send_data.provider_name = 'Wordpress';
+        send_data.blog_id = blog_id;
+        send_data.posts = [];
+
+            var send_post = {};
+            var raw_post = data;
+            send_post.title = raw_post.title;
+            send_post.modified = raw_post.modified;
+            send_post.id = raw_post.ID;
+            send_post.url = raw_post.URL;
+            send_post.categories = [];
+            send_post.tags = [];
+            var j=0;
+            if (raw_post.categories) {
+                var category_arr = Object.keys(raw_post.categories);
+                for (j=0; j<category_arr.length; j++) {
+                    send_post.categories.push(category_arr[j]);
+                }
+//                console.log('category-raw');
+//                console.log(category_arr);
+//                console.log('category-send');
+//                console.log(send_post.categories);
+            }
+            if (raw_post.tags) {
+                var tag_arr = Object.keys(raw_post.tags);
+                for (j=0; j<tag_arr.length; j++) {
+                    send_post.tags.push(tag_arr[j]);
+                }
+//                console.log('tag-raw');
+//                console.log(tag_arr);
+//                console.log('tags-send');
+//                console.log(send_post.tags);
+            }
+            //send_post.content = raw_post.content;
+            send_data.posts.push(send_post);
+       console.log(send_data);
+       res.send(send_data);
+    });
+
+    return;
+});
+
+router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     console.log("Wordpress: "+ req.url + ' : this is called by bot');
 
     var user_id = getUserId(req);
@@ -178,12 +257,12 @@ router.get('/bot_posts/:blog_id/:offset', function (req, res) {
     }
 
     var blog_id = req.params.blog_id;
-    var offset = req.params.offset;
+    var post_id = req.params.post_id;
     var p = userdb.findProviderId(user_id, blog_id);
 
     var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
-    api_url = api_url + "/posts";
-    api_url = api_url + "/?offset=" + offset;
+    api_url += "/posts";
+    api_url += "/" + post_id;
 
     console.log(api_url);
 
@@ -193,6 +272,98 @@ router.get('/bot_posts/:blog_id/:offset', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
+        //console.log(data);
+        var _ref;
+        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
+            err = "" + response.statusCode + " " + data.meta.msg;
+            console.log(err);
+        }
+        var send_data = {};
+        send_data.provider_name = 'Wordpress';
+        send_data.blog_id = blog_id;
+        send_data.posts = [];
+
+            var send_post = {};
+            var raw_post = data;
+            send_post.title = raw_post.title;
+            send_post.modified = raw_post.modified;
+            send_post.id = raw_post.ID;
+            send_post.url = raw_post.URL;
+            send_post.categories = [];
+            send_post.tags = [];
+            var j=0;
+            if (raw_post.categories) {
+                var category_arr = Object.keys(raw_post.categories);
+                for (j=0; j<category_arr.length; j++) {
+                    send_post.categories.push(category_arr[j]);
+                }
+//                console.log('category-raw');
+//                console.log(category_arr);
+//                console.log('category-send');
+//                console.log(send_post.categories);
+            }
+            if (raw_post.tags) {
+                var tag_arr = Object.keys(raw_post.tags);
+                for (j=0; j<tag_arr.length; j++) {
+                    send_post.tags.push(tag_arr[j]);
+                }
+//                console.log('tag-raw');
+//                console.log(tag_arr);
+//                console.log('tags-send');
+//                console.log(send_post.tags);
+            }
+            send_post.content = raw_post.content;
+            send_data.posts.push(send_post);
+        res.send(send_data);
+    });
+});
+
+
+router.get('/bot_posts/:blog_id', function (req, res) {
+    console.log("Wordpress: "+ req.url + ' : this is called by bot');
+
+    var user_id = getUserId(req);
+    if (user_id == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blog_id = req.params.blog_id;
+    var offset = req.query.offset;
+    var after = req.query.after;
+    var is_extended = false;
+    var p = userdb.findProviderId(user_id, blog_id);
+
+    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    api_url += "/posts";
+    api_url += "?";
+    if (offset) {
+        api_url += "offset=" + offset;
+        is_extended = true;
+    }
+    if (after) {
+        if (is_extended) {
+            api_url += "&";
+        }
+        api_url += "after=" + after;
+    }
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, data) {
+        var _ref;
+        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
+            err = "" + response.statusCode + " " + data.meta.msg;
+            console.log(err);
+        }
         //console.log(data);
         //for (var i=0; i<data.posts.length;i++) {
         //    console.log('post_id='+data.posts[i].ID);
@@ -204,12 +375,18 @@ router.get('/bot_posts/:blog_id/:offset', function (req, res) {
 
         var send_data = {};
         send_data.provider_name = 'Wordpress';
-        send_data.blog_id = data.posts[0].site_ID;
+        send_data.blog_id = blog_id;
         send_data.post_count = data.posts.length;
         send_data.posts = [];
 
         for (var i = 0; i<data.posts.length; i++) {
             var raw_post = data.posts[i];
+            var post_date = new Date(raw_post.modified);
+            var after_date = new Date(after);
+            if (post_date < after_date) {
+                console.log('post is before');
+                continue;
+            }
             var send_post = {};
             send_post.title = raw_post.title;
             send_post.modified = raw_post.modified;
@@ -269,6 +446,11 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
+        var _ref;
+        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
+            err = "" + response.statusCode + " " + data.meta.msg;
+            console.log(err);
+        }
         var send_data = {};
         console.log(data.post_count);
         send_data.provider_name = 'Wordpress';

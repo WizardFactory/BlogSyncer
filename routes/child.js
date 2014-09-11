@@ -45,7 +45,7 @@ process.on('message', function (m, server) {
         open_child_socket(m.port);
         blogbot.start(m.user);
         //console.log(this);
-        this.intarval = setInterval(send_run_event, 1000*10, this); //1 min
+        this.intarval = setInterval(send_run_event, 1000*30, this); //1 min
     }
     else if (m.msg === 'stop') {
         blogbot.stop();
