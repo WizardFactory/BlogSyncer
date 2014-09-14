@@ -25,15 +25,16 @@ bs.directive('multiselect',['$document', function($document) {
             };
             scope.toggleSelect = function(){
                 scope.isVisible = !scope.isVisible;
-            }
+            };
 
             element.bind('click', function(event) {
                 event.stopPropagation();
             });
 
             $document.bind('click', function(){
-                scope.isVisible = false;
-                scope.$apply();
+                scope.$apply(function () {
+                    scope.isVisible = false;
+                });
             });
         }
     };
