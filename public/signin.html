@@ -118,6 +118,9 @@
                 <a class="button {{ provider.providerName }}" >{{ provider.providerName }} : {{provider.displayName}}</a>
             </div>
         </div>
+        <div ng-if="user.id" style="padding:10px;">
+            <a href="/logout">Logout</a>
+        </div>
         <div style="padding:10px;">
             <div ng-repeat="provider in providers">
                 <a class="button {{ provider }}" ng-href="/{{ provider }}/authorize">Sign in with {{ provider }}</a>

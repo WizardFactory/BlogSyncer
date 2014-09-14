@@ -7,6 +7,7 @@ var userdb = require('../models/userdb');
 var express = require('express');
 var passport = require('passport');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var childm = require('./childmanager');
 
 var router = express.Router();
 
@@ -41,6 +42,7 @@ passport.use(new GoogleStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
+        childm.sendMessage(user, 'findOrCreate');
 
         process.nextTick(function () {
             return done(null, user);

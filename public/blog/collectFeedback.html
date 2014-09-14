@@ -1,3 +1,11 @@
 <div>
-    피드백 모음
+    <h1 class="cover-heading">모아보기</h1>
+    <p class="lead">posts : {{ posts.length }}</p>
+    <div class="animate-repeat" ng-repeat="post in posts">
+        <h3 align="left">{{ post.title }}</h3>
+        <div class="animate-repeat" ng-repeat="info in post.infos track by $index" align="left">
+            {{ info.provider_name }} {{ info.blog_id }} comment_count {{ info.comment_count }} like_count {{ info.like_count }}
+        </div>
+        <br>
+    </div>
 </div>
