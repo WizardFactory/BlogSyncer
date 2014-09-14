@@ -281,7 +281,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
         for (var i = 0; i<recv_post_count; i++) {
             var raw_post = {};
-            if (item.totalCount == 1) {
+            if (recv_post_count == 1) {
                 raw_post = item.posts.post;
             }
             else {

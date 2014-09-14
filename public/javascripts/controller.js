@@ -135,8 +135,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
                     if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
                         $scope.$apply(function () {
                             console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
-                            $scope.posts[i].infos[j].comment_count = data.comment_count;
-                            $scope.posts[i].infos[j].like_count = data.like_count;
+                            $scope.posts[i].infos[j].replies = data.replies;
                         });
                         break;
                     }
