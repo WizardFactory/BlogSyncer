@@ -65,6 +65,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
     //set/get Child port is not working now.
     $scope.child_port = 20149;
     $scope.title = "Blog 등록~!";
+    $scope.posts = [];
 
     if (!$scope.user.id) {
         console.log('you have to signin~');
@@ -74,37 +75,68 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
     var childio = io.connect(child_url);
     console.log('child_url='+child_url);
 
-    childio.on('connect', function () {
-        childio.emit('blog', {msg: 'getSites'});
-    });
-    childio.on('sites', function(data){
-        console.log(data);
-        $scope.blog_list = data;
-    });
+//    childio.on('connect', function () {
+//        childio.emit('blog', {msg: 'getSites'});
+//    });
+//    childio.on('sites', function(data){
+//        console.log(data);
+//        $scope.blog_list = data;
+//    });
 
     // About blogCollectFeedback
     var postsID = 0;
 
-    childio.on('connect', function(data){
-        childio.emit('blog', {msg: 'getPosts'});
-    });
-    childio.on('posts', function(data, callback){
-        postID = data.posts[0].ID;
-        $scope.$apply(function() {
-            $scope.title = data.posts[0].title;
+      childio.emit('blog', {msg: 'getPosts'});
+//    childio.on('connect', function(){
+//        childio.emit('blog', {msg: 'getPosts'});
+//    });
+
+    childio.on('posts', function(data){
+        var post_ids = [];
+        for (var i=0; i<data.post_db.length; i++) {
+            console.log('push post_id='+data.post_db[i].id);
+            post_ids.push(data.post_db[i].id);
+        }
+        var messages = { msg : 'get_reply_count', post_ids : post_ids };
+        console.log('send get_reply_count post_ids='+post_ids.length);
+        childio.emit('blog', messages );
+
+        $scope.$apply(function () {
+            $scope.posts = data.post_db;
         });
     });
 
-    childio.on('connect', function(data){
-        var messages = { msg : 'getComments', postID : postsID };
-        childio.emit('blog', messages );
+    childio.on('reply_count', function(data) {
+        console.log('reply_count');
+        console.log(data);
+        for (var i = 0; i<$scope.posts.length; i++) {
+            if ($scope.posts[i].id == data.post_id) {
+               for (var j=0; j<$scope.posts[i].infos.length; j++) {
+                   var info = $scope.posts[i].infos[j];
+                   if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
+                       $scope.$apply(function () {
+                           console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
+                           $scope.posts[i].infos[j].comment_count = data.comment_count;
+                           $scope.posts[i].infos[j].like_count = data.like_count;
+                       });
+                       break;
+                   }
+               }
+               break;
+            }
+        }
     });
-    childio.on('comments', function(data){
-        var comments = data.comments[0].content;
-        $scope.$apply(function() {
-            $scope.comments = comments;
-        });
-    });
+
+//    childio.on('connect', function(data){
+//        var messages = { msg : 'getComments', postID : postsID };
+//        childio.emit('blog', messages );
+//    });
+//    childio.on('comments', function(data){
+//        var comments = data.comments[0].content;
+//        $scope.$apply(function() {
+//            $scope.comments = comments;
+//        });
+//    });
 });
 
 bs.controller('homeCtrl', function ($q, $scope, $http, User) {
@@ -115,8 +147,8 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     $scope.signstat = 'Sign in';
 
     // add DropDown Blog
-    $scope.options = [{"Route":"/blog/blogRegister","Display":"블로그 등록"},{"Route":"/blog/blogSetSync","Display":"동기화 설정"},
-        {"Route":"/blog/blogHistorySync","Display":"동기 히스토리"},{"Route":"/blog/blogCollectFeedback","Display":"피드백 모음"}]
+    $scope.options = [{"Route":"/#/blog/blogRegister","Display":"블로그 등록"},{"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
+        {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},{"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}]
 
     console.log('Start homeCtrl');
 
