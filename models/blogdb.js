@@ -5,6 +5,31 @@
 var fs = require('fs');
 var dbfilename = 'blog.db';
 
+/*
+	Temporary work for mongodb.
+
+	var mongoDB = require('mongoose'); // mongoose for mongodb
+
+	// connect to mongoDB database on modulus.io
+	mongoDB.connect('mongodb://localhost/blog');
+  
+  // define Schema =================
+  var BlogSchema = new Schema({
+    providers : {
+      providerName : String, 
+      accessToken : String, 
+      providerId : Number
+    },
+    blogs : [{
+      blog_id : Number,
+      blog_title : String,
+      blog_url : String
+    }]
+  })
+	// define model =================
+	var BlogDB = mongoDB.model('Blog',BlogSchema);
+*/
+
 function blogdb() {
 
 }
