@@ -27,6 +27,7 @@ postdb.posts = [];
                 {
                     "provider_name":"wordpress", "blog_id":2313, "post_id":123,"post_url":"http://www.xxx.yy",
                     "modified": "2014-08-07T13:22:12+09:00",
+                    //"comment_count": 3, "like_count": 7,
                 },
                 {
                     "provider_name":"wordpress", "blog_id":2314, "post_id":789,"post_url":"http://www.xxx.bb",
@@ -93,7 +94,22 @@ postdb.find_post_by_url = function(url) {
 };
 
 postdb.find_post_by_id = function(post_id) {
+    for (var i=0; i<postdb.posts.length; i++) {
+        if (postdb.posts[i].id == post_id) {
+            break;
+        }
+    }
 
+    if (i == postdb.posts.length) {
+        console.log('Fail to find post id=' + post_id);
+    }
+    else {
+        var post = postdb.posts[i];
+        console.log('find post('+post.id+')');
+        return postdb.posts[i];
+    }
+
+    return null;
 };
 
 postdb.find_post_by_post_id_of_blog = function(provider_name, blog_id, post_id) {

@@ -5,7 +5,7 @@ var io;
 var blog_socket;
 
 send_run_event = function (child_process) {
-   console.log('called send_run_event');
+   //console.log('called send_run_event');
    //console.log(child_process);
    //var msg_object = {"msg":'runEvent'};
    //child_process.send(msg_object);
@@ -30,8 +30,15 @@ open_child_socket = function (port) {
                 blogbot.getPosts(socket);
             }
             else if(data.msg == 'getComments') {
-                console.log('recv msg =' + data.msg + " postID : "+data.postID);
-                blogbot.getComments(socket, data.postID);
+                console.log('recv msg =' + data.msg + " postIDs = "+data.post_ids.length);
+                blogbot.getComments(socket, data.post_ids);
+            }
+            else if(data.msg == 'get_reply_count') {
+                console.log('recv msg =' + data.msg + " post_ids = " + data.post_ids.length);
+                for (var i=0;i<data.post_ids.length;i++) {
+                   console.log('get reply count post_ids='+data.post_ids[i]);
+                   blogbot.get_reply_count(socket, data.post_ids[i]);
+                }
             }
         });
     });

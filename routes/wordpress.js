@@ -275,7 +275,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         //console.log(data);
         var _ref;
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " + data.meta.msg;
+            err = " " + response.statusCode;
             console.log(err);
         }
         var send_data = {};
@@ -313,6 +313,8 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 //                console.log(send_post.tags);
             }
             send_post.content = raw_post.content;
+            send_post.comment_count = raw_post.comment_count;
+            send_post.like_count = raw_post.like_count;
             send_data.posts.push(send_post);
         res.send(send_data);
     });
