@@ -4,7 +4,7 @@
     </button>
     <div class="multiselect-wrapper" ng-show="isVisible">
         <ul>
-            <li ng-repeat="c in choices | filter: searchText">
+            <li ng-repeat="c in choices | filter: searchText" ng-click="toggleSelect()">
                 <a href="{{c.Route}}">{{c.Display}}</a>
             </li>
         </ul>
