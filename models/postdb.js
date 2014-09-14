@@ -27,7 +27,7 @@ postdb.posts = [];
                 {
                     "provider_name":"wordpress", "blog_id":2313, "post_id":123,"post_url":"http://www.xxx.yy",
                     "modified": "2014-08-07T13:22:12+09:00",
-                    //"comment_count": 3, "like_count": 7,
+                    //"replies":[{"comment":3}, {"like":4}]
                 },
                 {
                     "provider_name":"wordpress", "blog_id":2314, "post_id":789,"post_url":"http://www.xxx.bb",

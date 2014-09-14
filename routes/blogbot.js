@@ -71,7 +71,7 @@ blogbot.getandpush = function() {
 //    post.content = "it is for test of justwapps";
 //    post.tags = "justwapps, api";
 //    post.categories ="development";
-//    blogbot.request_post_content(post, 'Wordpress', 72254286, blogbot.add_postinfo_to_db);
+//    blogbot.request_post_content(post, 'tistory', 'wizardfactory', blogbot.add_postinfo_to_db);
 
     return;
 };
@@ -277,6 +277,7 @@ blogbot.request_post_content = function (post, provider_name, blog_id, callback)
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
             err = "" + response.statusCode + " " ;
             console.log(err);
+            return;
         }
        //add post info
        //console.log(data);
@@ -348,8 +349,7 @@ blogbot.get_reply_count = function (socket, post_id) {
             send_data.post_id = post_id;
             send_data.provider_name = recv_posts.provider_name;
             send_data.blog_id = recv_posts.blog_id;
-            send_data.comment_count = recv_post.comment_count;
-            send_data.like_count = recv_post.like_count;
+            send_data.replies = recv_post.replies;
             console.log(send_data);
             socket.emit('reply_count', send_data);
         });
