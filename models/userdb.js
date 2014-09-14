@@ -2,6 +2,27 @@
  * Created by aleckim on 2014. 7. 11..
  */
 
+/*
+	Temporary work for mongodb.
+
+	var mongoDB = require('mongoose'); // mongoose for mongodb
+
+	// connect to mongoDB database on modulus.io
+	mongoDB.connect('mongodb://localhost/user');
+  
+  // define Schema =================
+  var UserSchema = new Schema({
+    id : String,
+    providers : {
+      providerName : String, 
+      accessToken : String, 
+      providerId : Number
+    }
+  })
+	// define model =================
+	var UserDB = mongoDB.model('User',UserSchema);
+*/
+
 var fs = require('fs');
 var dbfilename = 'users.db';
 
