@@ -1,71 +1,65 @@
 <!DOCTYPE html>
 <html ng-app="BlogSyncer">
-<head lang="en">
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="service to sync blogs">
-    <meta name="author" content="wizard factory">
-    <!--<link rel="icon" href="../../favicon.ico"> -->
-    <title>Invisible automation service BlogSyncer</title>
+    <head lang="en">
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="service to sync blogs">
+        <meta name="author" content="wizard factory">
+        <!--<link rel="icon" href="../../favicon.ico"> -->
+        <title>Invisible automation service BlogSyncer</title>
 
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Custom styles for this template -->
-    <link href="./stylesheets/style.css" rel="stylesheet">
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Custom styles for this template -->
+        <link href="./stylesheets/style.css" rel="stylesheet">
 
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.js"></script>
-    <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
-    <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.11.0.js"></script>
-    <script src="//cdn.socket.io/socket.io-1.0.6.js"></script>
-    <script src="./javascripts/core.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.2.17/angular-route.js"></script>
+        <script src="//angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.11.0.js"></script>
+        <script src="//cdn.socket.io/socket.io-1.0.6.js"></script>
+        <script src="./javascripts/core.js"></script>
+        <script src="./javascripts/controller.js"></script>
+        <script src="./javascripts/directive.js"></script>
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!--[if lt IE 9]>
-    <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-    <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-    <![endif]-->
-</head>
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    </head>
 
-<body ng-controller="homeCtrl">
+    <body ng-controller="mainCtrl">
+        <div class="site-wrapper">
+            <div class="site-wrapper-inner">
+                <div class="cover-container">
+                    <div class="masthead clearfix">
+                        <div class="inner">
+                            <h3 class="masthead-brand">BlogSync</h3>
+                            <ul class="nav masthead-nav">
+                                <li class="active"><a href="#">Home</a></li>
+                                <li>
+                                    <div>
+                                        <multiselect choices="options" selected="selectedOptions">Blog</multiselect>
+                                    </div>
+                                </li>
+                                <li><a href="#signin">{{signstat}}</a></li>
+                            </ul>
+                        </div>
+                    </div>
 
-<div class="site-wrapper">
+                    <div id="main">
+                        <!-- angular templating -->
+                        <!-- this is where content will be injected -->
+                        <div ng-view></div>
+                    </div>
 
-    <div class="site-wrapper-inner">
-
-        <div class="cover-container">
-
-            <div class="masthead clearfix">
-                <div class="inner">
-                    <h3 class="masthead-brand">BlogSync</h3>
-                    <ul class="nav masthead-nav">
-                        <li class="active"><a href="#">Home</a></li>
-                        <li>
-                            <div>
-                                <multiselect choices="options" selected="selectedOptions">Blog</multiselect>
-                            </div>
-                        </li>
-                        <li><a href="#signin">{{ signstat }}</a></li>
-                    </ul>
+                    <div class="mastfoot">
+                        <div class="inner">
+                            <p><a href="http://wizardfactory.net">WizardFactory</a></p>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div id="main">
-                <!-- angular templating -->
-                <!-- this is where content will be injected -->
-                <div ng-view></div>
-            </div>
-
-            <div class="mastfoot">
-                <div class="inner">
-                    <p><a href="http://wizardfactory.net">WizardFactory</a></p>
-                </div>
-            </div>
-
         </div>
-
-    </div>
-
-</div>
-
-</body>
+    </body>
 </html>
