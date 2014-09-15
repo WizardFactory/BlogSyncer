@@ -71,7 +71,7 @@ blogbot.getandpush = function() {
 //    post.content = "it is for test of justwapps";
 //    post.tags = "justwapps, api";
 //    post.categories ="development";
-//    blogbot.request_post_content(post, 'tistory', 'wizardfactory', blogbot.add_postinfo_to_db);
+//    blogbot.request_post_content(post, 'tumblr', 'wizardfactory', blogbot.add_postinfo_to_db);
 
     return;
 };
