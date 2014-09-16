@@ -5,13 +5,13 @@
 var fs = require('fs');
 var dbfilename = 'blog.db';
 
-function blogdb() {
-
+function blogdb(sites) {
+    this.sites = sites;
 }
 
 /* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
 /* 1user -> sites[] -> provider,blogs[] -> posts[] */
-blogdb.sites = [];
+//blogdb.sites = [];
 /*
  [
  { "provider":object, "blogs":
@@ -24,9 +24,9 @@ blogdb.sites = [];
  */
 
 
-blogdb.init = function () {
+blogdb.prototype.init = function () {
   try {
-    blogdb.sites = JSON.parse(fs.readFileSync(dbfilename)).blog_db;
+    this.sites = JSON.parse(fs.readFileSync(dbfilename)).blog_db;
   }
   catch (e) {
     console.log(e);
@@ -36,9 +36,9 @@ blogdb.init = function () {
   return true;
 };
 
-blogdb.saveFile = function () {
+blogdb.prototype.saveFile = function () {
   try {
-    fs.writeFile(dbfilename, JSON.stringify({"blog_db":blogdb.sites}), function (err) {
+    fs.writeFile(dbfilename, JSON.stringify({"blog_db":this.sites}), function (err) {
         if (err) throw err;
         console.log("It's saved!");
     });
@@ -51,11 +51,11 @@ blogdb.saveFile = function () {
   return true;
 };
 
-blogdb.getProviderCount = function () {
+blogdb.prototype.getProviderCount = function () {
     return this.sites.length;
 };
 
-blogdb.findSiteByProvider = function (providerName) {
+blogdb.prototype.findSiteByProvider = function (providerName) {
     var sites = this.sites;
 
     for (var i = 0; i < sites.length; i++) {
@@ -69,7 +69,7 @@ blogdb.findSiteByProvider = function (providerName) {
     return null;
 };
 
-blogdb.find_blog_by_blog_id = function (site, blog_id) {
+blogdb.prototype.find_blog_by_blog_id = function (site, blog_id) {
     for (var i = 0; i<site.blogs.length; i++) {
        if (site.blogs[i].blog_id == blog_id)  {
            break;
@@ -84,12 +84,12 @@ blogdb.find_blog_by_blog_id = function (site, blog_id) {
     return site.blogs[i];
 };
 
-blogdb.change_new_blogs = function (site, new_blogs) {
+blogdb.prototype.change_new_blogs = function (site, new_blogs) {
     site.blogs.length = 0;
     site.blogs = new_blogs;
 };
 
-blogdb.addProvider = function (new_provider, new_blogs) {
+blogdb.prototype.addProvider = function (new_provider, new_blogs) {
     var totalCount = 0;
 
     this.sites.push({"provider":new_provider, "blogs":new_blogs});
