@@ -98,7 +98,7 @@ router.get('/info', function (req, res) {
 
     console.log(api_url);
     request.get(api_url, function (err, response, data) {
-        console.log(data);
+        //console.log(data);
         res.send(data);
     });
 });
@@ -121,7 +121,7 @@ router.get('/post/list/:simpleName', function (req, res) {
 
     console.log(api_url);
     request.get(api_url, function (err, response, data) {
-        console.log(data);
+        //console.log(data);
         res.send(data);
     });
 });
@@ -339,7 +339,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     console.log(api_url);
     request.get(api_url, function (err, response, data) {
 
-        console.log(data);
+        //console.log(data);
         var item = JSON.parse(data).tistory.item;
 
         var send_data = {};
@@ -428,7 +428,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return;
         }
 
-        console.log(data);
+        //console.log(data);
         var item = JSON.parse(data).tistory;
 
         var send_data = {};
@@ -448,7 +448,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
         send_data.posts.push(send_post);
 
-        console.log(send_data);
+        //console.log(send_data);
         res.send(send_data);
     });
 });
