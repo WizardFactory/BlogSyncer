@@ -23,6 +23,7 @@ function postdb(posts) {
             "title":"XXXX",
             "categories":"ttt",
             "tags":["xxxx","bbb"],
+            "tyep": text, photo,
             "infos": [
                 {
                     "provider_name":"wordpress", "blog_id":2313, "post_id":123,"post_url":"http://www.xxx.yy",
@@ -65,13 +66,13 @@ postdb.prototype.saveFile = function () {
   return true;
 };
 
-postdb.prototype.get_post_count = function () {
-    return this.posts.length;
-};
-
 postdb.prototype.find_post_by_title = function(title) {
 
     for (var i = 0; i<this.posts.length; i++) {
+        if (this.posts[i].title == undefined) {
+            continue;
+        }
+
         if (this.posts[i].title == title) {
             break;
         }
@@ -169,19 +170,31 @@ postdb.prototype.add_post = function(provider_name, blog_id, new_post) {
     var lastId = 0;
     var post = {};
 
-    totalCount = this.get_post_count();
-    //console.log("total = " + totalCount);
+    totalCount = this.posts.length;
+    console.log("total = " + totalCount);
 
     if (totalCount > 0) {
         lastId = this.posts[totalCount - 1].id;
     }
-    //console.log("lastId = " + lastId);
+    console.log("lastId = " + lastId);
     lastId++;
 
     post.id = lastId;
-    if (new_post.title) {
+    if (new_post.title !== undefined) {
         post.title = new_post.title;
     }
+    else if (new_post.content !== undefined && new_post.content.length != 0) {
+        if (new_post.content.length < 30) {
+            post.title = new_post.content;
+        }
+        else {
+            post.title = new_post.content.substr(0,27) + "...";
+        }
+    }
+    else if (new_post.url !== undefined) {
+        post.title = new_post.url;
+    }
+
     if (new_post.categories) {
         post.categories = new_post.categories;
     }

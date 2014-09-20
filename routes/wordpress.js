@@ -251,15 +251,16 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }, function (err, response, data) {
         var _ref;
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " + data.meta.msg;
+            err = "" + response.statusCode + " ";
             console.log(err);
         }
         //console.log(data);
         //for (var i=0; i<data.posts.length;i++) {
         //    console.log('post_id='+data.posts[i].ID);
         //}
-        if (!data.posts) {
+        if (data.posts === undefined) {
            console.log('Fail to get posts');
+           res.send('Fail to get posts');
            return;
         }
 
