@@ -242,7 +242,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
         var post_date = new Date(raw_post.date);
         var after_date = new Date(after);
         if (post_date < after_date) {
-            console.log('post(' + raw_post.id + ') is before');
+            //console.log('post(' + raw_post.id + ') is before');
             continue;
         }
 

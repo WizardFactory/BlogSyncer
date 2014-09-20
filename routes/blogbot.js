@@ -6,6 +6,7 @@
 var request = require('request');
 var blogdb = require('../models/blogdb');
 var postdb = require('../models/postdb');
+var historydb = require('../models/historydb');
 
 function BlogBot() {
 }
@@ -13,8 +14,8 @@ function BlogBot() {
 BlogBot.users = [];
 /*
     [
-        { "user":object, "blogdb":blogdb, "postdb":postdb },
-        { "user":object, "blogdb":blogdb, "postdb":postdb },
+        { "user":object, "blogdb":blogdb, "postdb":postdb, "historydb":historydb },
+        { "user":object, "blogdb":blogdb, "postdb":postdb, "historydb":historydb },
     ]
  */
 
@@ -32,6 +33,14 @@ BlogBot.findPostDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
         if (this.users[i].user.id === user.id) {
             return this.users[i].postDb;
+        }
+    }
+};
+
+BlogBot.findHistoryDbByUser = function(user) {
+    for (var i=0; i<this.users.length; i++) {
+        if (this.users[i].user.id === user.id) {
+            return this.users[i].historyDb;
         }
     }
 };
@@ -72,6 +81,7 @@ BlogBot.push_posts_to_blogs = function(user, recv_posts) {
                             recv_posts.blog_id + ' post ' + new_post.id);
         }
         else {
+            BlogBot._makeTitle(new_post);
             postDb.add_post(recv_posts.provider_name, recv_posts.blog_id, new_post);
             BlogBot.request_get_posts(user, recv_posts.provider_name, recv_posts.blog_id, {"post_id":new_post.id},
                             BlogBot.send_post_to_blogs);
@@ -110,7 +120,7 @@ BlogBot.task = function() {
 //    post.content = "it is for test of justwapps";
 //    post.tags = "justwapps, api";
 //    post.categories ="development";
-//    BlogBot.request_post_content(this.users[0].user, post, 'Wordpress', 72254286, BlogBot.add_postinfo_to_db);
+//    BlogBot.request_post_content(this.users[0].user, post, "tumblr", "kimalec", BlogBot.add_postinfo_to_db);
 };
 
 BlogBot.start = function (user) {
@@ -123,6 +133,8 @@ BlogBot.start = function (user) {
     var posts = [];
     userInfo.postDb = new postdb(posts);
     userInfo.postDb.lastUpdateTime = new Date();
+    var histories = [];
+    userInfo.historyDb = new historydb(histories);
     this.users.push(userInfo);
     return;
 };
@@ -347,6 +359,53 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
     return;
 };
 
+BlogBot.getHistorys = function (socket, user) {
+
+    var historyDb = BlogBot.findHistoryDbByUser(user);
+
+    console.log('BlogBot.getHistories : userId='+ user.id);
+    if (historyDb === undefined) {
+        console.log('Fail to find historyDb of userId='+user.id);
+        socket.emit('histories', {"histories":[]});
+        return;
+    }
+
+    console.log('histories length='+historyDb.histories.length);
+    socket.emit('histories', {"histories":historyDb.histories});
+};
+
+BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
+    var historyDb = BlogBot.findHistoryDbByUser(user);
+    historyDb.addHistory(srcPost, postStatus, dstPost);
+};
+
+BlogBot._makeTitle = function (post) {
+     if (post.content !== undefined && post.content.length != 0) {
+
+        var indexNewLine = post.content.indexOf("\n");
+
+        if (indexNewLine < 30) {
+            post.title = post.content.substr(0, indexNewLine);
+            return;
+        }
+
+        if (post.content.length < 30) {
+            post.title = post.content;
+            return;
+        }
+
+        post.title = post.content.substr(0,27);
+        return;
+    }
+
+    if (post.url !== undefined) {
+        post.title = post.url;
+        return;
+    }
+
+    console.log("Fail to make title!!!");
+};
+
 BlogBot.request_post_content = function (user, post, provider_name, blog_id, callback) {
     var url = "http://www.justwapps.com/"+provider_name + "/bot_posts";
     url += "/new";
@@ -355,6 +414,10 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "userid=" + user.id;
 
     //send_data title, content, tags, categories
+    if (post.title === undefined) {
+        BlogBot._makeTitle(post);
+    }
+
     var opt = { form: post };
 
     console.log('post='+url);
@@ -363,12 +426,17 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
             err = "" + response.statusCode + " " ;
             console.log(err);
+            //add fail to history
+            BlogBot.addHistory(user, post, response.statusCode, undefined);
             return;
         }
        //add post info
-       //console.log(data);
+       console.log(data);
        var recv_posts = JSON.parse(data);
        callback(user, recv_posts);
+
+        BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
+       //add success to history
     });
 
     return;
