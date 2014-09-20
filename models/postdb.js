@@ -183,24 +183,24 @@ postdb.prototype.add_post = function(provider_name, blog_id, new_post) {
     if (new_post.title !== undefined) {
         post.title = new_post.title;
     }
-    else if (new_post.content !== undefined && new_post.content.length != 0) {
-        if (new_post.content.length < 30) {
-            post.title = new_post.content;
-        }
-        else {
-            post.title = new_post.content.substr(0,27) + "...";
-        }
-    }
-    else if (new_post.url !== undefined) {
-        post.title = new_post.url;
+    else {
+        //console.log("title is undefined");
     }
 
-    if (new_post.categories) {
+    if (new_post.categories !== undefined) {
         post.categories = new_post.categories;
     }
-    if (new_post.tags) {
+    else {
+        //console.log("categories is undefined");
+    }
+
+    if (new_post.tags !== undefined) {
         post.tags = new_post.tags;
     }
+    else {
+        //console.log("tags is undefined");
+    }
+
     post.infos = [];
     var postinfo = {};
     postinfo.provider_name = provider_name;

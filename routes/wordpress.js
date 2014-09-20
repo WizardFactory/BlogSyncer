@@ -275,7 +275,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var post_date = new Date(raw_post.modified);
             var after_date = new Date(after);
             if (post_date < after_date) {
-                console.log('post is before');
+                //console.log('post is before');
                 continue;
             }
             var send_post = {};

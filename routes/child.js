@@ -40,6 +40,10 @@ open_child_socket = function (port) {
                    blogBot.get_reply_count(socket, data.user, data.post_ids[i]);
                 }
             }
+            else if (data.msg == 'getHistories') {
+                console.log('recv msg =' + data.msg);
+                blogBot.getHistorys(socket, data.user);
+            }
         });
     });
 };

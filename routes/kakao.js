@@ -232,7 +232,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var after_date = new Date(after);
 
             if (post_date < after_date) {
-                console.log('post is before');
+                //console.log('post is before');
                 continue;
             }
 
@@ -354,6 +354,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
             err = "" + response.statusCode + " " ;
             console.log(err);
+            res.send(err);
+            return;
         }
 
         //console.log(data);
