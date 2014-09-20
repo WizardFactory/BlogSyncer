@@ -65,6 +65,21 @@ router.get('/authorized',
     }
 );
 
+getUserId = function (req) {
+    var userid = 0;
+
+    if (req.user) {
+        userid = req.user.id;
+    }
+    else if (req.query.userid)
+    {
+        //this request form child process;
+        userid = req.query.userid;
+    }
+
+    return userid;
+};
+
 router.get('/me', function (req, res) {
     if (!req.user) {
         var errorMsg = 'You have to login first!';
