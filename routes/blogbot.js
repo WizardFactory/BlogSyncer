@@ -110,7 +110,7 @@ BlogBot.task = function() {
 //    post.content = "it is for test of justwapps";
 //    post.tags = "justwapps, api";
 //    post.categories ="development";
-//    BlogBot.request_post_content(user, post, 'tumblr', 'wizardfactory', BlogBot.add_postinfo_to_db);
+//    BlogBot.request_post_content(this.users[0].user, post, 'Wordpress', 72254286, BlogBot.add_postinfo_to_db);
 };
 
 BlogBot.start = function (user) {
@@ -133,6 +133,7 @@ BlogBot.stop = function (user) {
 };
 
 BlogBot.add_blogs_to_db = function (user, recv_blogs) {
+
     /*
      { "provider":object, "blogs":
                             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
@@ -142,7 +143,7 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     var blogs = recv_blogs.blogs;
     var blogDb = BlogBot.findBlogDbByUser(user);
 
-    if (blogDb == undefined) {
+    if (blogDb === undefined) {
          console.log('add_blogs_to_db : Fail to find blogDb of user='+user.id);
         return;
     }
@@ -199,30 +200,39 @@ BlogBot.getSites = function (user) {
 BlogBot.add_postinfo_to_db = function (user, recv_posts) {
     var postDb = BlogBot.findPostDbByUser(user);
     //TODO: change from title to id
-    var post = postDb.find_post_by_title(recv_posts.posts[0].title);
-    if (post) {
-        postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[0]);
+    if (recv_posts.posts[0].title !== undefined) {
+        var post = postDb.find_post_by_title(recv_posts.posts[0].title);
+        if (post) {
+            postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[0]);
+        }
+        else {
+            console.log('Fail to found post');
+        }
     }
     else {
-        console.log('Fail to found post');
+        //TODO content 및 다른 것으로 찾아서 넣는다.
     }
-
-    return;
 };
 
 BlogBot.add_posts_to_db = function(user, recv_posts) {
+
     console.log('BlogBot.add_posts_to_db');
+
     var postDb = BlogBot.findPostDbByUser(user);
+
     //TODO: change from title to id
     for(var i = 0; i<recv_posts.posts.length;i++) {
-        var post = postDb.find_post_by_title(recv_posts.posts[i].title);
-        //console.log(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
-        if (post) {
-            postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
+        if (recv_posts.posts[i].title !== undefined) {
+            var post = postDb.find_post_by_title(recv_posts.posts[i].title);
+
+            //console.log(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
+            if (post) {
+                postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
+                continue;
+            }
         }
-        else {
-            postDb.add_post(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
-        }
+
+        postDb.add_post(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
     }
 
     //postDb.saveFile();
@@ -230,16 +240,42 @@ BlogBot.add_posts_to_db = function(user, recv_posts) {
     return;
 };
 
+BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, callback) {
+    BlogBot.request_get_posts(user, provider_name, blog_id, options, function (user, recv_posts) {
+        console.log("recursiveGetPosts: recv posts");
+        callback(user, recv_posts);
+        if (recv_posts.posts.length != 0) {
+            var index = recv_posts.posts.length-1;
+            var new_opts = {};
+            new_opts.offset = recv_posts.posts[index].id;
+            console.log("recursiveGetPosts: get posts");
+            BlogBot.recursiveGetPosts(user, provider_name, blog_id, new_opts, callback);
+        }
+        else {
+            console.log("Stop recursive call functions");
+        }
+    });
+};
+
 BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     console.log('BlogBot.add_posts_from_new_blog');
     var provider_name = recv_post_count.provider_name;
     var blog_id =  recv_post_count.blog_id;
     var post_count = recv_post_count.post_count;
+
     //how many posts get per 1 time.
-    for(var i = 0; i<post_count;i+=20) {
-        var offset = i + '-20';
-        BlogBot.request_get_posts(user, provider_name,blog_id, {"offset":offset}, BlogBot.add_posts_to_db);
+    if (post_count > 0) {
+        for (var i = 0; i < post_count; i += 20) {
+            var offset = i + '-20';
+            BlogBot.request_get_posts(user, provider_name, blog_id, {"offset": offset}, BlogBot.add_posts_to_db);
+        }
     }
+    else if (post_count < 0) {
+        console.log("post_count didn't supported");
+        var options = {};
+        BlogBot.recursiveGetPosts(user, provider_name, blog_id, options, BlogBot.add_posts_to_db);
+    }
+    //else for nothing
 
     return;
 };
@@ -314,7 +350,7 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
 BlogBot.request_post_content = function (user, post, provider_name, blog_id, callback) {
     var url = "http://www.justwapps.com/"+provider_name + "/bot_posts";
     url += "/new";
-    url += "/"+blog_id;
+    url += "/"+encodeURIComponent(blog_id);
     url += "?";
     url += "userid=" + user.id;
 
@@ -344,7 +380,7 @@ BlogBot.getPosts = function (socket, user) {
     var postDb = BlogBot.findPostDbByUser(user);
 
     console.log('BlogBot.getPosts : userid='+ user.id);
-    if (postdb == undefined) {
+    if (postdb === undefined) {
         console.log('Fail to find postdb of user='+user.id);
         socket.emit('posts', {"post_db":[]});
         return;
