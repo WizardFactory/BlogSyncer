@@ -7,6 +7,7 @@ var request = require('request');
 var blogdb = require('../models/blogdb');
 var postdb = require('../models/postdb');
 var historydb = require('../models/historydb');
+var groupdb = require('../models/groupdb');
 
 function BlogBot() {
 }
@@ -45,24 +46,32 @@ BlogBot.findHistoryDbByUser = function(user) {
     }
 };
 
+BlogBot.findGroupDbByUser = function(user) {
+    for (var i=0; i<this.users.length; i++) {
+        if (this.users[i].user.id === user.id) {
+            return this.users[i].groupDb;
+        }
+    }
+};
+
 BlogBot.send_post_to_blogs = function (user, recv_posts) {
-    var blogDb = BlogBot.findBlogDbByUser(user);
-    var sites = blogDb.sites;
+    var groupDb = BlogBot.findGroupDbByUser(user);
     var blog_id = recv_posts.blog_id;
     var provider_name = recv_posts.provider_name;
     var post = recv_posts.posts[0];
+    var groups = groupDb.findGroupByBlogInfo(provider_name, blog_id);
 
-    for (var i = 0; i < sites.length; i++) {
-        for (var j = 0; j < sites[i].blogs.length; j++) {
-            target_blog = sites[i].blogs[j];
-            if (target_blog.blog_id == blog_id && sites[i].provider.providerName == provider_name) {
+    for (var i = 0; i < groups.length; i++) {
+        for (var j = 0; j < groups[i].blogs.length; j++) {
+            var targetBlog = groups[i].blogs[j];
+            if (targetBlog.blog_id == blog_id && targetBlog.provider.providerName == provider_name) {
                 console.log('send_post_to_blogs: skip current blog id='+blog_id+' provider='+provider_name);
                 //skip current blog
             }
             else {
-                console.log('send_post_to_blogs: post id='+post.id+' to provider='+sites[i].provider.providerName+
-                                ' blog='+target_blog.blog_id);
-                BlogBot.request_post_content(user, post, sites[i].provider.providerName, target_blog.blog_id,
+                console.log('send_post_to_blogs: post id='+post.id+' to provider='+targetBlog.provider.providerName+
+                                ' blog='+targetBlog.blog_id);
+                BlogBot.request_post_content(user, post, targetBlog.provider.providerName, targetBlog.blog_id,
                                 BlogBot.add_postinfo_to_db);
             }
         }
@@ -136,6 +145,9 @@ BlogBot.start = function (user) {
     var histories = [];
     userInfo.historyDb = new historydb(histories);
     this.users.push(userInfo);
+    var groups = [];
+    userInfo.groupDb = new groupdb(groups);
+    this.users.push(userInfo);
     return;
 };
 
@@ -207,6 +219,21 @@ BlogBot.findOrCreate = function (user) {
 BlogBot.getSites = function (user) {
     console.log('BlogBot.getSites');
     return BlogBot.findBlogDbByUser(user);
+};
+
+BlogBot.addGroup = function(user, group) {
+    var groupDb = BlogBot.findGroupDbByUser(user);
+    groupDb.groups.push(group);
+};
+
+BlogBot.setGroups = function(user, groups) {
+    var groupDb = BlogBot.findGroupDbByUser(user);
+    groupDb.groups = groups;
+};
+
+BlogBot.getGroups = function(user) {
+    var groupDb = BlogBot.findGroupDbByUser(user);
+    return groupDb.groups;
 };
 
 BlogBot.add_postinfo_to_db = function (user, recv_posts) {

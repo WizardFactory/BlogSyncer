@@ -115,7 +115,9 @@ router.get('/info', function (req, res) {
 
     client.userInfo(function(error, data) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         console.log(data);
         res.send(data);
@@ -146,7 +148,9 @@ router.get('/posts/:blogName', function (req, res) {
 
     client.posts(blog_name, function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         console.log(response);
         res.send(response);
@@ -176,7 +180,9 @@ router.get('/bot_bloglist', function (req, res) {
 
     client.userInfo(function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         //console.log(response);
 
@@ -220,7 +226,9 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     client.blogInfo(blog_id, function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         //console.log(response);
         var send_data = {};
@@ -362,7 +370,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
     client.posts(blog_id, options, function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         //console.log(response);
 
@@ -405,7 +415,9 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
     client.posts(blog_id, options, function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         //console.log(response);
 
@@ -466,14 +478,18 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     client.text(blog_id, options, function(error, response) {
         if (error) {
-            throw new Error(error);
+            //throw new Error(error);
+            res.send(error);
+            return;
         }
         console.log(response);
         var options = response;
 
         client.posts(blog_id, options, function(error, response) {
             if (error) {
-                throw new Error(error);
+                //throw new Error(error);
+                res.send(error);
+                return;
             }
             //console.log(response);
 

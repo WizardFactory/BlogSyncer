@@ -44,6 +44,19 @@ open_child_socket = function (port) {
                 console.log('recv msg =' + data.msg);
                 blogBot.getHistorys(socket, data.user);
             }
+            else if (data.msg == 'addGroup') {
+                console.log('recv msg =' + data.msg);
+                blogBot.addGroup(data.user, data.group);
+            }
+            else if (data.msg == 'setGroups') {
+                console.log('recv msg =' + data.msg);
+                blogBot.setGroups(data.user, data.groups);
+            }
+            else if (data.msg == 'getGroups') {
+                console.log('recv msg =' + data.msg);
+                var groups = blogBot.getGroups(data.user);
+                socket.emit('groups', {"groups":groups});
+            }
         });
     });
 };
