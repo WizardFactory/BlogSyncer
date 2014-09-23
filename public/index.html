@@ -36,13 +36,15 @@
                         <div class="inner">
                             <h3 class="masthead-brand">BlogSync</h3>
                             <ul class="nav masthead-nav">
-                                <li class="active"><a href="#">Home</a></li>
-                                <li>
-                                    <div>
-                                        <multiselect choices="options" selected="selectedOptions">Blog</multiselect>
-                                    </div>
+                                <li ng-class="{active: (active === 'home')}">
+                                    <a href="#">Home</a>
                                 </li>
-                                <li><a href="#signin">{{signstat}}</a></li>
+                                <li ng-class="{active: (active === 'blog')}">
+                                    <multiselect choices="options" selected="selectedOptions"></multiselect>
+                                </li>
+                                <li ng-class="{active: (active === 'signin')}">
+                                    <a href="#signin">{{signstat}}</a>
+                                </li>
                             </ul>
                         </div>
                     </div>

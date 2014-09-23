@@ -10,121 +10,17 @@
 <!--</form>-->
 <!--</div>-->
 
-<style>
-    #intro
-    {
-        height                      : 100%;
-        color                       : #666666;
-        font-size                   : 16px;
-    }
-
-    .button
-    {
-        background-color            : #6CC655;
-        color                       : white;
-        font-size                   : 16px;
-        line-height                 : 44px;
-        margin-bottom               : 10px;
-        border-radius               : 3px;
-        padding-left                : 44px;
-        background-position         : 7px 7px;
-        background-size             : 30px 30px;
-        background-repeat           : no-repeat;
-        cursor                      : pointer;
-        display                     : block;
-        text-decoration             : none;
-    }
-
-    .button.google
-    {
-        background-color            : #DF4B31;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-google_2x.png');*/
-    }
-    .button.google:hover
-    {
-        background-color            : #B9341D;
-    }
-
-    .button.twitter
-    {
-        background-color            : #55ACEE;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-twitter_2x.png');*/
-    }
-    .button.twitter:hover
-    {
-        background-color            : #178DE8;
-    }
-
-    .button.facebook
-    {
-        background-color            : #4963A4;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-facebook_2x.png');*/
-    }
-    .button.facebook:hover
-    {
-        background-color            : #3A4F82;
-    }
-
-    .button.tumblr
-    {
-        background-color            : #38465c;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-tumblr_2x.png');*/
-    }
-    .button.tumblr:hover
-    {
-        background-color            : #38465c;
-    }
-    .button.tistory
-    {
-        background-color            : #f1631b;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-tistory_2x.png');*/
-    }
-    .button.tistory:hover
-    {
-        background-color            : #f1631b;
-    }
-    .button.Wordpress
-    {
-        background-color            : #1e8cbe;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-wordpress_2x.png');*/
-    }
-    .button.Wordpress:hover
-    {
-        background-color            : #1e8cbe;
-    }
-    .button.kakao
-    {
-        background-color            : #faae00;
-        color                       : white;
-        /*background-image            : url('/images/mobile-icon-toolbar-kakao_2x.png');*/
-    }
-    .button.kakao:hover
-    {
-        background-color            : #faae00;
-    }
-</style>
-
 <div style="max-width: 360px; margin-left: auto; margin-right:auto">
     <h2 class="form-signin-heading">{{ message }}</h2>
     <div align="left">
         <div style="padding:10px;">
-            <div ng-repeat="provider in user.providers">
-                <a class="button {{ provider.providerName }}" >{{ provider.providerName }} : {{provider.displayName}}</a>
-            </div>
+            <a class="button {{ provider.providerName }}-normal" ng-repeat="provider in user.providers">{{ provider.providerName }} : {{provider.displayName}}</a>
         </div>
         <div ng-if="user.id" style="padding:10px;">
             <a href="/logout">Logout</a>
         </div>
         <div style="padding:10px;">
-            <div ng-repeat="provider in providers">
-                <a class="button {{ provider }}" ng-href="/{{ provider }}/authorize">Sign in with {{ provider }}</a>
-            </div>
+            <a class="button {{ provider }}-normal" ng-href="/{{ provider }}/authorize" ng-repeat="provider in providers">Sign in with {{ provider }}</a>
         </div>
     </div>
 </div>
