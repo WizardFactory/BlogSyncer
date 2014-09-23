@@ -107,7 +107,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
     $scope.message = 'Your blog groups';
-    $scope.button = ['Create', 'Register'];
+    $scope.button = ['Delete', 'Create', 'Close'];
     $scope.groups = [
         [{
             'provider' : {
@@ -185,14 +185,29 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
     $scope.posts = [];
 
     $scope.onClickButton = function(button) {
-        if (button === 'Create') {
-            $scope.button[0] = 'Close';
+        if (button === 'Delete') {
+            $scope.button[0] = 'Confirm';
+        } else if (button === 'Confirm') {
+            $scope.button[0] = 'Delete';
+        } else if (button === 'Create') {
+            disselectAllBlog();
+            $scope.button[1] = 'Register';
         } else if (button === 'Close') {
-            $scope.button[0] = 'Create';
+            $scope.button[1] = 'Create';
         } else if (button === 'Register') {
             registerBlogGroup();
         }
-        disselectAllBlog();
+    };
+
+    $scope.onClickGroup = function(group_index, blog_index) {
+        if ($scope.button[0] !== 'Confirm') {
+            return;
+        }
+        var group = $scope.groups[group_index];
+        group.splice(blog_index, 1);
+        if (group.length === 0) {
+            $scope.groups.splice(group_index, 1);
+        }
     };
 
     $scope.onClickBlog = function(index) {
@@ -216,7 +231,9 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
                 group.push($scope.sites[i]);
             }
         }
-        $scope.groups.push(group);
+        if (group.length > 0) {
+            $scope.groups.push(group);
+        }
     }
 
     function init() {
@@ -300,7 +317,6 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
 
 bs.controller('signinCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
     if ($scope.user.id) {
