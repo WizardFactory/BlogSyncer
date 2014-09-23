@@ -4,15 +4,25 @@
         <div style="padding:10px;">
             <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
         </div>
-        <div class="button-parent" style="margin:10px; padding:10px; background-color: darkgray;" ng-repeat="group in groups">
-            <a class="button {{site.provider.providerName}}-normal" ng-repeat="site in group" ng-click="onClickGroup($parent.$index, $index);">{{site.provider.providerName}} : {{site.blog.blog_id}}</a>
+        <div class="button-parent" style="margin:10px; padding:10px; background-color: darkgray;
+                " ng-repeat="group in groups">
+            <a class="button {{site.provider.providerName}}-normal" ng-repeat="site in group"
+                    ng-click="onClickGroup($parent.$index, $index);">
+                {{site.provider.providerName}} : {{site.blog.blog_id}}
+            </a>
         </div>
         <div style="padding:10px;">
             <a href="" ng-click="onClickButton(button[1]);">{{button[1]}}</a>
-            <a href="" style="float:right;" ng-click="onClickButton(button[2]);" ng-if="button[1]==='Register'">{{button[2]}}</a>
+            <a href="" style="float:right;" ng-click="onClickButton(button[2]);"
+                    ng-if="button[1]==='Register'">
+                {{button[2]}}
+            </a>
         </div>
         <div style="padding:10px;" ng-if="button[1]==='Register'">
-            <a class="button {{site.provider.providerName}}-{{selected[$index]}}" ng-click="onClickBlog($index);" ng-repeat="site in sites">{{site.provider.providerName}} : {{site.blog.blog_id}}</a>
+            <a class="button {{site.provider.providerName}}-{{selected[$index]}}" ng-click="onClickBlog($index);"
+                    ng-repeat="site in sites">
+                {{site.provider.providerName}} : {{site.blog.blog_id}}
+            </a>
         </div>
     </div>
 </div>

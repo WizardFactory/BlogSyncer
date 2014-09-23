@@ -475,7 +475,7 @@ BlogBot.getPosts = function (socket, user) {
     var postDb = BlogBot.findPostDbByUser(user);
 
     console.log('BlogBot.getPosts : userid='+ user.id);
-    if (postdb === undefined) {
+    if (postDb === undefined) {
         console.log('Fail to find postdb of user='+user.id);
         socket.emit('posts', {"post_db":[]});
         return;

@@ -38,7 +38,7 @@ bs.config(function ($routeProvider) {
         // route for blog page
         .when('/blog/blogRegister', {
             templateUrl : '../views/blog/registerBlog.html',
-            controller : 'blogCtrl'
+            controller : 'blogRegisterCtrl'
         })
         .when('/blog/blogSetSync', {
             templateUrl : '../views/blog/setSync.html',
@@ -50,7 +50,7 @@ bs.config(function ($routeProvider) {
         })
         .when('/blog/blogCollectFeedback', {
             templateUrl : '../views/blog/collectFeedback.html',
-            controller : 'blogCtrl'
+            controller : 'blogCollectFeedbackCtrl'
         })
         // route for sign in page
         .when('/signin', {

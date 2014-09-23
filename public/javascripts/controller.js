@@ -6,8 +6,12 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     $scope.signstat = 'Sign in';
 
     // add DropDown Blog
-    $scope.options = [{"Route":"/#/blog/blogRegister","Display":"블로그 등록"},{"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
-        {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},{"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}]
+    $scope.options = [
+                    {"Route":"/#/blog/blogRegister","Display":"블로그 등록"},
+                    {"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
+                    {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},
+                    {"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}
+                    ];
 
     console.log('Start mainCtrl');
 
@@ -78,6 +82,14 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     console.log('Start homeCtrl');
 });
 
+bs.controller('blogCtrl', function ($scope, $http, User) {
+    $scope.user = User.getUser();
+    $scope.child_port = User.getChildPort();
+    //set/get Child port is not working now.
+    $scope.child_port = 20149;
+    $scope.message = 'Your blog ctrl';
+});
+
 bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
     $scope.child_port = User.getChildPort();
@@ -105,84 +117,18 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
     });
 });
 
-bs.controller('blogCtrl', function ($scope, $http, User) {
+
+bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
+    $scope.user = User.getUser();
     $scope.message = 'Your blog groups';
     $scope.button = ['Delete', 'Create', 'Close'];
-    $scope.groups = [
-        [{
-            'provider' : {
-                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
-                displayName: 'kimalec7@gmail.com',
-                providerId: '1240601',
-                providerName: 'tistory'
-            },
-            'blog' : {
-                blog_id: 'wizardfactory',
-                blog_title: 'WizardFactory',
-                blog_url: 'http://wizardfactory.tistory.com'
-            }
-        },
-        {
-            'provider' : {
-                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
-                displayName: 'kimalec7@gmail.com',
-                providerId: '1240601',
-                providerName: 'tistory'
-            },
-            'blog' : {
-                blog_id: 'aleckim',
-                blog_title: 'The wizard',
-                blog_url: 'http://aleckim.tistory.com'
-            }
-        }],
-        [{
-            'provider' : {
-                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
-                displayName: 'kimalec7@gmail.com',
-                providerId: '1240601',
-                providerName: 'google'
-            },
-            'blog' : {
-                blog_id: 'wizardfactory',
-                blog_title: 'WizardFactory',
-                blog_url: 'http://wizardfactory.tistory.com'
-            }
-        }]
-    ];
-    $scope.sites = [
-        {
-            'provider' : {
-                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
-                displayName: 'kimalec7@gmail.com',
-                providerId: '1240601',
-                providerName: 'google'
-            },
-            'blog' : {
-                blog_id: 'wizardfactory',
-                blog_title: 'WizardFactory',
-                blog_url: 'http://wizardfactory.tistory.com'
-            }
-        },
-        {
-            'provider' : {
-                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
-                displayName: 'kimalec7@gmail.com',
-                providerId: '1240601',
-                providerName: 'tistory'
-            },
-            'blog' : {
-                blog_id: 'aleckim',
-                blog_title: 'The wizard',
-                blog_url: 'http://aleckim.tistory.com'
-            }
-        }
-    ];
+    $scope.groups = [];
+    $scope.sites = [];
     $scope.selected = [];
 
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
     $scope.child_port = 20149;
-    $scope.posts = [];
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
@@ -240,28 +186,62 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
     	var user = $scope.user;
         if (user.id == undefined) {
             console.log('you have to signin~');
+            return;
         }
 
         var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
         var childio = io.connect(child_url);
         console.log('child_url='+child_url);
 
+        childio.on('connect', function () {
+            childio.emit('blog', {"msg":'getSites', "user":user});
+            childio.emit('blog', {"msg":'getGroups', "user":user});
+        });
 
-//        childio.on('connect', function () {
-//            childio.emit('blog', {"msg":'getSites', "user":user});
-//        });
-//        childio.on('sites', function(data){
-//            console.log(data);
-//            $scope.blog_list = data;
-//        });
+        childio.on('sites', function(data){
+            console.log(data);
+            $scope.$apply(function () {
+                $scope.sites = data;
+            });
+        });
 
-        // About blogCollectFeedback
-        var postsID = 0;
+        childio.on('groups', function(data){
+            console.log(data);
+            $scope.$apply(function () {
+                $scope.groups = data.groups;
+            });
+        });
+
+        disselectAllBlog();
+    }
+
+    init();
+});
+
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
+    $scope.user = User.getUser();
+    $scope.message = 'Collect Feedback';
+
+    $scope.child_port = User.getChildPort();
+    //set/get Child port is not working now.
+    $scope.child_port = 20149;
+    $scope.posts = [];
+
+    function init() {
+    	var user = $scope.user;
+        if (user.id == undefined) {
+            console.log('you have to signin~');
+            return;
+        }
+
+        var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
+        var childio = io.connect(child_url);
+        console.log('child_url='+child_url);
 
         childio.emit('blog', {"msg":'getPosts',"user":user});
-//        childio.on('connect', function(){
-//            childio.emit('blog', {"msg":'getPosts',"user":user});
-//        });
+        childio.on('connect', function(){
+            childio.emit('blog', {"msg":'getPosts',"user":user});
+        });
 
         childio.on('posts', function(data){
             var post_ids = [];
@@ -282,22 +262,28 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
             console.log('reply_count');
             console.log(data);
             for (var i = 0; i<$scope.posts.length; i++) {
-                if ($scope.posts[i].id == data.post_id) {
-                    for (var j=0; j<$scope.posts[i].infos.length; j++) {
-                        var info = $scope.posts[i].infos[j];
-                        if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
-                            $scope.$apply(function () {
-                                console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
-                                $scope.posts[i].infos[j].replies = data.replies;
-                            });
-                            break;
-                        }
-                    }
-                    break;
+                if ($scope.posts[i].id !== data.post_id) {
+                    continue;
                 }
+
+                for (var j=0; j<$scope.posts[i].infos.length; j++) {
+                    var info = $scope.posts[i].infos[j];
+
+                    if (info.provider_name === data.provider_name && info.blog_id === data.blog_id) {
+                        $scope.$apply(function () {
+                            console.log('provider='+info.provider_name+' blog='+info.blog_id+
+                                ' add comment_count, like_count');
+                            $scope.posts[i].infos[j].replies = data.replies;
+                        });
+                        break;
+                    }
+                }
+                break;
             }
         });
 
+//        // About blogCollectFeedback
+//        var postsID = 0;
 //        childio.on('connect', function(data){
 //            var messages = { "msg":'getComments', "user":user, "postID":postsID };
 //            childio.emit('blog', messages );
@@ -309,7 +295,6 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
 //            });
 //        });
 
-        disselectAllBlog();
     }
 
     init();
