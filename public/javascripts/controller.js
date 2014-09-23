@@ -1,5 +1,3 @@
-'use strict';
-
 bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     $scope.user = User.getUser();
 
