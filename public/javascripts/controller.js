@@ -106,84 +106,196 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
-    $scope.user = User.getUser();
+    $scope.message = 'Your blog groups';
+    $scope.button = ['Create', 'Register'];
+    $scope.groups = [
+        [{
+            'provider' : {
+                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
+                displayName: 'kimalec7@gmail.com',
+                providerId: '1240601',
+                providerName: 'tistory'
+            },
+            'blog' : {
+                blog_id: 'wizardfactory',
+                blog_title: 'WizardFactory',
+                blog_url: 'http://wizardfactory.tistory.com'
+            }
+        },
+        {
+            'provider' : {
+                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
+                displayName: 'kimalec7@gmail.com',
+                providerId: '1240601',
+                providerName: 'tistory'
+            },
+            'blog' : {
+                blog_id: 'aleckim',
+                blog_title: 'The wizard',
+                blog_url: 'http://aleckim.tistory.com'
+            }
+        }],
+        [{
+            'provider' : {
+                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
+                displayName: 'kimalec7@gmail.com',
+                providerId: '1240601',
+                providerName: 'google'
+            },
+            'blog' : {
+                blog_id: 'wizardfactory',
+                blog_title: 'WizardFactory',
+                blog_url: 'http://wizardfactory.tistory.com'
+            }
+        }]
+    ];
+    $scope.sites = [
+        {
+            'provider' : {
+                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
+                displayName: 'kimalec7@gmail.com',
+                providerId: '1240601',
+                providerName: 'google'
+            },
+            'blog' : {
+                blog_id: 'wizardfactory',
+                blog_title: 'WizardFactory',
+                blog_url: 'http://wizardfactory.tistory.com'
+            }
+        },
+        {
+            'provider' : {
+                accessToken: 'd59f16d6ef07ff131824a858129f0028_bb9d06ced23d5eaacaffd3d11041628d',
+                displayName: 'kimalec7@gmail.com',
+                providerId: '1240601',
+                providerName: 'tistory'
+            },
+            'blog' : {
+                blog_id: 'aleckim',
+                blog_title: 'The wizard',
+                blog_url: 'http://aleckim.tistory.com'
+            }
+        }
+    ];
+    $scope.selected = [];
+
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
     $scope.child_port = 20149;
-    $scope.title = "Blog 등록~!";
     $scope.posts = [];
 
-    var user = $scope.user;
+    $scope.onClickButton = function(button) {
+        if (button === 'Create') {
+            $scope.button[0] = 'Close';
+        } else if (button === 'Close') {
+            $scope.button[0] = 'Create';
+        } else if (button === 'Register') {
+            registerBlogGroup();
+        }
+        disselectAllBlog();
+    };
 
-    if (user.id == undefined) {
-        console.log('you have to signin~');
+    $scope.onClickBlog = function(index) {
+        if ($scope.selected[index] === 'normal') {
+            $scope.selected[index] = 'selected';
+        } else {
+            $scope.selected[index] = 'normal';
+        }
+    };
+
+    function disselectAllBlog() {
+        for (var i = 0; i < $scope.sites.length; i += 1) {
+            $scope.selected[i] = 'normal';
+        }
     }
 
-    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-    var childio = io.connect(child_url);
-    console.log('child_url='+child_url);
-
-//    childio.on('connect', function () {
-//        childio.emit('blog', {"msg":'getSites', "user":user});
-//    });
-//    childio.on('sites', function(data){
-//        console.log(data);
-//        $scope.blog_list = data;
-//    });
-
-    // About blogCollectFeedback
-    var postsID = 0;
-
-    childio.emit('blog', {"msg":'getPosts',"user":user});
-//    childio.on('connect', function(){
-//        childio.emit('blog', {"msg":'getPosts',"user":user});
-//    });
-
-    childio.on('posts', function(data){
-        var post_ids = [];
-        for (var i=0; i<data.post_db.length; i++) {
-            console.log('push post_id='+data.post_db[i].id);
-            post_ids.push(data.post_db[i].id);
-        }
-        var messages = {"msg":'get_reply_count',"user":user,"post_ids":post_ids};
-        console.log('send get_reply_count post_ids='+post_ids.length);
-        childio.emit('blog', messages );
-
-        $scope.$apply(function () {
-            $scope.posts = data.post_db;
-        });
-    });
-
-    childio.on('reply_count', function(data) {
-        console.log('reply_count');
-        console.log(data);
-        for (var i = 0; i<$scope.posts.length; i++) {
-            if ($scope.posts[i].id == data.post_id) {
-                for (var j=0; j<$scope.posts[i].infos.length; j++) {
-                    var info = $scope.posts[i].infos[j];
-                    if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
-                        $scope.$apply(function () {
-                            console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
-                            $scope.posts[i].infos[j].replies = data.replies;
-                        });
-                        break;
-                    }
-                }
-                break;
+    function registerBlogGroup() {
+        var group = [];
+        for (var i = 0; i < $scope.sites.length; i += 1) {
+            if ($scope.selected[i] === 'selected') {
+                group.push($scope.sites[i]);
             }
         }
-    });
+        $scope.groups.push(group);
+    }
 
-//    childio.on('connect', function(data){
-//        var messages = { "msg":'getComments', "user":user, "postID":postsID };
-//        childio.emit('blog', messages );
-//    });
-//    childio.on('comments', function(data){
-//        var comments = data.comments[0].content;
-//        $scope.$apply(function() {
-//            $scope.comments = comments;
+    function init() {
+    	var user = $scope.user;
+        if (user.id == undefined) {
+            console.log('you have to signin~');
+        }
+
+        var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
+        var childio = io.connect(child_url);
+        console.log('child_url='+child_url);
+
+
+//        childio.on('connect', function () {
+//            childio.emit('blog', {"msg":'getSites', "user":user});
 //        });
-//    });
+//        childio.on('sites', function(data){
+//            console.log(data);
+//            $scope.blog_list = data;
+//        });
+
+        // About blogCollectFeedback
+        var postsID = 0;
+
+        childio.emit('blog', {"msg":'getPosts',"user":user});
+//        childio.on('connect', function(){
+//            childio.emit('blog', {"msg":'getPosts',"user":user});
+//        });
+
+        childio.on('posts', function(data){
+            var post_ids = [];
+            for (var i=0; i<data.post_db.length; i++) {
+                console.log('push post_id='+data.post_db[i].id);
+                post_ids.push(data.post_db[i].id);
+            }
+            var messages = {"msg":'get_reply_count',"user":user,"post_ids":post_ids};
+            console.log('send get_reply_count post_ids='+post_ids.length);
+            childio.emit('blog', messages );
+
+            $scope.$apply(function () {
+                $scope.posts = data.post_db;
+            });
+        });
+
+        childio.on('reply_count', function(data) {
+            console.log('reply_count');
+            console.log(data);
+            for (var i = 0; i<$scope.posts.length; i++) {
+                if ($scope.posts[i].id == data.post_id) {
+                    for (var j=0; j<$scope.posts[i].infos.length; j++) {
+                        var info = $scope.posts[i].infos[j];
+                        if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
+                            $scope.$apply(function () {
+                                console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
+                                $scope.posts[i].infos[j].replies = data.replies;
+                            });
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        });
+
+//        childio.on('connect', function(data){
+//            var messages = { "msg":'getComments', "user":user, "postID":postsID };
+//            childio.emit('blog', messages );
+//        });
+//        childio.on('comments', function(data){
+//            var comments = data.comments[0].content;
+//            $scope.$apply(function() {
+//                $scope.comments = comments;
+//            });
+//        });
+
+        disselectAllBlog();
+    }
+
+    init();
 });
 
 bs.controller('signinCtrl', function ($scope, $http, User) {
