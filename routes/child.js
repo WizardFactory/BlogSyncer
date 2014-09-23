@@ -9,7 +9,7 @@ send_run_event = function (child_process) {
    //console.log(child_process);
    //var msg_object = {"msg":'runEvent'};
    //child_process.send(msg_object);
-   blogBot.task();
+   //blogBot.task();
 };
 
 open_child_socket = function (port) {
@@ -43,6 +43,19 @@ open_child_socket = function (port) {
             else if (data.msg == 'getHistories') {
                 console.log('recv msg =' + data.msg);
                 blogBot.getHistorys(socket, data.user);
+            }
+            else if (data.msg == 'addGroup') {
+                console.log('recv msg =' + data.msg);
+                blogBot.addGroup(data.user, data.group);
+            }
+            else if (data.msg == 'setGroups') {
+                console.log('recv msg =' + data.msg);
+                blogBot.setGroups(data.user, data.groups);
+            }
+            else if (data.msg == 'getGroups') {
+                console.log('recv msg =' + data.msg);
+                var groups = blogBot.getGroups(data.user);
+                socket.emit('groups', {"groups":groups});
             }
         });
     });
