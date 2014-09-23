@@ -2,6 +2,170 @@
  * Created by aleckim on 2014. 7. 11..
  */
 
+/*
+	Temporary work for mongodb.
+
+	var mongoDB = require('mongoose'); // mongoose for mongodb
+
+	// connect to mongoDB database on modulus.io
+	mongoDB.connect('mongodb://localhost/user');
+  
+  // define Schema =================
+  var UserSchema = new Schema({
+    id : String, // key
+    password : String, // key
+    usingProviderCount : Number,
+//  providers : [ProviderSchema]
+  });
+
+  var ProviderSchema = new Schema({
+    id : String, // key
+    providerName : String, // key
+    accessToken : String,
+//  providerId : Number // key?
+  });
+	// define model =================
+	var UserDB = mongoose.model('User',UserSchema);
+  var Provider = mongoose.model('Provider',ProviderSchema);
+  
+userdb.checkUserName = function () {
+    UserDB.findOne({ id : req.body.loginid }, 'id', function(err, user) {
+        if (err)
+            console.log(err);
+        else if (user)
+            return true;
+
+        return false;
+    });
+};
+
+userdb.getUserCount = function () {
+    UserDB.count({}, function( err, count){
+        return count;
+    });
+};
+
+userdb.getUserProviderCount = function (userId) {
+    UserDB.findOne({ id : userId }, 'id', function(err, user) {
+        return user.usingProviderCount;
+    });
+};
+
+userdb.addUser = function (new_id, new_passwd) {
+    UserDB.create({
+        id : new_id,
+        password : new_passwd,
+        usingProviderCount : 0
+    }, function(err, user) {
+        if (user)
+            return true;
+
+        return false;
+    });
+};
+
+userdb.removeUser = function (id) {
+    UserDB.remove({
+        _id : id,
+    }, function(err, user) {
+        if (user)
+            return true;
+        else
+            return false;
+    });
+};
+
+userdb.addProvider = function (userId, new_providerName) {
+    Provider.findOne({ id : userId, providerName : new_providerName }, 'id', function(err, provider) {
+        if (err) {
+            console.log(err);
+        } else if (provider) {
+            console.log("DB Update!!");
+            //  저장된 DB 가 있음. -> 기존항목 update
+            Provider.update({id: userId,
+                providerName: new_providerName,
+            }, {id: userId,
+                providerName: new_providerName,
+                accessToken: "token1"
+            }, {safe: true, upsert: true}, function (err) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    return true;
+                }
+                return false;
+            });
+        }
+        else {
+            console.log("DB Add!!");
+            // DB 에 없는 provider -> 신규 DB 추가
+            Provider.create({
+                id: userId,
+                providerName: new_providerName,
+                accessToken: "token"
+            }, function (err, provider) {
+                if (err)
+                    console.log(err);
+                else if (provider) {
+                    // usingProvider Count 조정
+                    UserDB.findOne({ id: userId }, 'id', function (err, user) {
+                        if (err) {
+                            console.log(err);
+                        } else if (user) {
+                            UserDB.update({id: userId},
+                                {id: userId,
+                                    password: user.password,
+                                    usingProviderCount: user.usingProviderCount + 1
+                                }, {safe: true, upsert: true}, function (err) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        return true;
+                                    }
+                                    return false;
+                                });
+                        }
+                        return false;
+                    });
+                }
+            });
+        }
+    });
+};
+
+userdb.removeProvider = function (userId, removeProviderName) {
+    Provider.remove({
+        _id : userId, providerName : removeProviderName
+    }, function(err, todo) {
+        if (err){
+            console.log(err);
+            return false;
+        }
+        // usingProvider Count 조정
+        UserDB.findOne({ id : userId }, 'id', function(err, user) {
+            if (err) {
+                console.log(err);
+            } else if (user) {
+                UserDB.update({id: userId},
+                    {id: userId,
+                        password : user.password,
+                        usingProviderCount : user.usingProviderCount - 1
+                    }, {safe: true, upsert: true}, function (err) {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            return true;
+                        }
+                        return false;
+                    });
+            }
+            return false;
+        });
+    });
+}
+
+*/
+
 var fs = require('fs');
 var dbfilename = 'users.db';
 
