@@ -6,41 +6,6 @@
 var fs = require('fs');
 var dbfilename = 'post.db';
 
-/*
-	Temporary work for mongodb.
-
-	var mongoDB = require('mongoose'); // mongoose for mongodb
-
-	// connect to mongoDB database on modulus.io
-	mongoDB.connect('mongodb://localhost/post');
-
-  // define Schema =================
-  var PostSchema = new Schema({
-    id : String,
-    title : String,
-    categories : String,
-    tags : {
-      tag1 : String, 
-      tag2 : String, 
-      tag3 : String
-    },
-    infos : [{
-      provider_name : String, 
-      blog_id : Number, 
-      post_id : Number, 
-      post_url : String,
-      modified : {
-        type : Date, 
-        default : Date.now 
-      },
-      //comment_count : Number, 
-      //like_count : Number,
-    }]
-  })
-	// define model =================
-	var PostDB = mongoDB.model('Post',PostSchema);
-*/
-
 function postdb() {
 
 }
