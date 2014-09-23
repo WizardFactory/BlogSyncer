@@ -46,7 +46,7 @@ bs.config(function ($routeProvider) {
         })
         .when('/blog/blogHistorySync', {
             templateUrl : '../views/blog/historySync.html',
-            controller : 'blogCtrl'
+            controller : 'blogHistoryCtrl'
         })
         .when('/blog/blogCollectFeedback', {
             templateUrl : '../views/blog/collectFeedback.html',

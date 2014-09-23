@@ -3,9 +3,11 @@
     <p class="lead">posts : {{ posts.length }}</p>
     <div class="animate-repeat" ng-repeat="post in posts">
         <h3 align="left">{{ post.title }}</h3>
-        <div class="animate-repeat" ng-repeat="info in post.infos track by $index" align="left">
-            {{ info.provider_name }} {{ info.blog_id }} comment_count {{ info.comment_count }} like_count {{ info.like_count }}
-        </div>
-        <br>
+        <p class="animate-repeat" ng-repeat="info in post.infos track by $index" align="left">
+            {{ info.provider_name }} {{ info.blog_id }}
+            <span ng-repeat="reply in info.replies track by $index">
+               {{ reply }}
+            </span>
+        </p>
     </div>
 </div>

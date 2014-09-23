@@ -78,6 +78,33 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     console.log('Start homeCtrl');
 });
 
+bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
+    $scope.user = User.getUser();
+    $scope.child_port = User.getChildPort();
+    //set/get Child port is not working now.
+    $scope.child_port = 20149;
+    $scope.title = "Blog Sync Histories";
+    $scope.histories = [];
+
+    var user = $scope.user;
+
+    if (user.id == undefined) {
+        console.log('you have to signin~');
+    }
+
+    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
+    var childio = io.connect(child_url);
+    console.log('child_url='+child_url);
+
+    childio.emit('blog', {"msg":'getHistories',"user":user});
+
+    childio.on('histories', function(data){
+        $scope.$apply(function () {
+            $scope.histories = data.histories;
+        });
+    });
+});
+
 bs.controller('blogCtrl', function ($scope, $http, User) {
     $scope.message = 'Your blog groups';
     $scope.button = ['Create', 'Register'];
@@ -193,7 +220,8 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
     }
 
     function init() {
-        if (!$scope.user.id) {
+    	var user = $scope.user;
+        if (user.id == undefined) {
             console.log('you have to signin~');
         }
 
@@ -202,7 +230,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
         console.log('child_url='+child_url);
 
 //        childio.on('connect', function () {
-//            childio.emit('blog', {msg: 'getSites'});
+//            childio.emit('blog', {"msg":'getSites', "user":user});
 //        });
 //        childio.on('sites', function(data){
 //            console.log(data);
@@ -212,9 +240,9 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
         // About blogCollectFeedback
         var postsID = 0;
 
-        childio.emit('blog', {msg: 'getPosts'});
+        childio.emit('blog', {"msg":'getPosts',"user":user});
 //        childio.on('connect', function(){
-//            childio.emit('blog', {msg: 'getPosts'});
+//            childio.emit('blog', {"msg":'getPosts',"user":user});
 //        });
 
         childio.on('posts', function(data){
@@ -223,7 +251,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
                 console.log('push post_id='+data.post_db[i].id);
                 post_ids.push(data.post_db[i].id);
             }
-            var messages = { msg : 'get_reply_count', post_ids : post_ids };
+            var messages = {"msg":'get_reply_count',"user":user,"post_ids":post_ids};
             console.log('send get_reply_count post_ids='+post_ids.length);
             childio.emit('blog', messages );
 
@@ -242,8 +270,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
                         if (info.provider_name == data.provider_name && info.blog_id == data.blog_id) {
                             $scope.$apply(function () {
                                 console.log('provider='+info.provider_name+' blog='+info.blog_id+' add comment_count, like_count');
-                                $scope.posts[i].infos[j].comment_count = data.comment_count;
-                                $scope.posts[i].infos[j].like_count = data.like_count;
+                                $scope.posts[i].infos[j].replies = data.replies;
                             });
                             break;
                         }
@@ -254,7 +281,7 @@ bs.controller('blogCtrl', function ($scope, $http, User) {
         });
 
 //        childio.on('connect', function(data){
-//            var messages = { msg : 'getComments', postID : postsID };
+//            var messages = { "msg":'getComments', "user":user, "postID":postsID };
 //            childio.emit('blog', messages );
 //        });
 //        childio.on('comments', function(data){
