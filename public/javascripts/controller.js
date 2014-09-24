@@ -132,7 +132,9 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
-            $scope.button[0] = 'Confirm';
+            if ($scope.groups.length > 0) {
+                $scope.button[0] = 'Confirm';
+            }
         } else if (button === 'Confirm') {
             $scope.button[0] = 'Delete';
         } else if (button === 'Create') {
@@ -154,6 +156,9 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         if (group.length === 0) {
             $scope.groups.splice(group_index, 1);
         }
+        if ($scope.groups.length === 0) {
+            $scope.button[0] = 'Delete';
+        }
     };
 
     $scope.onClickBlog = function(index) {
@@ -174,6 +179,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         var group = [];
         for (var i = 0; i < $scope.sites.length; i += 1) {
             if ($scope.selected[i] === 'selected') {
+                $scope.selected[i] = 'normal';
                 group.push($scope.sites[i]);
             }
         }
@@ -193,15 +199,25 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         var childio = io.connect(child_url);
         console.log('child_url='+child_url);
 
-        childio.on('connect', function () {
+        if (childio.connected === true) {
             childio.emit('blog', {"msg":'getSites', "user":user});
             childio.emit('blog', {"msg":'getGroups', "user":user});
-        });
+        } else {
+            childio.on('connect', function () {
+                childio.emit('blog', {"msg":'getSites', "user":user});
+                childio.emit('blog', {"msg":'getGroups', "user":user});
+            });
+        }
 
         childio.on('sites', function(data){
             console.log(data);
             $scope.$apply(function () {
-                $scope.sites = data;
+                for (var i = 0; i < data.sites.length; i += 1) {
+                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                        $scope.sites.push(site);
+                    }
+                }
             });
         });
 
