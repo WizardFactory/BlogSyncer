@@ -45,6 +45,7 @@
     "passport-kakao": "~0.0.2",
     "passport-tistory": "~0.1.0",
     "tumblr.js": "~0.0.4",
-    "socket.io": "~1.0.6"
+    "socket.io": "~1.0.6",
+    "winston": "~0.8.0"
   }
 }
