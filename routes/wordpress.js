@@ -100,7 +100,7 @@ router.get('/me', function (req, res) {
         return;
     }
 
-    var api_url = clientConfig.apiURL+"/me";
+    var api_url = WORDPRESS_API_URL+"/me";
     console.log(api_url);
     request.get(api_url, {
         json: true,
@@ -138,7 +138,7 @@ router.get('/bot_bloglist', function (req, res) {
     }
     var p = userdb.findProviderId(user_id, req.query.providerid);
 
-    var api_url = clientConfig.apiURL+"/sites/"+p.providerId;
+    var api_url = WORDPRESS_API_URL+"/sites/"+p.providerId;
 
     console.log(api_url);
 
@@ -184,7 +184,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     }
 
     var blog_id = req.params.blog_id;
-    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
+    var api_url = WORDPRESS_API_URL+"/sites/"+blog_id;
     var p = userdb.findProviderId(user_id, blog_id);
 
     console.log(api_url);
@@ -227,7 +227,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var is_extended = false;
     var p = userdb.findProviderId(user_id, blog_id);
 
-    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
+    var api_url = WORDPRESS_API_URL+"/sites/"+blog_id;
     api_url += "/posts";
     api_url += "?";
     if (offset) {
@@ -328,7 +328,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var post_id = req.params.post_id;
     var p = userdb.findProviderId(user_id, blog_id);
 
-    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
+    var api_url = WORDPRESS_API_URL+"/sites/"+blog_id;
     api_url += "/posts";
     api_url += "/" + post_id;
 
@@ -403,7 +403,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var blog_id = req.params.blog_id;
     var p = userdb.findProviderId(user_id, blog_id);
-    var api_url = clientConfig.apiURL+"/sites/"+blog_id +"/posts/new";
+    var api_url = WORDPRESS_API_URL+"/sites/"+blog_id +"/posts/new";
 
     console.log(api_url);
 

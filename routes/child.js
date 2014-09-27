@@ -9,7 +9,7 @@ send_run_event = function (child_process) {
    //console.log(child_process);
    //var msg_object = {"msg":'runEvent'};
    //child_process.send(msg_object);
-   //blogBot.task();
+   blogBot.task();
 };
 
 open_child_socket = function (port) {
@@ -71,7 +71,7 @@ process.on('message', function (m, server) {
         }
         blogBot.start(m.user);
         //console.log(this);
-        this.intarval = setInterval(send_run_event, 1000*20, this); //1 min
+        this.intarval = setInterval(send_run_event, 1000*60, this); //1 min
     }
     else if (m.msg === 'stop') {
         blogBot.stop(m.user);

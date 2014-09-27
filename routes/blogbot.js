@@ -55,6 +55,11 @@ BlogBot.findGroupDbByUser = function(user) {
 };
 
 BlogBot.send_post_to_blogs = function (user, recv_posts) {
+    if (recv_posts === undefined)  {
+        console.log("Fail to get recv_posts");
+        return;
+    }
+
     var groupDb = BlogBot.findGroupDbByUser(user);
     var blog_id = recv_posts.blog_id;
     var provider_name = recv_posts.provider_name;
@@ -76,11 +81,15 @@ BlogBot.send_post_to_blogs = function (user, recv_posts) {
             }
         }
     }
-
-    return;
 };
 
 BlogBot.push_posts_to_blogs = function(user, recv_posts) {
+
+    if (recv_posts === undefined)  {
+        console.log("Fail to get recv_posts");
+        return;
+    }
+
     var postDb = BlogBot.findPostDbByUser(user);
 //TODO: if post count over max it need to extra update - aleckim
     for(var i=0; i<recv_posts.posts.length;i++) {
@@ -97,8 +106,6 @@ BlogBot.push_posts_to_blogs = function(user, recv_posts) {
             //push post to others blog and add_postinfo
         }
     }
-
-    return;
 };
 
 BlogBot.getAndPush = function(user) {
@@ -163,12 +170,18 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
                             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
                               {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
      */
+
+    if (recv_blogs === undefined) {
+        console.log("Fail to get recv_blogs");
+        return;
+    }
+
     var provider = recv_blogs.provider;
     var blogs = recv_blogs.blogs;
     var blogDb = BlogBot.findBlogDbByUser(user);
 
     if (blogDb === undefined) {
-         console.log('add_blogs_to_db : Fail to find blogDb of user='+user.id);
+        console.log('add_blogs_to_db : Fail to find blogDb of user='+user.id);
         return;
     }
 
@@ -237,8 +250,13 @@ BlogBot.getGroups = function(user) {
 };
 
 BlogBot.add_postinfo_to_db = function (user, recv_posts) {
+    if (recv_posts === undefined) {
+        console.log("Fail to get recv_posts");
+        return;
+    }
+
     var postDb = BlogBot.findPostDbByUser(user);
-    //TODO: change from title to id
+
     if (recv_posts.posts[0].title !== undefined) {
         var post = postDb.find_post_by_title(recv_posts.posts[0].title);
         if (post) {
@@ -254,6 +272,10 @@ BlogBot.add_postinfo_to_db = function (user, recv_posts) {
 };
 
 BlogBot.add_posts_to_db = function(user, recv_posts) {
+    if (recv_posts === undefined) {
+        console.log("Fail to get recv_posts");
+        return;
+    }
 
     console.log('BlogBot.add_posts_to_db');
 
@@ -281,7 +303,14 @@ BlogBot.add_posts_to_db = function(user, recv_posts) {
 
 BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, callback) {
     BlogBot.request_get_posts(user, provider_name, blog_id, options, function (user, recv_posts) {
+
         console.log("recursiveGetPosts: recv posts");
+
+        if (recv_posts === undefined) {
+            console.log("Fail to get recv_posts");
+            return;
+        }
+
         callback(user, recv_posts);
         if (recv_posts.posts.length != 0) {
             var index = recv_posts.posts.length-1;
@@ -297,7 +326,14 @@ BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, call
 };
 
 BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
+
     console.log('BlogBot.add_posts_from_new_blog');
+
+    if (recv_post_count === undefined) {
+        console.log("Fail to get recv_post_count");
+        return;
+    }
+
     var provider_name = recv_post_count.provider_name;
     var blog_id =  recv_post_count.blog_id;
     var post_count = recv_post_count.post_count;
@@ -319,6 +355,19 @@ BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     return;
 };
 
+BlogBot._checkError = function(err, response, body) {
+    if (err) {
+        console.log(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var err = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        console.log(errStr);
+        return new Error(errStr);
+    }
+};
+
 BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callback) {
     var url = "http://www.justwapps.com/" + provider_name + "/bot_bloglist";
     url += "?";
@@ -329,17 +378,17 @@ BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callba
 
     console.log("url=" + url);
     request.get(url, function (err, response, body) {
-        if (err) {
-            console.log(err);
-            return callback(err);
+        var hasError = BlogBot._checkError(err, response, body);
+
+        if (hasError !== undefined) {
+            callback(hasError);
+            return;
         }
-        if (response.statusCode >= 400) {
-            var err = body.meta ? body.meta.msg : body.error;
-            var errStr = 'API error: ' + response.statusCode + ' ' + err;
-            return callback(new Error(errStr));
-        }
-        console.log(body);
+
+        //console.log(body);
+
         var recvBlogs = JSON.parse(body);
+
         callback(user, recvBlogs);
     });
 
@@ -353,9 +402,17 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
     url += "userid=" + user.id;
 
     console.log("url="+url);
-    request.get(url, function (err, response, data) {
-        //console.log(data);
-        var recv_post_count = JSON.parse(data);
+    request.get(url, function (err, response, body) {
+        var hasError = BlogBot._checkError(err, response, body);
+        if (hasError !== undefined) {
+            callback(hasError);
+            return;
+        }
+
+        //console.log(body);
+
+        var recv_post_count = JSON.parse(body);
+
         callback(user, recv_post_count);
     });
 
@@ -385,10 +442,15 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
     url += "userid=" + user.id;
 
     console.log(url);
-    request.get(url, function (err, response, data) {
-        //TODO: add exception code.
-        //console.log(data);
-        var recv_posts = JSON.parse(data);
+    request.get(url, function (err, response, body) {
+        var hasError = BlogBot._checkError(err, response, body);
+        if (hasError !== undefined) {
+            callback(hasError);
+            return;
+        }
+
+        //console.log(body);
+        var recv_posts = JSON.parse(body);
         callback(user, recv_posts);
     });
 
@@ -457,22 +519,20 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     var opt = { form: post };
 
     console.log('post='+url);
-    request.post(url, opt, function (err, response, data) {
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " ;
-            console.log(err);
-            //add fail to history
-            BlogBot.addHistory(user, post, response.statusCode, undefined);
+    request.post(url, opt, function (err, response, body) {
+        var hasError = BlogBot._checkError(err, response, body);
+        if (hasError !== undefined) {
+            callback(hasError);
             return;
         }
-       //add post info
-       console.log(data);
-       var recv_posts = JSON.parse(data);
-       callback(user, recv_posts);
+
+        //add post info
+        console.log(body);
+        var recv_posts = JSON.parse(body);
+        callback(user, recv_posts);
 
         BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
-       //add success to history
+        //add success to history
     });
 
     return;
@@ -497,12 +557,14 @@ BlogBot.getPosts = function (socket, user) {
 //    url = url + "?userid=" + this.user.id;
 //    url = url + "&providerid=" + p.providerId;
 //    console.log("url="+url);
-//    request.get(url, function (err, response, data) {
-//        if(err) {
-//            console.log("Cannot get Posts : " + err);
-//        }
-//        console.log("[BlogBot.getPosts]" + data);
-//        var jsonData = JSON.parse(data);
+//    request.get(url, function (err, response, body) {
+//      var hasError = BlogBot._checkError(err, response, body);
+//      if (hasError !== undefined) {
+//        callback(hasError);
+//        return;
+//      }
+//        console.log("[BlogBot.getPosts]" + body);
+//        var jsonData = JSON.parse(body);
 //        console.log(jsonData);
 //        socket.emit('posts', jsonData);
 //    });
