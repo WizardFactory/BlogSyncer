@@ -9,14 +9,14 @@ var blogCommon  = require('./blogjs/blogCommon');
 var express = require('express');
 var passport = require('passport');
 var request = require('request');
-var WordpressStrategy = require('passport-wordpress').Strategy;
+var wordpressStrategy = require('passport-wordpress').Strategy;
 var childm = require('./childmanager');
-
 var router = express.Router();
 
-var WORDPRESS_CLIENT_ID = "35169";
-var WORDPRESS_CLIENT_SECRET = "giyzfEzoqkuwmjxuWT5Tz7E16NtKkud0zT4otmX9xNDH4AJE6mc3U5dGepYrPd5A";
-var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.Wordpress;
+
+var WORDPRESS_API_URL = "https://public-api.wordpress.com/rest/v1";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -26,10 +26,10 @@ passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
-passport.use(new WordpressStrategy({
-        clientID: WORDPRESS_CLIENT_ID,
-        clientSecret: WORDPRESS_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/wordpress/authorized",
+passport.use(new wordpressStrategy({
+        clientID: clientConfig.clientID,
+        clientSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL+"/wordpress/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
@@ -100,7 +100,7 @@ router.get('/me', function (req, res) {
         return;
     }
 
-    var api_url = API_WORDPRESS_COM+"/me";
+    var api_url = clientConfig.apiURL+"/me";
     console.log(api_url);
     request.get(api_url, {
         json: true,
@@ -138,7 +138,7 @@ router.get('/bot_bloglist', function (req, res) {
     }
     var p = userdb.findProviderId(user_id, req.query.providerid);
 
-    var api_url = API_WORDPRESS_COM+"/sites/"+p.providerId;
+    var api_url = clientConfig.apiURL+"/sites/"+p.providerId;
 
     console.log(api_url);
 
@@ -184,7 +184,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     }
 
     var blog_id = req.params.blog_id;
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
     var p = userdb.findProviderId(user_id, blog_id);
 
     console.log(api_url);
@@ -227,7 +227,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var is_extended = false;
     var p = userdb.findProviderId(user_id, blog_id);
 
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
     api_url += "/posts";
     api_url += "?";
     if (offset) {
@@ -328,7 +328,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var post_id = req.params.post_id;
     var p = userdb.findProviderId(user_id, blog_id);
 
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id;
+    var api_url = clientConfig.apiURL+"/sites/"+blog_id;
     api_url += "/posts";
     api_url += "/" + post_id;
 
@@ -403,7 +403,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var blog_id = req.params.blog_id;
     var p = userdb.findProviderId(user_id, blog_id);
-    var api_url = API_WORDPRESS_COM+"/sites/"+blog_id +"/posts/new";
+    var api_url = clientConfig.apiURL+"/sites/"+blog_id +"/posts/new";
 
     console.log(api_url);
 

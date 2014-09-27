@@ -8,11 +8,10 @@ var express = require('express');
 var passport = require('passport');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 var childm = require('./childmanager');
-
 var router = express.Router();
 
-var GOOGLE_CLIENT_ID = "983607775835-j47q6oj8qsupdiem0solc9hrsg0u0vlg.apps.googleusercontent.com";
-var GOOGLE_CLIENT_SECRET = "jZjb-jTiu10z1KiFmurcCu2a";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.google;
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -23,9 +22,9 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new GoogleStrategy({
-        clientID: GOOGLE_CLIENT_ID,
-        clientSecret: GOOGLE_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/google/authorized",
+        clientID: clientConfig.clientID,
+        clientSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL + "/google/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {

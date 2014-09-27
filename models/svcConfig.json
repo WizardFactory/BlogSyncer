@@ -1,0 +1,32 @@
+{
+    "svcURL":"your domain",
+    "Wordpress": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "tistory": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "tumblr": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "kakao": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "google": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "facebook": {
+        "clientID":"",
+        "clientSecret":""
+    },
+    "twitter": {
+        "clientID":"",
+        "clientSecret":""
+    }
+}
+

@@ -172,8 +172,8 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
         return;
     }
 
-    var site = blogDb.findSiteByProvider(provider.providerName);
     //console.log(provider);
+    var site = blogDb.findSiteByProvider(provider.providerName);
 
     if (site) {
         for (var i = 0; i<blogs.length; i++) {
@@ -328,10 +328,19 @@ BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callba
     url += "userid=" + user.id;
 
     console.log("url=" + url);
-    request.get(url, function (err, response, data) {
-        console.log(data);
-        var recv_blogs = JSON.parse(data);
-        callback(user, recv_blogs);
+    request.get(url, function (err, response, body) {
+        if (err) {
+            console.log(err);
+            return callback(err);
+        }
+        if (response.statusCode >= 400) {
+            var err = body.meta ? body.meta.msg : body.error;
+            var errStr = 'API error: ' + response.statusCode + ' ' + err;
+            return callback(new Error(errStr));
+        }
+        console.log(body);
+        var recvBlogs = JSON.parse(body);
+        callback(user, recvBlogs);
     });
 
     return;
