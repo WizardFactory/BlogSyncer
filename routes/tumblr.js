@@ -13,8 +13,8 @@ var childm = require('./childmanager');
 
 var router = express.Router();
 
-var TUMBLR_CONSUMER_KEY = "bYI8NrFCwVUI5JLm2Zq0XfhKEczy85xr5jcYR8PpgjsEumIvog";
-var TUMBLR_CONSUMER_SECRET = "OCFgDboa9bgNtr4lZvxDiMMgXigiNdJyTSkHNdd1lDdwDq8TBU";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.tumblr;
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -25,9 +25,9 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new TumblrStrategy({
-        consumerKey: TUMBLR_CONSUMER_KEY,
-        consumerSecret: TUMBLR_CONSUMER_SECRET,
-        callbackURL: "http://www.justwapps.com/tumblr/authorized",
+        consumerKey: clientConfig.clientID,
+        consumerSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL+"/tumblr/authorized",
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
@@ -91,8 +91,8 @@ router.get('/info', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tumblr");
 //    var oauth = {
-//        consumer_key: TUMBLR_CONSUMER_KEY,
-//        consumer_secret: TUMBLR_CONSUMER_SECRET,
+//        consumer_key: clientConfig.clientID,
+//        consumer_secret: clientConfig.clientSecret,
 //        token: p.token,
 //        token_secret: p.tokenSecret
 //    };
@@ -107,8 +107,8 @@ router.get('/info', function (req, res) {
 //    });
 
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -138,8 +138,8 @@ router.get('/posts/:blogName', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tumblr");
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -172,8 +172,8 @@ router.get('/bot_bloglist', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tumblr");
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -218,8 +218,8 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     var p = userdb.findProvider(user_id, "tumblr");
 
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -355,8 +355,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var p = userdb.findProvider(user_id, "tumblr");
 
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -405,8 +405,8 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tumblr");
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });
@@ -451,8 +451,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var p = userdb.findProvider(user_id, "tumblr");
 
     var client = tumblr.createClient({
-        consumer_key: TUMBLR_CONSUMER_KEY,
-        consumer_secret: TUMBLR_CONSUMER_SECRET,
+        consumer_key: clientConfig.clientID,
+        consumer_secret: clientConfig.clientSecret,
         token: p.token,
         token_secret: p.tokenSecret
     });

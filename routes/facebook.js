@@ -9,12 +9,12 @@ var passport = require('passport');
 var request = require('request');
 var FacebookStrategy = require('passport-facebook').Strategy;
 var childm = require('./childmanager');
-
 var router = express.Router();
 
-var FACEBOOK_CLIENT_ID = "1447794722165916";
-var FACEBOOK_CLIENT_SECRET = "adf699b010b780c8808b3ebeb755e5ab";
-var API_FACEBOOK_COM = "https://graph.facebook.com";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.facebook;
+
+var FACEBOOK_API_URL = "https://graph.facebook.com";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -25,9 +25,9 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new FacebookStrategy({
-        clientID: FACEBOOK_CLIENT_ID,
-        clientSecret: FACEBOOK_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/facebook/authorized",
+        clientID: clientConfig.clientID,
+        clientSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL + "/facebook/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
@@ -90,7 +90,7 @@ router.get('/me', function (req, res) {
     else {
         var p = userdb.findProvider(req.user.id, "facebook");
 
-        var api_url = API_FACEBOOK_COM+"/me";
+        var api_url = FACEBOOK_API_URL+"/me";
 
         console.log(api_url);
 

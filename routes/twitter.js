@@ -11,8 +11,8 @@ var childm = require('./childmanager');
 
 var router = express.Router();
 
-var TWITTER_CONSUMER_KEY = "jvA2oAAGMZGgVePR68GPq6SJe";
-var TWITTER_CONSUMER_SECRET = "qVoX0GwzwCtmR9Lf4yxGgUNlTxm6qTaaK8NfCAZeMZHUiwIOJP";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.twitter;
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -23,9 +23,9 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new TwitterStrategy({
-        consumerKey: TWITTER_CONSUMER_KEY,
-        consumerSecret: TWITTER_CONSUMER_SECRET,
-        callbackURL: "http://www.justwapps.com/twitter/authorized",
+        consumerKey: clientConfig.clientID,
+        consumerSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL+"/twitter/authorized",
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {

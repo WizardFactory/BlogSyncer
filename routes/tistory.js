@@ -14,9 +14,10 @@ var childm = require('./childmanager');
 
 var router = express.Router();
 
-var TISTORY_CLIENT_ID = "790c21e5390770f3463d9b428fab8622";
-var TISTORY_CLIENT_SECRET = "790c21e5390770f3463d9b428fab86225dff8f624e5d52c94ce86e2eb85a106696450c6e";
-var API_TISTORY_COM = "https://www.tistory.com/apis/";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.tistory;
+
+var TISTORY_API_URL = "https://www.tistory.com/apis";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -27,9 +28,9 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new TistoryStrategy({
-        clientID: TISTORY_CLIENT_ID,
-        clientSecret: TISTORY_CLIENT_SECRET,
-        callbackURL: "http://www.justwapps.com/tistory/authorized",
+        clientID: clientConfig.clientID,
+        clientSecret: clientConfig.clientSecret,
+        callbackURL: svcConfig.svcURL + "/tistory/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
@@ -94,11 +95,11 @@ router.get('/info', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"blog/info?access_token="+ p.accessToken+"&output=json";
+    var api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
 
     console.log(api_url);
     request.get(api_url, function (err, response, data) {
-        //console.log(data);
+        console.log(data);
         res.send(data);
     });
 });
@@ -115,7 +116,7 @@ router.get('/post/list/:simpleName', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tistory");
     var blog_name = req.params.simpleName;
-    var api_url = API_TISTORY_COM+"post/list?access_token="+ p.accessToken;
+    var api_url = TISTORY_API_URL+"/post/list?access_token="+ p.accessToken;
     api_url = api_url + "&targetUrl=" + blog_name;
     api_url = api_url + "&output=json";
 
@@ -141,16 +142,32 @@ router.get('/bot_bloglist', function (req, res) {
 
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"blog/info?access_token="+ p.accessToken+"&output=json";
+    var api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
 
     console.log(api_url);
-    request.get(api_url, function (err, response, data) {
-        //console.log(data);
+    request.get(api_url, function (err, response, body) {
+        if (err) {
+            console.log(err);
+            res.send(err);
+            return;
+        }
+        if (response.statusCode >= 400) {
+            var err = body.meta ? body.meta.msg : body.error;
+            var errStr = 'API error: ' + response.statusCode + ' ' + err;
+            console.log(errStr);
+            res.send(new Error(errStr));
+            return;
+        }
+
+        //console.log(body);
+
         var send_data = {};
         send_data.provider = p;
+        //console.log(p);
+
         send_data.blogs = [];
 
-        var item = JSON.parse(data).tistory.item;
+        var item = JSON.parse(body).tistory.item;
         console.log('item length=' + item.length);
 
         for (var i=0;i<item.length;i++) {
@@ -187,7 +204,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     var target_url = req.params.blog_id;
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"blog/info?";
+    var api_url = TISTORY_API_URL+"/blog/info?";
     api_url = api_url + "access_token="+ p.accessToken;
     api_url += "&output=json";
 
@@ -244,7 +261,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"post/list?";
+    var api_url = TISTORY_API_URL+"/post/list?";
     api_url = api_url + "access_token="+ p.accessToken;
     api_url += "&targetUrl="+target_url; //조회할 티스토리 주소
     if (offset) {
@@ -330,7 +347,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var post_id = req.params.post_id;
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"post/read?";
+    var api_url = TISTORY_API_URL+"/post/read?";
     api_url = api_url + "access_token="+ p.accessToken;
     api_url += "&targetUrl="+target_url; //조회할 티스토리 주소
     api_url += "&postId="+post_id;
@@ -384,7 +401,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var target_url = req.params.blog_id;
     var p = userdb.findProvider(user_id, "tistory");
 
-    var api_url = API_TISTORY_COM+"post/write";
+    var api_url = TISTORY_API_URL+"/post/write";
     var new_post = {};
     new_post.access_token  = p.accessToken;
     new_post.targetUrl = target_url;

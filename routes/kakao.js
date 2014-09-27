@@ -12,8 +12,10 @@ var childm = require('./childmanager');
 
 var router = express.Router();
 
-var KAKAO_CLIENT_ID = "d76e3616d42d5a2507183f717aff6579";
-var API_KAKAO_COM = "https://kapi.kakao.com";
+var svcConfig = require('../models/svcConfig.json');
+var clientConfig = svcConfig.kakao;
+
+var KAKAO_API_URL = "https://kapi.kakao.com";
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -24,8 +26,8 @@ passport.deserializeUser(function(obj, done) {
 });
 
 passport.use(new KakaoStrategy({
-        clientID: KAKAO_CLIENT_ID,
-        callbackURL: "http://www.justwapps.com/kakao/authorized",
+        clientID: clientConfig.clientID,
+        callbackURL: svcConfig.svcURL + "/kakao/authorized",
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
@@ -92,7 +94,7 @@ router.get('/me', function (req, res) {
 
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/user/me";
+    var api_url = KAKAO_API_URL+"/v1/user/me";
 
     console.log(api_url);
 
@@ -116,7 +118,7 @@ router.get('/mystories', function (req, res) {
 
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/api/story/mystories";
+    var api_url = KAKAO_API_URL+"/v1/api/story/mystories";
 
     console.log(api_url);
 
@@ -142,7 +144,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/user/me";
+    var api_url = KAKAO_API_URL+"/v1/user/me";
 
     console.log(api_url);
 
@@ -204,7 +206,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var after = req.query.after;
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/api/story/mystories";
+    var api_url = KAKAO_API_URL+"/v1/api/story/mystories";
     if (last_id) {
         api_url += "?";
         api_url += "last_id=" + last_id;
@@ -264,7 +266,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var post_id = req.params.post_id;
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/api/story/mystory";
+    var api_url = KAKAO_API_URL+"/v1/api/story/mystory";
     if (post_id) {
         api_url += "?";
         api_url += "id=" + post_id;
@@ -330,7 +332,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var blog_id = req.params.blog_id;
     var p = userdb.findProvider(user_id, "kakao");
 
-    var api_url = API_KAKAO_COM+"/v1/api/story/post/note";
+    var api_url = KAKAO_API_URL+"/v1/api/story/post/note";
     var new_post = {};
     new_post.content = "";
     console.log(api_url);
