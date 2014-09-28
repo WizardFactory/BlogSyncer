@@ -249,6 +249,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
                 .success(function (data) {
                     var indexes = _getPost(data.providerName, data.blogID, data.postID);
                     console.log("postIndex="+indexes.postIndex+" infoIndex="+indexes.postIndex);
+                    console.log(data.comments);
                     $scope.posts[indexes.postIndex].infos[indexes.infoIndex].comments = data.comments;
                 })
                 .error(function (data) {
@@ -306,7 +307,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
             console.log(data);
 
             var indexes = _getPost(data.providerName, data.blogID, data.postID);
-            
+
             $scope.$apply(function () {
                 console.log('provider='+data.provider_name+' blog='+data.blog_id+
                     ' add comment_count, like_count');

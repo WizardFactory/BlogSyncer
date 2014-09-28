@@ -64,7 +64,7 @@ router.get('/authorized',
     }
 );
 
-getUserId = function (req) {
+function _getUserId(req) {
     var userid = 0;
 
     if (req.user) {
@@ -80,7 +80,7 @@ getUserId = function (req) {
 };
 
 router.get('/info', function (req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -127,7 +127,7 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/posts/:blogName', function (req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -161,7 +161,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     console.log(req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -205,7 +205,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     console.log("tumblr: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -340,7 +340,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
 router.get('/bot_posts/:blog_id', function (req, res) {
     console.log("tumblr: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -391,7 +391,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     console.log("tumblr: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -437,7 +437,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     console.log("tumblr: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -507,4 +507,27 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     });
 });
 
-module.exports = router;
+//router.get('/bot_comments/:blogID/:postID', function (req, res) {
+//    console.log(req.url);
+//    var userID = _getUserID(req);
+//    if (userID == 0) {
+//        var errorMsg = 'You have to login first!';
+//        console.log(errorMsg);
+//        res.send(errorMsg);
+//        res.redirect("/#/signin");
+//        return;
+//    }
+//
+//    var blog_id = req.params.blog_id;
+//    var post_id = req.params.post_id;
+//
+//    var p = userdb.findProvider(userID, "tumblr");
+//    var client = tumblr.createClient({
+//        consumer_key: clientConfig.clientID,
+//        consumer_secret: clientConfig.clientSecret,
+//        token: p.token,
+//        token_secret: p.tokenSecret
+//    });
+//});
+
+ module.exports = router;
