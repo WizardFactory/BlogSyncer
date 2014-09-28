@@ -39,6 +39,8 @@ var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
 
+var log = require('./routes/log');
+
 var app = express();
 
 app.set('views', path.join(__dirname, 'views'));
