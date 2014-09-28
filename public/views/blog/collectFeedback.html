@@ -6,21 +6,30 @@
         <div class="row featurette">
             <div class="col-md-10">
                 <h2 class="featurette-heading">{{ post.title }}</h2>
-                <p class="lead" ng-repeat="info in post.infos track by $index" align="left">
-                    {{ info.provider_name }}: {{ info.blog_id }}
-                    <span ng-repeat="reply in info.replies track by $index">
-                        <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
-                            <span ng-repeat="(key, value) in reply track by $index">
-                                {{ key }} : {{ value }}
-                            </span>
-                        </span>
-                    </span>
-                    <br>
+                <div class="btn-group" ng-repeat="info in post.infos track by $index">
+                    <button type="button" class="btn btn-default">
+                        <img ng-src="views/imgs/{{ info.provider_name }}.png" width="18" height="18">
+                        {{ info.blog_id }}
+                     </button>
+                    <button type="button" class="btn btn-default" ng-repeat="reply in info.replies track by $index">
+                            <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
+                                <span ng-repeat="(key, value) in reply track by $index">
+                                    {{ key }} <span class="badge">{{ value }}</span>
+                                </span>
+                                </span>
+
+                    </button>
+                </div>
+
+                <p class="lead" ng-repeat="info in post.infos track by $index"
+                    style="font-size: 16px;
+                    text-align: left;
+                    margin-top: 10px">
                     <span ng-repeat="comment in info.comments track by $index">
                         {{ comment.date }}
-                        <span ng-bind-html="comment.content">
+                        <span ng-bind-html="comment.content" style="font-weight: bold">
                         {{ comment.content }}
-                        </span><br>
+                        </span>
                     </span>
                 </p>
             </div>
