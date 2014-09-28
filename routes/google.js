@@ -13,6 +13,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.google;
 
+var log = require('winston');
+
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -28,9 +30,9 @@ passport.use(new GoogleStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//        console.log("accessToken:" + accessToken);
-//        console.log("refreshToken:" + refreshToken);
-//        console.log("profile:" + JSON.stringify(profile));
+//        log.debug("accessToken:" + accessToken);
+//        log.debug("refreshToken:" + refreshToken);
+//        log.debug("profile:" + JSON.stringify(profile));
 
         var provider = {
             "providerName": profile.provider,
@@ -57,7 +59,7 @@ router.get('/authorized',
     passport.authenticate('google', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );

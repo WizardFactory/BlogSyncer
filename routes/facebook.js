@@ -14,6 +14,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.facebook;
 
+var log = require('winston');
+
 var FACEBOOK_API_URL = "https://graph.facebook.com";
 
 passport.serializeUser(function(user, done) {
@@ -31,9 +33,9 @@ passport.use(new FacebookStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//        console.log("accessToken:" + accessToken);
-//        console.log("refreshToken:" + refreshToken);
-//        console.log("profile:" + JSON.stringify(profile));
+//        log.debug("accessToken:" + accessToken);
+//        log.debug("refreshToken:" + refreshToken);
+//        log.debug("profile:" + JSON.stringify(profile));
 
         var provider = {
             "providerName": profile.provider,
@@ -60,7 +62,7 @@ router.get('/authorized',
     passport.authenticate('facebook', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );
@@ -83,7 +85,7 @@ getUserId = function (req) {
 router.get('/me', function (req, res) {
     if (!req.user) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
     }
@@ -92,7 +94,7 @@ router.get('/me', function (req, res) {
 
         var api_url = FACEBOOK_API_URL+"/me";
 
-        console.log(api_url);
+        log.debug(api_url);
 
         request.get(api_url, {
                 json: true,
@@ -100,7 +102,7 @@ router.get('/me', function (req, res) {
                     "authorization": "Bearer " + p.accessToken
                 }
             }, function (err, response, data) {
-                console.log(data);
+                log.debug(data);
                 res.send(data);
         });
     }

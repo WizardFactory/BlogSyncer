@@ -5,6 +5,7 @@
 var fs = require('fs');
 var dbfileName = 'history.db';
 
+var log = require('winston');
 
 function HistoryDb(histories) {
     this.histories = histories;
@@ -26,7 +27,7 @@ HistoryDb.prototype.init = function () {
     this.histories = JSON.parse(fs.readFileSync(dbfilename)).histories;
   }
   catch (e) {
-    console.log(e);
+    log.debug(e);
     return false;
   }
 
@@ -37,11 +38,11 @@ HistoryDb.prototype.saveFile = function () {
   try {
     fs.writeFile(dbfilename, JSON.stringify({"histories":this.histories}), function (err) {
         if (err) throw err;
-        console.log('It\'s saved!');
+        log.debug('It\'s saved!');
     });
   }
   catch(e) {
-      console.log(e);
+      log.debug(e);
       return false;
   }
 

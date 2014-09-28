@@ -15,6 +15,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.kakao;
 
+var log = require('winston');
+
 var KAKAO_API_URL = "https://kapi.kakao.com";
 
 passport.serializeUser(function(user, done) {
@@ -31,9 +33,9 @@ passport.use(new KakaoStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//        console.log("accessToken:" + accessToken);
-//        console.log("refreshToken:" + refreshToken);
-//        console.log("profile:" + JSON.stringify(profile));
+//        log.debug("accessToken:" + accessToken);
+//        log.debug("refreshToken:" + refreshToken);
+//        log.debug("profile:" + JSON.stringify(profile));
 
         var provider = {
             "providerName": profile.provider,
@@ -60,7 +62,7 @@ router.get('/authorized',
     passport.authenticate('kakao', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );
@@ -78,7 +80,7 @@ function _getUserID(req, res) {
     }
     else {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
     }
@@ -88,13 +90,13 @@ function _getUserID(req, res) {
 
 function _checkError(err, response, body) {
     if (err) {
-        console.log(err);
+        log.debug(err);
         return err;
     }
     if (response.statusCode >= 400) {
         var err = body.meta ? body.meta.msg : body.error;
         var errStr = 'API error: ' + response.statusCode + ' ' + err;
-        console.log(errStr);
+        log.debug(errStr);
         return new Error(errStr);
     }
 }
@@ -109,7 +111,7 @@ router.get('/me', function (req, res) {
 
     var api_url = KAKAO_API_URL+"/v1/user/me";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -117,7 +119,7 @@ router.get('/me', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log(data);
+        log.debug(data);
         res.send(data);
     });
 
@@ -133,7 +135,7 @@ router.get('/mystories', function (req, res) {
 
     var api_url = KAKAO_API_URL+"/v1/api/story/mystories";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -141,14 +143,14 @@ router.get('/mystories', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log(data);
+        log.debug(data);
         res.send(data);
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -159,7 +161,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var api_url = KAKAO_API_URL+"/v1/user/me";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -167,7 +169,7 @@ router.get('/bot_bloglist', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log(data);
+        log.debug(data);
         var nickname = data.properties.nickname;
         var blog_url = "stroy.kakao.com/" + nickname;
         var send_data = {};
@@ -185,7 +187,7 @@ router.get('/bot_bloglist', function (req, res) {
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -207,7 +209,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -225,7 +227,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         api_url += "last_id=" + last_id;
     }
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -233,7 +235,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log(data);
+        log.debug(data);
 
         var send_data = {};
         send_data.provider_name = 'kakao';
@@ -247,7 +249,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var after_date = new Date(after);
 
             if (post_date < after_date) {
-                //console.log('post is before');
+                //log.debug('post is before');
                 continue;
             }
 
@@ -268,7 +270,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -285,7 +287,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         api_url += "id=" + post_id;
     }
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -294,7 +296,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         }
     }, function (err, response, data) {
 
-        console.log(data);
+        log.debug(data);
 
         var send_data = {};
         send_data.provider_name = 'kakao';
@@ -329,13 +331,13 @@ function _convertToURL(postId) {
     str += "/";
     str += postId.substring(indexOfDot+1);
 
-    console.log(str);
+    log.debug(str);
     return str;
 }
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -348,7 +350,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var api_url = KAKAO_API_URL+"/v1/api/story/post/note";
     var new_post = {};
     new_post.content = "";
-    console.log(api_url);
+    log.debug(api_url);
 
     if (req.body.title !== undefined) {
         new_post.content += req.body.title +'\n';
@@ -357,7 +359,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         new_post.content += req.body.content;
     }
 
-    console.log(new_post);
+    log.debug(new_post);
 
     request.post(api_url, {
         headers: {
@@ -368,12 +370,12 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         var _ref;
         if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
             err = "" + response.statusCode + " " ;
-            console.log(err);
+            log.debug(err);
             res.send(err);
             return;
         }
 
-        //console.log(data);
+        //log.debug(data);
 
         //add post info
         var send_data = {};
@@ -394,7 +396,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
         if (raw_post === undefined) {
             var errMsg = "Fail to post";
-            console.log(errMsg);
+            log.debug(errMsg);
             res.send(errMsg);
             return;
         }
@@ -406,14 +408,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         send_post.content = new_post.content;
 
         send_data.posts.push(send_post);
-        console.log(send_data);
+        log.debug(send_data);
         res.send(send_data);
     });
 });
 
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -430,7 +432,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         api_url += "id=" + post_id;
     }
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -443,7 +445,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             res.send(hasError);
             return;
         }
-        console.log(body);
+        log.debug(body);
 
         var send = {};
         send.providerName = "kakao";

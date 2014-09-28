@@ -31,7 +31,7 @@
 userdb.checkUserName = function () {
     UserDB.findOne({ id : req.body.loginid }, 'id', function(err, user) {
         if (err)
-            console.log(err);
+            log.debug(err);
         else if (user)
             return true;
 
@@ -78,9 +78,9 @@ userdb.removeUser = function (id) {
 userdb.addProvider = function (userId, new_providerName) {
     Provider.findOne({ id : userId, providerName : new_providerName }, 'id', function(err, provider) {
         if (err) {
-            console.log(err);
+            log.debug(err);
         } else if (provider) {
-            console.log("DB Update!!");
+            log.debug("DB Update!!");
             //  저장된 DB 가 있음. -> 기존항목 update
             Provider.update({id: userId,
                 providerName: new_providerName,
@@ -89,7 +89,7 @@ userdb.addProvider = function (userId, new_providerName) {
                 accessToken: "token1"
             }, {safe: true, upsert: true}, function (err) {
                 if (err) {
-                    console.log(err);
+                    log.debug(err);
                 } else {
                     return true;
                 }
@@ -97,7 +97,7 @@ userdb.addProvider = function (userId, new_providerName) {
             });
         }
         else {
-            console.log("DB Add!!");
+            log.debug("DB Add!!");
             // DB 에 없는 provider -> 신규 DB 추가
             Provider.create({
                 id: userId,
@@ -105,12 +105,12 @@ userdb.addProvider = function (userId, new_providerName) {
                 accessToken: "token"
             }, function (err, provider) {
                 if (err)
-                    console.log(err);
+                    log.debug(err);
                 else if (provider) {
                     // usingProvider Count 조정
                     UserDB.findOne({ id: userId }, 'id', function (err, user) {
                         if (err) {
-                            console.log(err);
+                            log.debug(err);
                         } else if (user) {
                             UserDB.update({id: userId},
                                 {id: userId,
@@ -118,7 +118,7 @@ userdb.addProvider = function (userId, new_providerName) {
                                     usingProviderCount: user.usingProviderCount + 1
                                 }, {safe: true, upsert: true}, function (err) {
                                     if (err) {
-                                        console.log(err);
+                                        log.debug(err);
                                     } else {
                                         return true;
                                     }
@@ -138,13 +138,13 @@ userdb.removeProvider = function (userId, removeProviderName) {
         _id : userId, providerName : removeProviderName
     }, function(err, todo) {
         if (err){
-            console.log(err);
+            log.debug(err);
             return false;
         }
         // usingProvider Count 조정
         UserDB.findOne({ id : userId }, 'id', function(err, user) {
             if (err) {
-                console.log(err);
+                log.debug(err);
             } else if (user) {
                 UserDB.update({id: userId},
                     {id: userId,
@@ -152,7 +152,7 @@ userdb.removeProvider = function (userId, removeProviderName) {
                         usingProviderCount : user.usingProviderCount - 1
                     }, {safe: true, upsert: true}, function (err) {
                         if (err) {
-                            console.log(err);
+                            log.debug(err);
                         } else {
                             return true;
                         }
@@ -169,6 +169,7 @@ userdb.removeProvider = function (userId, removeProviderName) {
 var fs = require('fs');
 var dbfilename = 'users.db';
 
+var log = require('winston');
 
 function userdb() {
 
@@ -193,7 +194,7 @@ userdb.init = function () {
     userdb.users = JSON.parse(fs.readFileSync(dbfilename)).user_db;
   }
   catch (e) {
-    console.log(e);
+    log.debug(e);
     return false;
   }
 
@@ -204,11 +205,11 @@ userdb.saveFile = function () {
   try {
     fs.writeFile(dbfilename, JSON.stringify({"user_db":userdb.users}), function (err) {
         if (err) throw err;
-        console.log('It\'s saved!');
+        log.debug('It\'s saved!');
     });
   }
   catch(e) {
-      console.log(e);
+      log.debug(e);
       return false;
   }
 
@@ -229,7 +230,7 @@ userdb.getProviderCount = function (id) {
     }
 
     if (len == 0) {
-        console.log("Fail to find id");
+        log.debug("Fail to find id");
     }
 
     return len;
@@ -240,12 +241,12 @@ userdb.addUser = function (new_provider) {
     var lastId = 0;
 
     totalCount = this.getUserCount();
-    //console.log("total = " + totalCount);
+    //log.debug("total = " + totalCount);
 
     if (totalCount > 0) {
         lastId = this.users[totalCount - 1].id;
     }
-    //console.log("lastId = " + lastId);
+    //log.debug("lastId = " + lastId);
     lastId++;
 
     this.users.push({"id":lastId, "providers":[new_provider]});
@@ -263,7 +264,7 @@ userdb.removeUser = function (id) {
         }
     }
 
-    console.log("Fail to find user");
+    log.debug("Fail to find user");
     return false;
 };
 
@@ -288,29 +289,29 @@ userdb.removeProvider = function (id, providerName) {
                 }
             }
 
-            console.log("There is id, but fail to find provider by providerName");
+            log.debug("There is id, but fail to find provider by providerName");
         }
     }
 
-    console.log("Fail to find provider by providerName");
+    log.debug("Fail to find provider by providerName");
 
     return false;
 };
 
 userdb.findUser = function (id) {
-    //console.log("Find user = " + id);
+    //log.debug("Find user = " + id);
 
     for (var i=0; i<this.users.length; i++) {
 
         if (this.users[i].id == id) {
 
-            //console.log(this.users[i]);
+            //log.debug(this.users[i]);
 
             return this.users[i];
         }
     }
 
-    console.log("Fail to find user by id");
+    log.debug("Fail to find user by id");
     return null;
 };
 
@@ -324,13 +325,13 @@ userdb.findUserByProvider = function (provider) {
         }
     }
 
-    console.log("Fail to find user by provider");
+    log.debug("Fail to find user by provider");
     return null;
 };
 
 /* 동일한 provider를 여러개 가지는 경우 provider id로 찾아야 한다. by dhkim2 */
 userdb.findProvider = function (id, providerName) {
-    //console.log("Find id= " + id + " providerName= " + providerName);
+    //log.debug("Find id= " + id + " providerName= " + providerName);
 
     for (var i=0; i<this.users.length; i++) {
         if (this.users[i].id == id) {
@@ -340,17 +341,17 @@ userdb.findProvider = function (id, providerName) {
                 }
             }
 
-            console.log("There is id, but fail to find provider by provider");
+            log.debug("There is id, but fail to find provider by provider");
         }
     }
 
-    console.log("Fail to find provider by providerName");
+    log.debug("Fail to find provider by providerName");
 
     return null;
 };
 
 userdb.findProviderId = function (id, providerId) {
-    //console.log("Find id= " + id + " providerId= " + providerId);
+    //log.debug("Find id= " + id + " providerId= " + providerId);
 
     for (var i=0; i<this.users.length; i++) {
         if (this.users[i].id == id) {
@@ -360,11 +361,11 @@ userdb.findProviderId = function (id, providerId) {
                 }
             }
 
-            console.log("There is id, but fail to find provider by provider");
+            log.debug("There is id, but fail to find provider by provider");
         }
     }
 
-    console.log("Fail to find provider by providerName");
+    log.debug("Fail to find provider by providerName");
 
     return null;
 };
@@ -378,11 +379,11 @@ userdb.findOrCreate = function (req_user, provider) {
         user = userdb.findUserByProvider(provider);
         if (user == null) {
             user = userdb.addProvider(req_user.id, provider);
-            console.log("add new provider");
-            console.log("user:" + JSON.stringify(user));
+            log.debug("add new provider");
+            log.debug("user:" + JSON.stringify(user));
         }
         else {
-            console.log("Already has provider") ;
+            log.debug("Already has provider") ;
         }
     }
     else {
@@ -390,9 +391,9 @@ userdb.findOrCreate = function (req_user, provider) {
         if (user == null) {
             user = userdb.addUser(provider);
 
-            console.log('userdb: createChild of user='+user.id);
+            log.debug('userdb: createChild of user='+user.id);
         }
-        console.log("user:" + JSON.stringify(user));
+        log.debug("user:" + JSON.stringify(user));
     }
 
     return user;

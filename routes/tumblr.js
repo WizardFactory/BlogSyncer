@@ -16,6 +16,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.tumblr;
 
+var log = require('winston');
+
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -31,9 +33,9 @@ passport.use(new TumblrStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
-//        console.log("token:" + token); // 인증 이후 auth token을 출력할 것이다.
-//        console.log("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
-//        console.log("profile:" + JSON.stringify(profile));
+//        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
+//        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
+//        log.debug("profile:" + JSON.stringify(profile));
         var provider = {
             "providerName":profile.provider,
             "token":token,
@@ -59,7 +61,7 @@ router.get('/authorized',
     passport.authenticate('tumblr', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );
@@ -83,7 +85,7 @@ router.get('/info', function (req, res) {
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -102,7 +104,7 @@ router.get('/info', function (req, res) {
 //        if (error) {
 //            throw new Error(error);
 //        }
-//        console.log(response.user);
+//        log.debug(response.user);
 //        res.send(response.user);
 //    });
 
@@ -119,7 +121,7 @@ router.get('/info', function (req, res) {
             res.send(error);
             return;
         }
-        console.log(data);
+        log.debug(data);
         res.send(data);
     });
 
@@ -130,7 +132,7 @@ router.get('/posts/:blogName', function (req, res) {
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -152,19 +154,19 @@ router.get('/posts/:blogName', function (req, res) {
             res.send(error);
             return;
         }
-        console.log(response);
+        log.debug(response);
         res.send(response);
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
 
-    console.log(req.url + ' : this is called by bot');
+    log.debug(req.url + ' : this is called by bot');
 
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -184,14 +186,14 @@ router.get('/bot_bloglist', function (req, res) {
             res.send(error);
             return;
         }
-        //console.log(response);
+        //log.debug(response);
 
         var send_data = {};
         send_data.provider = p;
         send_data.blogs = [];
 
         var blogs = response.user.blogs;
-        console.log('blogs length=' + blogs.length);
+        log.debug('blogs length=' + blogs.length);
 
         for (var i=0;i<blogs.length;i++) {
             send_data.blogs.push({"blog_id":blogs[i].name, "blog_title":blogs[i].title, "blog_url":blogs[i].url});
@@ -203,12 +205,12 @@ router.get('/bot_bloglist', function (req, res) {
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
 
-    console.log("tumblr: "+ req.url + ' : this is called by bot');
+    log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -230,7 +232,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             res.send(error);
             return;
         }
-        //console.log(response);
+        //log.debug(response);
         var send_data = {};
         send_data.provider_name = 'tumblr';
         send_data.blog_id = response.blog.name;
@@ -250,7 +252,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
         var post_date = new Date(raw_post.date);
         var after_date = new Date(after);
         if (post_date < after_date) {
-            //console.log('post(' + raw_post.id + ') is before');
+            //log.debug('post(' + raw_post.id + ') is before');
             continue;
         }
 
@@ -268,8 +270,8 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
         for (var j=0;j<raw_post.tags.length;j++) {
             send_post.tags.push(raw_post.tags[j]);
         }
-//            console.log('tags-send');
-//            console.log(send_post.tags);
+//            log.debug('tags-send');
+//            log.debug(send_post.tags);
 
         switch (raw_post.type) {
             case "text":
@@ -329,7 +331,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
                     send_post.content = raw_post.answer;
                 break;
             default:
-                console.log('Fail to get type ' + raw_post.type);
+                log.debug('Fail to get type ' + raw_post.type);
                 break;
         }
         send_post.replies = [];
@@ -338,12 +340,12 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
 };
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    console.log("tumblr: "+ req.url + ' : this is called by bot');
+    log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -364,7 +366,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var options;
     if (offset != undefined) {
         var start_index = offset.split("-")[0];
-        console.log('offset=' + start_index);
+        log.debug('offset=' + start_index);
         options = {offset: start_index};
     }
 
@@ -374,7 +376,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             res.send(error);
             return;
         }
-        //console.log(response);
+        //log.debug(response);
 
         var send_data = {};
         send_data.provider_name = 'tumblr';
@@ -389,12 +391,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    console.log("tumblr: "+ req.url + ' : this is called by bot');
+    log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -419,7 +421,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             res.send(error);
             return;
         }
-        //console.log(response);
+        //log.debug(response);
 
         var send_data = {};
         send_data.provider_name = 'tumblr';
@@ -435,12 +437,12 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    console.log("tumblr: "+ req.url + ' : this is called by bot');
+    log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -463,7 +465,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         options.body =  req.body.content;
     }
     else {
-       console.log("Fail to get content");
+       log.debug("Fail to get content");
        res.send("Fail to get content");
        return;
     }
@@ -482,7 +484,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             res.send(error);
             return;
         }
-        console.log(response);
+        log.debug(response);
         var options = response;
 
         client.posts(blog_id, options, function(error, response) {
@@ -491,7 +493,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 res.send(error);
                 return;
             }
-            //console.log(response);
+            //log.debug(response);
 
             var send_data = {};
             send_data.provider_name = 'tumblr';
@@ -508,11 +510,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 //router.get('/bot_comments/:blogID/:postID', function (req, res) {
-//    console.log(req.url);
+//    log.debug(req.url);
 //    var userID = _getUserID(req);
 //    if (userID == 0) {
 //        var errorMsg = 'You have to login first!';
-//        console.log(errorMsg);
+//        log.debug(errorMsg);
 //        res.send(errorMsg);
 //        res.redirect("/#/signin");
 //        return;

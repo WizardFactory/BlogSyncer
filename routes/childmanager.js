@@ -1,8 +1,9 @@
 /**
  * Created by aleckim on 2014. 8. 17..
  */
-
 var childP = require('child_process');
+
+var log = require('winston');
 
 function childmanager() {
 
@@ -20,11 +21,11 @@ childmanager.childs = [];
 
 childmanager.createChild = function (user) {
 
-    console.log('childmanager: create child of user='+user.id);
+    log.debug('childmanager: create child of user='+user.id);
 
     var child;
     if (this.childs.length == 0) {
-        console.log('childmanager: create child process of user='+user.id);
+        log.debug('childmanager: create child process of user='+user.id);
         child = {};
         child.process = childP.fork('./routes/child.js');
         //we have to change to use random port.
@@ -36,7 +37,7 @@ childmanager.createChild = function (user) {
         this.childs.push(child);
     }
     else {
-        console.log('childmanager: register user='+user.id+' to child process');
+        log.debug('childmanager: register user='+user.id+' to child process');
         //use only 1 child process we will extend for multi child processes.
         //get available process to add child
         child = this.childs[0];
@@ -62,18 +63,18 @@ childmanager.destroyChild = function(user) {
 };
 
 childmanager.sendMessage = function(user, message) {
-    console.log('childmanager: send msg by user=' + user.id + ' message='+message);
+    log.debug('childmanager: send msg by user=' + user.id + ' message='+message);
 
     var child;
     var len = this.childs.length;
     var i;
     var j;
 
-    console.log('childmanager: childs.len='+len);
+    log.debug('childmanager: childs.len='+len);
     for(i=0; i<len; i++) {
         for (j=0; j<this.childs[i].users.length; j++) {
             if (this.childs[i].users[j].id === user.id) {
-                console.log('Found child index='+i);
+                log.debug('Found child index='+i);
                 child = this.childs[i];
                 break;
             }
@@ -82,12 +83,12 @@ childmanager.sendMessage = function(user, message) {
 
     if (i == len) {
         var msg = 'Fail to find process of userid='+user.id;
-        console.log (msg);
+        log.debug (msg);
         this.createChild(user);
         child = this.childs[0];
     }
 
-    console.log('child msg='+message+' user.id = '+user.id + ' port='+child.port);
+    log.debug('child msg='+message+' user.id = '+user.id + ' port='+child.port);
     var msg_object = {"msg": message, "user": user, "port": child.port};
 
     child.process.send(msg_object);
@@ -100,11 +101,11 @@ childmanager.get_child_port = function (user) {
     var len = this.childs.length;
     var i, j;
 
-    console.log('childmanager: childs.len='+len);
+    log.debug('childmanager: childs.len='+len);
     for(i=0; i<len; i++) {
         for (j=0; j<this.childs[i].users.length; j++) {
             if (this.childs[i].users[j].id === user.id) {
-                console.log('Found child index='+i + ' users='+j);
+                log.debug('Found child index='+i + ' users='+j);
                 child = this.childs[i];
                 break;
             }
@@ -113,11 +114,11 @@ childmanager.get_child_port = function (user) {
 
     if (i == len) {
         var msg = 'Fail to find process of userid='+id;
-        console.log (msg);
+        log.debug (msg);
         return -1;
     }
 
-    console.log('child_manager child_port=', child.port);
+    log.debug('child_manager child_port=', child.port);
 
     return child.port;
 };
