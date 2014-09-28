@@ -6,6 +6,7 @@
 var fs = require('fs');
 var dbfilename = 'post.db';
 
+var log = require('winston');
 
 function postdb(posts) {
     this.posts = posts;
@@ -44,7 +45,7 @@ postdb.prototype.init = function () {
     this.posts = JSON.parse(fs.readFileSync(dbfilename)).post_db;
   }
   catch (e) {
-    console.log(e);
+    log.debug(e);
     return false;
   }
 
@@ -55,11 +56,11 @@ postdb.prototype.saveFile = function () {
   try {
     fs.writeFile(dbfilename, JSON.stringify({"post_db":this.posts}), function (err) {
         if (err) throw err;
-        console.log('It\'s saved!');
+        log.debug('It\'s saved!');
     });
   }
   catch(e) {
-      console.log(e);
+      log.debug(e);
       return false;
   }
 
@@ -79,11 +80,11 @@ postdb.prototype.find_post_by_title = function(title) {
     }
 
     if (i == this.posts.length) {
-        console.log('Fail to find post title=' + title);
+        log.debug('Fail to find post title=' + title);
     }
     else {
         var post = this.posts[i];
-        console.log('find post('+post.id+') by title='+title);
+        log.debug('find post('+post.id+') by title='+title);
         return this.posts[i];
     }
 
@@ -102,11 +103,11 @@ postdb.prototype.find_post_by_id = function(post_id) {
     }
 
     if (i == this.posts.length) {
-        console.log('Fail to find post id=' + post_id);
+        log.debug('Fail to find post id=' + post_id);
     }
     else {
         var post = this.posts[i];
-        console.log('find post('+post.id+')');
+        log.debug('find post('+post.id+')');
         return this.posts[i];
     }
 
@@ -123,7 +124,7 @@ postdb.prototype.find_post_by_post_id_of_blog = function(provider_name, blog_id,
         var infos = this.posts[i].infos;
         for (var j = 0; j<infos.length; j++) {
            if (infos[j].provider_name == provider_name && infos[j].blog_id == blog_id && infos[j].post_id == post_id) {
-               console.log('posts index=' + i + ' infos index='+j);
+               log.debug('posts index=' + i + ' infos index='+j);
                foundit = true;
                break;
            }
@@ -134,7 +135,7 @@ postdb.prototype.find_post_by_post_id_of_blog = function(provider_name, blog_id,
 };
 
 postdb.prototype.add_postinfo = function(post, provider_name, blog_id, new_post) {
-    console.log('add_postinfo');
+    log.debug('add_postinfo');
     var postinfo = {};
     postinfo.provider_name = provider_name;
     postinfo.blog_id = blog_id;
@@ -165,18 +166,18 @@ postdb.prototype.add_postinfo = function(post, provider_name, blog_id, new_post)
 };
 
 postdb.prototype.add_post = function(provider_name, blog_id, new_post) {
-    console.log('add_post');
+    log.debug('add_post');
     var totalCount= 0;
     var lastId = 0;
     var post = {};
 
     totalCount = this.posts.length;
-    console.log("total = " + totalCount);
+    log.debug("total = " + totalCount);
 
     if (totalCount > 0) {
         lastId = this.posts[totalCount - 1].id;
     }
-    console.log("lastId = " + lastId);
+    log.debug("lastId = " + lastId);
     lastId++;
 
     post.id = lastId;
@@ -184,21 +185,21 @@ postdb.prototype.add_post = function(provider_name, blog_id, new_post) {
         post.title = new_post.title;
     }
     else {
-        //console.log("title is undefined");
+        //log.debug("title is undefined");
     }
 
     if (new_post.categories !== undefined) {
         post.categories = new_post.categories;
     }
     else {
-        //console.log("categories is undefined");
+        //log.debug("categories is undefined");
     }
 
     if (new_post.tags !== undefined) {
         post.tags = new_post.tags;
     }
     else {
-        //console.log("tags is undefined");
+        //log.debug("tags is undefined");
     }
 
     post.infos = [];

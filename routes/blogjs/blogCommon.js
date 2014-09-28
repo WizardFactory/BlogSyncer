@@ -1,6 +1,8 @@
 var userdb      = require('../../models/userdb');
 var request     = require('request');
 
+var log         = require('winston');
+
 var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
 
 getUserId = function (req) {
@@ -20,10 +22,10 @@ getUserId = function (req) {
 
 function getWPPosts(req, res) {
     var user_id = getUserId(req);
-    console.log(user_id);
+    log.debug(user_id);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -31,12 +33,12 @@ function getWPPosts(req, res) {
 
     //var p = userdb.findProviderId(user_id, req.query.providerid);
     var p = userdb.findProvider(user_id, "Wordpress");
-    console.log(p);
+    log.debug(p);
     var blog_id = p.providerId;
-    console.log(blog_id);
+    log.debug(blog_id);
     var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, {
         json: true,
@@ -44,7 +46,7 @@ function getWPPosts(req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log("[blogCommon-getWPPosts]" + data);
+        log.debug("[blogCommon-getWPPosts]" + data);
         res.send(data);
     });
 }
@@ -53,7 +55,7 @@ function getWPComments(req, res) {
     var user_id = getUserId(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -65,7 +67,7 @@ function getWPComments(req, res) {
     var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/posts/"+posts_id+"/replies";
     //var api_url = API_WORDPRESS_COM+"/sites/"+blog_id+"/comments";
 
-    //console.log(req);
+    //log.debug(req);
 
     request.get(api_url, {
         json: true,
@@ -73,7 +75,7 @@ function getWPComments(req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        console.log(data);
+        log.debug(data);
         res.send(data);
     });
 }

@@ -14,6 +14,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.twitter;
 
+var log = require('winston');
+
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -29,9 +31,9 @@ passport.use(new TwitterStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
-//        console.log("token:" + token); // 인증 이후 auth token을 출력할 것이다.
-//        console.log("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
-//        console.log("profile:" + JSON.stringify(profile));
+//        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
+//        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
+//        log.debug("profile:" + JSON.stringify(profile));
         var provider = {
             "providerName":profile.provider,
             "token":token,
@@ -57,7 +59,7 @@ router.get('/authorized',
     passport.authenticate('twitter', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );

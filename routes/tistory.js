@@ -17,6 +17,8 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.tistory;
 
+var log = require('winston');
+
 var TISTORY_API_URL = "https://www.tistory.com/apis";
 
 passport.serializeUser(function(user, done) {
@@ -34,9 +36,9 @@ passport.use(new TistoryStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//       console.log("accessToken:" + accessToken);
-//       console.log("refreshToken:" + refreshToken);
-//       console.log("profile:" + JSON.stringify(profile));
+//       log.debug("accessToken:" + accessToken);
+//       log.debug("refreshToken:" + refreshToken);
+//       log.debug("profile:" + JSON.stringify(profile));
 
         var provider = {
             "providerName": 'tistory',
@@ -63,7 +65,7 @@ router.get('/authorized',
     passport.authenticate('tistory', { failureRedirect: '/#signin' }),
     function(req, res) {
         // Successful authentication, redirect home.
-        console.log('Successful!');
+        log.debug('Successful!');
         res.redirect('/#');
     }
 );
@@ -85,13 +87,13 @@ function _getUserID(req) {
 
 function _checkError(err, response, body) {
     if (err) {
-        console.log(err);
+        log.debug(err);
         return err;
     }
     if (response.statusCode >= 400) {
         var err = body.meta ? body.meta.msg : body.error;
         var errStr = 'API error: ' + response.statusCode + ' ' + err;
-        console.log(errStr);
+        log.debug(errStr);
         return new Error(errStr);
     }
 }
@@ -100,7 +102,7 @@ router.get('/info', function (req, res) {
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -110,14 +112,14 @@ router.get('/info', function (req, res) {
 
     var api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             res.send(hasError);
             return;
         }
-        console.log(body);
+        log.debug(body);
         res.send(body);
     });
 });
@@ -126,7 +128,7 @@ router.get('/post/list/:simpleName', function (req, res) {
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -138,26 +140,26 @@ router.get('/post/list/:simpleName', function (req, res) {
     api_url = api_url + "&targetUrl=" + blog_name;
     api_url = api_url + "&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             res.send(hasError);
             return;
         }
-        //console.log(body);
+        //log.debug(body);
         res.send(body);
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -167,23 +169,23 @@ router.get('/bot_bloglist', function (req, res) {
 
     var api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             res.send(hasError);
             return;
         }
-        //console.log(body);
+        //log.debug(body);
 
         var send_data = {};
         send_data.provider = p;
-        //console.log(p);
+        //log.debug(p);
 
         send_data.blogs = [];
 
         var item = JSON.parse(body).tistory.item;
-        console.log('item length=' + item.length);
+        log.debug('item length=' + item.length);
 
         for (var i=0;i<item.length;i++) {
             var hostname = url.parse(item[i].url).hostname;
@@ -194,7 +196,7 @@ router.get('/bot_bloglist', function (req, res) {
             else {
                 target_url = hostname;
             }
-            console.log('target_url=', target_url);
+            log.debug('target_url=', target_url);
             //tistory api had used targetUrl instead of blogId;
             send_data.blogs.push({"blog_id":target_url, "blog_title":item[i].title, "blog_url":item[i].url});
         }
@@ -205,12 +207,12 @@ router.get('/bot_bloglist', function (req, res) {
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -223,7 +225,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     api_url = api_url + "access_token="+ p.accessToken;
     api_url += "&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
@@ -231,9 +233,9 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             res.send(hasError);
             return;
         }
-        //console.log(data);
+        //log.debug(data);
         var item = JSON.parse(body).tistory.item;
-        console.log('item length=' + item.length);
+        log.debug('item length=' + item.length);
 
         for (var i=0;i<item.length;i++) {
             var hostname = url.parse(item[i].url).hostname;
@@ -247,7 +249,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         send_data.provider_name = 'tistory';
 
         if (i == item.length) {
-            console.log('Fail to find blog='+target_url);
+            log.debug('Fail to find blog='+target_url);
             send_data.blog_id = target_url;
             send_data.post_count = 0;
         }
@@ -262,12 +264,12 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id', function (req, res) {
 
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -297,7 +299,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
     api_url += "&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
@@ -305,7 +307,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             res.send(hasError);
             return;
         }
-        console.log(body);
+        log.debug(body);
         var item = JSON.parse(body).tistory.item;
 
         var send_data = {};
@@ -321,7 +323,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         else {
            recv_post_count =  item.posts.post.length;
         }
-        console.log('tistory target_url='+target_url+' posts='+recv_post_count);
+        log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
 
         for (var i = 0; i<recv_post_count; i++) {
             var raw_post = {};
@@ -335,11 +337,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             if (after) {
                 var after_date = new Date(after);
                 if (post_date < after_date) {
-                    //console.log('post(' + raw_post.id + ') is before');
+                    //log.debug('post(' + raw_post.id + ') is before');
                     continue;
                 }
                 else {
-                    console.log('add post(' + raw_post.id + ')');
+                    log.debug('add post(' + raw_post.id + ')');
                 }
             }
 
@@ -359,12 +361,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -380,14 +382,14 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     api_url += "&postId="+post_id;
     api_url += "&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             res.send(hasError);
             return;
         }
-        //console.log(data);
+        //log.debug(data);
         var item = JSON.parse(body).tistory.item;
 
         var send_data = {};
@@ -417,12 +419,12 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    console.log(req.url);
+    log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -442,7 +444,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         new_post.title =  req.body.title;
     }
     else {
-       console.log("Fail to get title");
+       log.debug("Fail to get title");
        res.send("Fail to get title");
        return;
     }
@@ -460,8 +462,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
     new_post.output = "json";
 
-    console.log(api_url);
-    console.log(new_post);
+    log.debug(api_url);
+    log.debug(new_post);
 
     request.post(api_url,{
         form: new_post
@@ -472,7 +474,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return;
         }
 
-        //console.log(data);
+        //log.debug(data);
         var item = JSON.parse(body).tistory;
 
         var send_data = {};
@@ -492,17 +494,17 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
         send_data.posts.push(send_post);
 
-        //console.log(send_data);
+        //log.debug(send_data);
         res.send(send_data);
     });
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    console.log(req.url);
+    log.debug(req.url);
     var userID = _getUserID(req);
     if (userID == 0) {
         var errorMsg = 'You have to login first!';
-        console.log(errorMsg);
+        log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -518,7 +520,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     api_url += "&postId="+postID;
     api_url += "&output=json";
 
-    console.log(api_url);
+    log.debug(api_url);
 
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
@@ -526,7 +528,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             res.send(hasError);
             return;
         }
-        console.log(body);
+        log.debug(body);
         var item = JSON.parse(body).tistory.item;
         var send = {};
         send.providerName = p.providerName;

@@ -2,6 +2,8 @@
  * Created by aleckim on 2014. 9. 22..
  */
 
+var log = require('winston');
+
 function GroupDb(groups) {
     this.groups = groups;
 }
@@ -20,7 +22,7 @@ GroupDb.prototype.init = function () {
     this.groups = JSON.parse(fs.readFileSync(dbfilename)).groups;
   }
   catch (e) {
-    console.log(e);
+    log.debug(e);
     return false;
   }
 
@@ -31,11 +33,11 @@ GroupDb.prototype.saveFile = function () {
   try {
     fs.writeFile(dbfilename, JSON.stringify({"groups":this.groups}), function (err) {
         if (err) throw err;
-        console.log('It\'s saved!');
+        log.debug('It\'s saved!');
     });
   }
   catch(e) {
-      console.log(e);
+      log.debug(e);
       return false;
   }
 

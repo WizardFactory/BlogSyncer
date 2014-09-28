@@ -5,6 +5,8 @@
 var fs = require('fs');
 var dbfilename = 'blog.db';
 
+var log = require('winston');
+
 function blogdb(sites) {
     this.sites = sites;
 }
@@ -29,7 +31,7 @@ blogdb.prototype.init = function () {
     this.sites = JSON.parse(fs.readFileSync(dbfilename)).blog_db;
   }
   catch (e) {
-    console.log(e);
+    log.debug(e);
     return false;
   }
 
@@ -40,11 +42,11 @@ blogdb.prototype.saveFile = function () {
   try {
     fs.writeFile(dbfilename, JSON.stringify({"blog_db":this.sites}), function (err) {
         if (err) throw err;
-        console.log("It's saved!");
+        log.debug("It's saved!");
     });
   }
   catch(e) {
-      console.log(e);
+      log.debug(e);
       return false;
   }
 
@@ -64,7 +66,7 @@ blogdb.prototype.findSiteByProvider = function (providerName) {
         }
     }
 
-    console.log ("Fail to find blog of provider="+providerName);
+    log.debug ("Fail to find blog of provider="+providerName);
 
     return null;
 };
@@ -77,7 +79,7 @@ blogdb.prototype.find_blog_by_blog_id = function (site, blog_id) {
     }
 
     if (i == site.blogs.length) {
-        console.log ('Fail to find blog_id='+blog_id);
+        log.debug ('Fail to find blog_id='+blog_id);
         return null;
     }
 

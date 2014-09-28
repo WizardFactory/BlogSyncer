@@ -4,56 +4,58 @@ var socketIo = require('socket.io');
 var io;
 var blogSocket;
 
+var log = require('winston');
+
 send_run_event = function (child_process) {
-   //console.log('called send_run_event');
-   //console.log(child_process);
+   //log.debug('called send_run_event');
+   //log.debug(child_process);
    //var msg_object = {"msg":'runEvent'};
    //child_process.send(msg_object);
    blogBot.task();
 };
 
 open_child_socket = function (port) {
-    console.log('open_child_socket port='+port);
+    log.debug('open_child_socket port='+port);
     io =socketIo.listen(port);
     blogSocket = io
     .of('/blog')
     .on('connection', function (socket) {
-        console.log('blog: connection');
+        log.debug('blog: connection');
         socket.on('blog', function (data) {
             if (data.msg == 'getSites') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 var sites = blogBot.getSites(data.user);
                 socket.emit('sites', sites);
             }
             else if(data.msg == 'getPosts') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 blogBot.getPosts(socket, data.user);
             }
             else if(data.msg == 'getComments') {
-                console.log('recv msg =' + data.msg + " postIDs = "+data.post_ids.length);
+                log.debug('recv msg =' + data.msg + " postIDs = "+data.post_ids.length);
                 blogBot.getComments(socket, data.user, data.post_ids);
             }
             else if(data.msg == 'get_reply_count') {
-                console.log('recv msg =' + data.msg + " post_ids = " + data.post_ids.length);
+                log.debug('recv msg =' + data.msg + " post_ids = " + data.post_ids.length);
                 for (var i=0;i<data.post_ids.length;i++) {
-                   console.log('get reply count post_ids='+data.post_ids[i]);
+                   log.debug('get reply count post_ids='+data.post_ids[i]);
                    blogBot.get_reply_count(socket, data.user, data.post_ids[i]);
                 }
             }
             else if (data.msg == 'getHistories') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 blogBot.getHistorys(socket, data.user);
             }
             else if (data.msg == 'addGroup') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 blogBot.addGroup(data.user, data.group);
             }
             else if (data.msg == 'setGroups') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 blogBot.setGroups(data.user, data.groups);
             }
             else if (data.msg == 'getGroups') {
-                console.log('recv msg =' + data.msg);
+                log.debug('recv msg =' + data.msg);
                 var groups = blogBot.getGroups(data.user);
                 socket.emit('groups', {"groups":groups});
             }
@@ -62,15 +64,15 @@ open_child_socket = function (port) {
 };
 
 process.on('message', function (m, server) {
-    console.log(m);
-    //console.log(m.msg);
+    log.debug(m);
+    //log.debug(m.msg);
 
     if (m.msg === 'start') {
         if (io == undefined) {
             open_child_socket(m.port);
         }
         blogBot.start(m.user);
-        //console.log(this);
+        //log.debug(this);
         this.intarval = setInterval(send_run_event, 1000*60, this); //1 min
     }
     else if (m.msg === 'stop') {
@@ -85,16 +87,16 @@ process.on('message', function (m, server) {
 //    }
 //    else if (m.msg == 'getSites') {
 //        var sites = blogBot.getSites(m.user);
-//        console.log(server);
+//        log.debug(server);
 //        server.end(sites);
 //    }
     else {
-        console.log("unknown message " + m.msg);
+        log.debug("unknown message " + m.msg);
     }
 });
 
 process.on('close', function (code, signal) {
-    console.log('child() process terminated due to receipt of signal '+signal);
+    log.debug('child() process terminated due to receipt of signal '+signal);
     //it need to close port
 });
 
