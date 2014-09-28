@@ -111,6 +111,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
     childio.emit('blog', {"msg":'getHistories',"user":user});
 
     childio.on('histories', function(data){
+        console.log(data);
         $scope.$apply(function () {
             $scope.histories = data.histories;
         });
@@ -129,6 +130,9 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
     $scope.child_port = 20149;
+
+
+    var childio;
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
@@ -185,6 +189,8 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         }
         if (group.length > 0) {
             $scope.groups.push(group);
+            console.log(group);
+            childio.emit('blog', {"msg":'addGroup', "user":$scope.user, "group":group});
         }
     }
 
@@ -196,7 +202,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         }
 
         var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-        var childio = io.connect(child_url);
+        childio = io.connect(child_url);
         console.log('child_url='+child_url);
 
         if (childio.connected === true) {

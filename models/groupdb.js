@@ -10,10 +10,10 @@ function GroupDb(groups) {
 
 /*
  [
-    {"id":"aaa", "blogs":[
-                        {"provider":object, "blog":object}
-                        {"provider":object, "blog":object}
-                        ];
+    [
+        {provider, blog}
+        {provider, blog}
+    ]
  ]
  */
 
@@ -47,16 +47,19 @@ GroupDb.prototype.saveFile = function () {
 GroupDb.prototype.findGroupByBlogInfo = function (provider_name, blog_id)  {
     var new_groups = [];
     var i = 0;
+
+    log.debug(this.groups);
+
     for ( i=0; i<this.groups.length; i++) {
         var group = this.groups[i];
         var j = 0;
         var foundIt = false;
-
-        for (j=0; j<group.blogs.length; j++) {
-            var blog = group.blogs[j];
-
-            if ( blog.provider.providerName === provider_name
-                && blog.blog.blog_id === blog_id) {
+        log.debug(group);
+        for (j=0; j<group.length; j++) {
+            var blog = group[j].blog;
+            var provider = group[j].provider;
+            if ( provider.providerName === provider_name
+                && blog.blog_id == blog_id) {
                 foundIt = true;
                 break;
             }
@@ -65,7 +68,9 @@ GroupDb.prototype.findGroupByBlogInfo = function (provider_name, blog_id)  {
             new_groups.push(group);
         }
     }
-
+    if (new_groups.length === 0) {
+        log.error("Fail to find group p="+provider_name+" b="+blog_id);
+    }
     return new_groups;
 };
 
