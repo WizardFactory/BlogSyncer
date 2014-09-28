@@ -83,10 +83,8 @@ BlogBot.send_post_to_blogs = function (user, recv_posts) {
             else {
                 log.info('send_post_to_blogs: post id='+post.id+' to provider='+provider.providerName+
                                 ' blog='+targetBlog.blog_id);
-                process.nextTick(function () {
-                    BlogBot.request_post_content(user, post, provider.providerName, targetBlog.blog_id,
-                                BlogBot.add_postinfo_to_db);
-                });
+                BlogBot.request_post_content(user, post, provider.providerName, targetBlog.blog_id,
+                        BlogBot.add_postinfo_to_db);
             }
         }
     }
@@ -100,20 +98,21 @@ BlogBot.push_posts_to_blogs = function(user, recv_posts) {
     }
 
     var postDb = BlogBot.findPostDbByUser(user);
+
 //TODO: if post count over max it need to extra update - aleckim
     for(var i=0; i<recv_posts.posts.length;i++) {
         var new_post = recv_posts.posts[i];
         if (postDb.find_post_by_post_id_of_blog(recv_posts.provider_name, recv_posts.blog_id, new_post.id)) {
             log.debug('this post was already saved - provider ' + recv_posts.provider_name + ' blog ' +
                             recv_posts.blog_id + ' post ' + new_post.id);
+            continue;
         }
-        else {
-            BlogBot._makeTitle(new_post);
-            postDb.add_post(recv_posts.provider_name, recv_posts.blog_id, new_post);
-            BlogBot.request_get_posts(user, recv_posts.provider_name, recv_posts.blog_id, {"post_id":new_post.id},
-                            BlogBot.send_post_to_blogs);
-            //push post to others blog and add_postinfo
-        }
+
+        BlogBot._makeTitle(new_post);
+        postDb.add_post(recv_posts.provider_name, recv_posts.blog_id, new_post);
+        BlogBot.request_get_posts(user, recv_posts.provider_name, recv_posts.blog_id, {"post_id":new_post.id},
+            BlogBot.send_post_to_blogs);
+        //push post to others blog and add_postinfo
     }
 };
 
@@ -280,7 +279,7 @@ BlogBot.add_postinfo_to_db = function (user, recv_posts) {
     var post = postDb.find_post_by_title(recv_posts.posts[0].title);
 
     if (post == undefined) {
-        log.error('Fail to found post XXXX');
+        log.error("Fail to found post by title"+recv_posts.posts[0].title);
         return;
     }
 
@@ -529,7 +528,7 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "userid=" + user.id;
 
     //send_data title, content, tags, categories
-    if (post.title === undefined) {
+    if (post.title == undefined) {
         BlogBot._makeTitle(post);
     }
 

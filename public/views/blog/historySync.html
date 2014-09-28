@@ -1,6 +1,16 @@
 <div>
-    {{ title }}
-</div>
-<div>
-    {{ histories }}
+    <h1 class="cover-heading">{{ title }}</h1>
+    <p class="lead">histories : {{ histories.length }}</p>
+
+    <div  class="container marketing" ng-repeat="history in histories">
+        <hr class="featurette-divider">
+        <div class="row featurette">
+            <h2 class="featurette-heading">{{ history.tryTime.toString() }}<span class="text-muted">{{ history.src.title }}</span></h2>
+            <p class="lead" >{{ history.status }}  :
+                <span>{{ history.src.url }}</span> -->
+                <span>{{ history.dst.url }}</span>
+            </p>
+
+        </div>
+    </div>
 </div>
