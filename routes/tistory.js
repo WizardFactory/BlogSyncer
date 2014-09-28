@@ -92,7 +92,7 @@ function _checkError(err, response, body) {
     }
     if (response.statusCode >= 400) {
         var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        var errStr = 'tistory API error: ' + response.statusCode + ' ' + err;
         log.debug(errStr);
         return new Error(errStr);
     }
@@ -264,7 +264,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id', function (req, res) {
 
-    log.debug(req.url);
+    //log.debug("tistory: "+ req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -299,7 +299,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
     api_url += "&output=json";
 
-    log.debug(api_url);
+    //log.debug(api_url);
 
     request.get(api_url, function (err, response, body) {
         var hasError = _checkError(err, response, body);
@@ -307,7 +307,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             res.send(hasError);
             return;
         }
-        log.debug(body);
+        //log.debug(body);
         var item = JSON.parse(body).tistory.item;
 
         var send_data = {};
@@ -323,7 +323,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         else {
            recv_post_count =  item.posts.post.length;
         }
-        log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
+        //log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
 
         for (var i = 0; i<recv_post_count; i++) {
             var raw_post = {};
@@ -419,7 +419,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    log.debug(req.url);
+    //log.debug(req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -444,7 +444,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         new_post.title =  req.body.title;
     }
     else {
-       log.debug("Fail to get title");
+       log.error("Fail to get title");
        res.send("Fail to get title");
        return;
     }
@@ -462,10 +462,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
     new_post.output = "json";
 
-    log.debug(api_url);
-    log.debug(new_post);
-
-    request.post(api_url,{
+    request.post(api_url, {
         form: new_post
     }, function (err, response, body) {
         var hasError = _checkError(err, response, body);
@@ -474,7 +471,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return;
         }
 
-        //log.debug(data);
+        //log.debug(body);
         var item = JSON.parse(body).tistory;
 
         var send_data = {};
@@ -528,7 +525,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             res.send(hasError);
             return;
         }
-        log.debug(body);
+        //log.debug(body);
         var item = JSON.parse(body).tistory.item;
         var send = {};
         send.providerName = p.providerName;

@@ -54,9 +54,12 @@ BlogBot.findGroupDbByUser = function(user) {
             return this.users[i].groupDb;
         }
     }
+
+    log.error("Fail to find group db by user");
 };
 
 BlogBot.send_post_to_blogs = function (user, recv_posts) {
+
     if (recv_posts === undefined)  {
         log.debug("Fail to get recv_posts");
         return;
@@ -69,17 +72,21 @@ BlogBot.send_post_to_blogs = function (user, recv_posts) {
     var groups = groupDb.findGroupByBlogInfo(provider_name, blog_id);
 
     for (var i = 0; i < groups.length; i++) {
-        for (var j = 0; j < groups[i].blogs.length; j++) {
-            var targetBlog = groups[i].blogs[j];
-            if (targetBlog.blog_id == blog_id && targetBlog.provider.providerName == provider_name) {
+        var group = groups[i];
+        for (var j = 0; j < group.length; j++) {
+            var targetBlog = group[j].blog;
+            var provider = group[j].provider;
+            if (targetBlog.blog_id == blog_id && provider.providerName == provider_name) {
                 log.debug('send_post_to_blogs: skip current blog id='+blog_id+' provider='+provider_name);
                 //skip current blog
             }
             else {
-                log.debug('send_post_to_blogs: post id='+post.id+' to provider='+targetBlog.provider.providerName+
+                log.info('send_post_to_blogs: post id='+post.id+' to provider='+provider.providerName+
                                 ' blog='+targetBlog.blog_id);
-                BlogBot.request_post_content(user, post, targetBlog.provider.providerName, targetBlog.blog_id,
+                process.nextTick(function () {
+                    BlogBot.request_post_content(user, post, provider.providerName, targetBlog.blog_id,
                                 BlogBot.add_postinfo_to_db);
+                });
             }
         }
     }
@@ -138,7 +145,7 @@ BlogBot.task = function() {
 //    post.content = "it is for test of justwapps";
 //    post.tags = "justwapps, api";
 //    post.categories ="development";
-//    BlogBot.request_post_content(this.users[0].user, post, "tumblr", "kimalec", BlogBot.add_postinfo_to_db);
+//    BlogBot.request_post_content(this.users[0].user, post, "tistory", "aleckim", BlogBot.add_postinfo_to_db);
 };
 
 BlogBot.start = function (user) {
@@ -252,25 +259,33 @@ BlogBot.getGroups = function(user) {
 };
 
 BlogBot.add_postinfo_to_db = function (user, recv_posts) {
-    if (recv_posts === undefined) {
-        log.debug("Fail to get recv_posts");
+    if (recv_posts == undefined) {
+        log.error("Fail to get recv_posts");
         return;
     }
 
     var postDb = BlogBot.findPostDbByUser(user);
 
-    if (recv_posts.posts[0].title !== undefined) {
-        var post = postDb.find_post_by_title(recv_posts.posts[0].title);
-        if (post) {
-            postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[0]);
-        }
-        else {
-            log.debug('Fail to found post');
-        }
+    if (recv_posts.posts == undefined) {
+        log.error("BlogBot.add_postinfo_to_db: Broken posts");
+        return;
     }
-    else {
+
+    if (recv_posts.posts[0].title == undefined) {
+        log.error("Fail to find title !!");
         //TODO content 및 다른 것으로 찾아서 넣는다.
+        return;
     }
+
+    var post = postDb.find_post_by_title(recv_posts.posts[0].title);
+
+    if (post == undefined) {
+        log.error('Fail to found post XXXX');
+        return;
+    }
+
+    postDb.add_postinfo(post, recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[0]);
+    log.info("postDb.add_postinfo !!! ");
 };
 
 BlogBot.add_posts_to_db = function(user, recv_posts) {
@@ -364,8 +379,8 @@ function _checkError(err, response, body) {
     }
     if (response.statusCode >= 400) {
         var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
-        log.debug(errStr);
+        var errStr = 'blogbot API error: ' + response.statusCode + ' ' + err;
+        log.error(errStr);
         return new Error(errStr);
     }
 };
@@ -463,19 +478,19 @@ BlogBot.getHistorys = function (socket, user) {
 
     var historyDb = BlogBot.findHistoryDbByUser(user);
 
-    log.debug('BlogBot.getHistories : userId='+ user.id);
-    if (historyDb === undefined) {
-        log.debug('Fail to find historyDb of userId='+user.id);
+    if (historyDb == undefined) {
+        log.error('Fail to find historyDb of userId='+user.id);
         socket.emit('histories', {"histories":[]});
         return;
     }
 
-    log.debug('histories length='+historyDb.histories.length);
+    log.info('histories length='+historyDb.histories.length);
     socket.emit('histories', {"histories":historyDb.histories});
 };
 
 BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
     var historyDb = BlogBot.findHistoryDbByUser(user);
+    log.debug('BlogBot.addHistory : userId='+ user.id);
     historyDb.addHistory(srcPost, postStatus, dstPost);
 };
 
@@ -529,11 +544,16 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
         }
 
         //add post info
-        log.debug(body);
+        //log.debug(body);
         var recv_posts = JSON.parse(body);
         callback(user, recv_posts);
 
-        BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
+        if (recv_posts.posts == undefined) {
+            BlogBot.addHistory(user, post, response.statusCode);
+        }
+        else {
+            BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
+        }
         //add success to history
     });
 

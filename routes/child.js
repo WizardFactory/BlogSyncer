@@ -73,7 +73,7 @@ process.on('message', function (m, server) {
         }
         blogBot.start(m.user);
         //log.debug(this);
-        this.intarval = setInterval(send_run_event, 1000*60, this); //1 min
+        this.intarval = setInterval(send_run_event, 1000*30, this); //1 min
     }
     else if (m.msg === 'stop') {
         blogBot.stop(m.user);

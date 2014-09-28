@@ -232,7 +232,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
  });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    log.debug("Wordpress: "+ req.url + ' : this is called by bot');
+    //log.debug("Wordpress: "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -263,7 +263,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         api_url += "after=" + after;
     }
 
-    log.debug(api_url);
+    //log.debug(api_url);
 
     request.get(api_url, {
         json: true,
