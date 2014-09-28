@@ -114,11 +114,24 @@ postdb.prototype.find_post_by_id = function(post_id) {
     return null;
 };
 
+postdb.prototype.get_post_by_post_id_of_blog = function(provider_name, blog_id, post_id) {
+
+    for (var i = 0; i<this.posts.length; i++) {
+        var infos = this.posts[i].infos;
+        for (var j = 0; j<infos.length; j++) {
+           if (infos[j].provider_name == provider_name
+                    && infos[j].blog_id == blog_id
+                    && infos[j].post_id == post_id) {
+               log.debug('posts index=' + i + ' infos index='+j);
+               return this.posts[i];
+           }
+        }
+    }
+};
+
 postdb.prototype.find_post_by_post_id_of_blog = function(provider_name, blog_id, post_id) {
 
     var foundit = false;
-
-    return foundit;
 
     for (var i = 0; i<this.posts.length; i++) {
         var infos = this.posts[i].infos;
