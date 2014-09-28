@@ -111,6 +111,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
     childio.emit('blog', {"msg":'getHistories',"user":user});
 
     childio.on('histories', function(data){
+        console.log(data);
         $scope.$apply(function () {
             $scope.histories = data.histories;
         });
@@ -186,7 +187,8 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             }
         }
         if (group.length > 0) {
-            //$scope.groups.push(group);
+            $scope.groups.push(group);
+            console.log(group);
             childio.emit('blog', {"msg":'addGroup', "user":$scope.user, "group":group});
         }
     }
