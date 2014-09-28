@@ -65,7 +65,7 @@ router.get('/authorized',
     }
 );
 
-getUserId = function (req, res) {
+function _getUserID(req, res) {
     var userid = 0;
 
     if (req.user) {
@@ -84,10 +84,23 @@ getUserId = function (req, res) {
     }
 
     return userid;
-};
+}
+
+function _checkError(err, response, body) {
+    if (err) {
+        console.log(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var err = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        console.log(errStr);
+        return new Error(errStr);
+    }
+}
 
 router.get('/me', function (req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -111,7 +124,7 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/mystories', function (req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -137,7 +150,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     console.log(req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -174,7 +187,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     console.log(req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -196,7 +209,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
     console.log(req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -257,7 +270,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
     console.log(req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -310,7 +323,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     });
 });
 
-function convertToUrl(postId) {
+function _convertToURL(postId) {
     var indexOfDot = postId.indexOf(".");
     var str = postId.substring(0,indexOfDot);
     str += "/";
@@ -324,7 +337,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     console.log(req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         return;
     }
@@ -387,7 +400,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }
 
         send_post.id = raw_post.id;
-        send_post.url = "https://story.kakao.com" + "/" + convertToUrl(raw_post.id);
+        send_post.url = "https://story.kakao.com" + "/" + _convertToURL(raw_post.id);
         send_post.categories = [];
         send_post.tags = [];
         send_post.content = new_post.content;
@@ -395,6 +408,57 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         send_data.posts.push(send_post);
         console.log(send_data);
         res.send(send_data);
+    });
+});
+
+
+router.get('/bot_comments/:blogID/:postID', function (req, res) {
+    console.log(req.url);
+
+    var user_id = _getUserID(req);
+    if (user_id == 0) {
+        return;
+    }
+
+    var blog_id = req.params.blogID;
+    var post_id = req.params.postID;
+    var p = userdb.findProvider(user_id, "kakao");
+
+    var api_url = KAKAO_API_URL+"/v1/api/story/mystory";
+    if (post_id) {
+        api_url += "?";
+        api_url += "id=" + post_id;
+    }
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
+        }
+        console.log(body);
+
+        var send = {};
+        send.providerName = "kakao";
+        send.blogID = blog_id;
+        send.postID = post_id;
+        send.found = body.comment_count;
+        send.comments = [];
+
+        for(var i=0; i<body.comment_count; i++) {
+            var comment = {};
+            comment.URL = body.url;
+            comment.content = body.comments[i].text;
+            send.comments.push(comment);
+        }
+        res.send(send);
     });
 });
 

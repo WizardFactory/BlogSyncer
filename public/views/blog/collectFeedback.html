@@ -6,7 +6,18 @@
         <p class="animate-repeat" ng-repeat="info in post.infos track by $index" align="left">
             {{ info.provider_name }} {{ info.blog_id }}
             <span ng-repeat="reply in info.replies track by $index">
-               {{ reply }}
+                <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
+                    <span ng-repeat="(key, value) in reply track by $index">
+                        {{ key }} : {{ value }}
+                    </span>
+                </span>
+            </span>
+            <br>
+            <span ng-repeat="comment in info.comments track by $index">
+                {{ comment.date }}
+                <span ng-bind-html="comment.content">
+                {{ comment.content }}
+                </span><br>
             </span>
         </p>
     </div>

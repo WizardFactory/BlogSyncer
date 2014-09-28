@@ -75,7 +75,7 @@ router.get('/authorized',
     }
 );
 
-getUserId = function (req) {
+ function _getUserID(req) {
     var userid = 0;
 
     if (req.user) {
@@ -88,10 +88,23 @@ getUserId = function (req) {
     }
 
     return userid;
-};
+}
+
+function _checkError(err, response, body) {
+    if (err) {
+        console.log(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var err = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        console.log(errStr);
+        return new Error(errStr);
+    }
+}
 
 router.get('/me', function (req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -107,9 +120,14 @@ router.get('/me', function (req, res) {
         headers: {
             "authorization": "Bearer " + p.accessToken
         }
-    }, function (err, response, data) {
-        console.log(data);
-        res.send(data);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
+        }
+        console.log(body);
+        res.send(body);
     });
 });
 
@@ -121,7 +139,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     console.log("Wordpress: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -147,20 +165,22 @@ router.get('/bot_bloglist', function (req, res) {
         headers: {
             "authorization": "Bearer " + p.accessToken
         }
-    }, function (err, response, data) {
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " + data.meta.msg;
-            console.log(err);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
         }
+
         //console.log(data);
-        var blog_id = data.ID;
-        var blog_title = data.name;
-        var blog_url = data.URL;
+        var blog_id = body.ID;
+        var blog_title = body.name;
+        var blog_url = body.URL;
         var send_data = {};
         send_data.provider = p;
         send_data.blogs = [];
         send_data.blogs.push({"blog_id":blog_id, "blog_title":blog_title, "blog_url":blog_url});
+
         /*
          { "provider":object, "blogs":
          [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
@@ -174,7 +194,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     console.log("Wordpress: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -194,17 +214,17 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         headers: {
             "authorization": "Bearer " + p.accessToken
         }
-    }, function (err, response, data) {
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " + data.meta.msg;
-            console.log(err);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
         }
         var send_data = {};
-        console.log(data.post_count);
+        console.log(body.post_count);
         send_data.provider_name = 'Wordpress';
-        send_data.blog_id = data.ID;
-        send_data.post_count = data.post_count;
+        send_data.blog_id = body.ID;
+        send_data.post_count = body.post_count;
         res.send(send_data);
     });
  });
@@ -212,7 +232,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 router.get('/bot_posts/:blog_id', function (req, res) {
     console.log("Wordpress: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -248,17 +268,17 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         headers: {
             "authorization": "Bearer " + p.accessToken
         }
-    }, function (err, response, data) {
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " ";
-            console.log(err);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
         }
         //console.log(data);
         //for (var i=0; i<data.posts.length;i++) {
         //    console.log('post_id='+data.posts[i].ID);
         //}
-        if (data.posts === undefined) {
+        if (body.posts === undefined) {
            console.log('Fail to get posts');
            res.send('Fail to get posts');
            return;
@@ -267,11 +287,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var send_data = {};
         send_data.provider_name = 'Wordpress';
         send_data.blog_id = blog_id;
-        send_data.post_count = data.posts.length;
+        send_data.post_count = body.posts.length;
         send_data.posts = [];
 
-        for (var i = 0; i<data.posts.length; i++) {
-            var raw_post = data.posts[i];
+        for (var i = 0; i<body.posts.length; i++) {
+            var raw_post = body.posts[i];
             var post_date = new Date(raw_post.modified);
             var after_date = new Date(after);
             if (post_date < after_date) {
@@ -315,7 +335,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     console.log("Wordpress: "+ req.url + ' : this is called by bot');
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -339,20 +359,20 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         headers: {
             "authorization": "Bearer " + p.accessToken
         }
-    }, function (err, response, data) {
-        //console.log(data);
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = " " + response.statusCode;
-            console.log(err);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
         }
+        //console.log(data);
         var send_data = {};
         send_data.provider_name = 'Wordpress';
         send_data.blog_id = blog_id;
         send_data.posts = [];
 
             var send_post = {};
-            var raw_post = data;
+            var raw_post = body;
             send_post.title = raw_post.title;
             send_post.modified = raw_post.modified;
             send_post.id = raw_post.ID;
@@ -392,7 +412,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     console.log('Wordpress ' + req.url);
 
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         console.log(errorMsg);
@@ -413,11 +433,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         },
         form: req.body
-    }, function (err, response, data) {
-        var _ref;
-        if (!err && ((_ref = response.statusCode) !== 200 && _ref !== 301)) {
-            err = "" + response.statusCode + " " ;
-            console.log(err);
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
         }
         //add post info
         var send_data = {};
@@ -426,7 +446,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         send_data.posts = [];
 
         var send_post = {};
-        var raw_post = data;
+        var raw_post = body;
         send_post.title = raw_post.title;
         send_post.modified = raw_post.modified;
         send_post.id = raw_post.ID;
@@ -461,6 +481,59 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     });
 
     return;
+});
+
+router.get('/bot_comments/:blogID/:postID', function (req, res) {
+    console.log(req.url);
+    var userID = _getUserID(req);
+    if (userID == 0) {
+        var errorMsg = 'You have to login first!';
+        console.log(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    var blogID = req.params.blogID;
+    var postID = req.params.postID;
+    var p = userdb.findProviderId(userID, blogID);
+
+    var api_url = WORDPRESS_API_URL+"/sites/"+blogID;
+    api_url += "/posts";
+    api_url += "/" + postID;
+    api_url += "/replies";
+
+    console.log(api_url);
+
+    request.get(api_url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + p.accessToken
+        }
+    }, function (err, response, body) {
+        var hasError = _checkError(err, response, body);
+        if (hasError !== undefined) {
+            res.send(hasError);
+            return;
+        }
+        console.log(body);
+        var send = {};
+        send.providerName = p.providerName;
+        send.blogID = blogID;
+        send.postID = postID;
+        send.found = body.found;
+        send.comments = [];
+        for(var i=0; i<body.found; i++) {
+            var comment = {};
+            comment.date = body.comments[i].date;
+            comment.URL = body.comments[i].short_URL;
+            comment.content = body.comments[i].content;
+            send.comments.push(comment);
+        }
+
+        res.send(send);
+    });
+
 });
 
 module.exports = router;

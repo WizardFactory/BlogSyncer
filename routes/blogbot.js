@@ -355,7 +355,7 @@ BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     return;
 };
 
-BlogBot._checkError = function(err, response, body) {
+function _checkError(err, response, body) {
     if (err) {
         console.log(err);
         return err;
@@ -378,7 +378,7 @@ BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callba
 
     console.log("url=" + url);
     request.get(url, function (err, response, body) {
-        var hasError = BlogBot._checkError(err, response, body);
+        var hasError = _checkError(err, response, body);
 
         if (hasError !== undefined) {
             callback(hasError);
@@ -403,7 +403,7 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
 
     console.log("url="+url);
     request.get(url, function (err, response, body) {
-        var hasError = BlogBot._checkError(err, response, body);
+        var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             callback(hasError);
             return;
@@ -443,7 +443,7 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
 
     console.log(url);
     request.get(url, function (err, response, body) {
-        var hasError = BlogBot._checkError(err, response, body);
+        var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             callback(hasError);
             return;
@@ -520,7 +520,7 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
 
     console.log('post='+url);
     request.post(url, opt, function (err, response, body) {
-        var hasError = BlogBot._checkError(err, response, body);
+        var hasError = _checkError(err, response, body);
         if (hasError !== undefined) {
             callback(hasError);
             return;
@@ -558,7 +558,7 @@ BlogBot.getPosts = function (socket, user) {
 //    url = url + "&providerid=" + p.providerId;
 //    console.log("url="+url);
 //    request.get(url, function (err, response, body) {
-//      var hasError = BlogBot._checkError(err, response, body);
+//      var hasError = _checkError(err, response, body);
 //      if (hasError !== undefined) {
 //        callback(hasError);
 //        return;
@@ -608,9 +608,9 @@ BlogBot.get_reply_count = function (socket, user, post_id) {
                         {"post_id":post.infos[i].post_id}, function (user, recv_posts) {
             var recv_post = recv_posts.posts[0];
             var send_data = {};
-            send_data.post_id = post_id;
-            send_data.provider_name = recv_posts.provider_name;
-            send_data.blog_id = recv_posts.blog_id;
+            send_data.providerName = recv_posts.provider_name;
+            send_data.blogID = recv_posts.blog_id;
+            send_data.postID = recv_post.id;
             send_data.replies = recv_post.replies;
             //console.log(send_data);
             socket.emit('reply_count', send_data);

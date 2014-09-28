@@ -242,6 +242,34 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
     //set/get Child port is not working now.
     $scope.child_port = 20149;
     $scope.posts = [];
+    $scope.getReplyContent = function (providerName, blogID, postID) {
+       //window.alert("getReplyContent = " + providerName + blogID + postID);
+       var url = providerName + "/bot_comments/" + blogID + "/" + postID;
+       $http.get(url)
+                .success(function (data) {
+                    var indexes = _getPost(data.providerName, data.blogID, data.postID);
+                    console.log("postIndex="+indexes.postIndex+" infoIndex="+indexes.postIndex);
+                    console.log(data.comments);
+                    $scope.posts[indexes.postIndex].infos[indexes.infoIndex].comments = data.comments;
+                })
+                .error(function (data) {
+                    window.alert('Error: ' + data);
+                });
+    };
+
+    function _getPost(providerName, blogID, postID) {
+        for (var i = 0; i<$scope.posts.length; i++) {
+            for (var j=0; j<$scope.posts[i].infos.length; j++) {
+                var info = $scope.posts[i].infos[j];
+                console.log(info);
+                if (info.provider_name === providerName && info.blog_id === blogID
+                            && info.post_id == postID.toString()) {
+                    return {"postIndex":i, "infoIndex":j};
+                }
+            }
+        }
+        console.log("Fail to find post of provider="+providerName+",blog="+blogID+",postID"+postID);
+    };
 
     function init() {
     	var user = $scope.user;
@@ -277,25 +305,14 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
         childio.on('reply_count', function(data) {
             console.log('reply_count');
             console.log(data);
-            for (var i = 0; i<$scope.posts.length; i++) {
-                if ($scope.posts[i].id !== data.post_id) {
-                    continue;
-                }
 
-                for (var j=0; j<$scope.posts[i].infos.length; j++) {
-                    var info = $scope.posts[i].infos[j];
+            var indexes = _getPost(data.providerName, data.blogID, data.postID);
 
-                    if (info.provider_name === data.provider_name && info.blog_id === data.blog_id) {
-                        $scope.$apply(function () {
-                            console.log('provider='+info.provider_name+' blog='+info.blog_id+
-                                ' add comment_count, like_count');
-                            $scope.posts[i].infos[j].replies = data.replies;
-                        });
-                        break;
-                    }
-                }
-                break;
-            }
+            $scope.$apply(function () {
+                console.log('provider='+data.provider_name+' blog='+data.blog_id+
+                    ' add comment_count, like_count');
+                $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
+            });
         });
 
 //        // About blogCollectFeedback
