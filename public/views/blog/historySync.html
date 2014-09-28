@@ -5,12 +5,16 @@
     <div  class="container marketing" ng-repeat="history in histories">
         <hr class="featurette-divider">
         <div class="row featurette">
-            <h2 class="featurette-heading">{{ history.tryTime.toString() }}<span class="text-muted">{{ history.src.title }}</span></h2>
-            <p class="lead" >{{ history.status }}  :
-                <span>{{ history.src.url }}</span> -->
+            <h2 class="featurette-heading" style="font-size: 22px">
+                [{{ history.tryTime.toString() }}]&nbsp;
+                <span class="text-muted" style="font-size: 25px"> {{ history.src.title }}</span></h2>
+            <p class="lead"  style="font-size: 16px;">{{ history.status }}  :
+                <span>{{ history.src.url }}</span> →
                 <span>{{ history.dst.url }}</span>
             </p>
 
         </div>
     </div>
 </div>
+
+<hr class="featurette-divider">
