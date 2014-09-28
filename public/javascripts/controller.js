@@ -3,7 +3,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
 
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
-    $scope.signstat = 'Sign in';
+    $scope.signstat = '로그인';
 
     // add DropDown Blog
     $scope.options = [
@@ -26,7 +26,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
                     else {
                         var user = data;
                         User.setUser(user);
-                        $scope.signstat = 'My account';
+                        $scope.signstat = "내계정";
                         $scope.username = user.providers[0].displayName;
                         console.log('Change username, signstat');
                     }
@@ -130,7 +130,6 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     $scope.child_port = User.getChildPort();
     //set/get Child port is not working now.
     $scope.child_port = 20149;
-
 
     var childio;
 

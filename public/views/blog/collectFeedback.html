@@ -1,24 +1,29 @@
 <div>
     <h1 class="cover-heading">모아보기</h1>
     <p class="lead">posts : {{ posts.length }}</p>
-    <div class="animate-repeat" ng-repeat="post in posts">
-        <h3 align="left">{{ post.title }}</h3>
-        <p class="animate-repeat" ng-repeat="info in post.infos track by $index" align="left">
-            {{ info.provider_name }} {{ info.blog_id }}
-            <span ng-repeat="reply in info.replies track by $index">
-                <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
-                    <span ng-repeat="(key, value) in reply track by $index">
-                        {{ key }} : {{ value }}
+    <div  class="container marketing" ng-repeat="post in posts">
+        <hr class="featurette-divider">
+        <div class="row featurette">
+            <div class="col-md-10">
+                <h2 class="featurette-heading">{{ post.title }}</h2>
+                <p class="lead" ng-repeat="info in post.infos track by $index" align="left">
+                    {{ info.provider_name }}: {{ info.blog_id }}
+                    <span ng-repeat="reply in info.replies track by $index">
+                        <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
+                            <span ng-repeat="(key, value) in reply track by $index">
+                                {{ key }} : {{ value }}
+                            </span>
+                        </span>
                     </span>
-                </span>
-            </span>
-            <br>
-            <span ng-repeat="comment in info.comments track by $index">
-                {{ comment.date }}
-                <span ng-bind-html="comment.content">
-                {{ comment.content }}
-                </span><br>
-            </span>
-        </p>
+                    <br>
+                    <span ng-repeat="comment in info.comments track by $index">
+                        {{ comment.date }}
+                        <span ng-bind-html="comment.content">
+                        {{ comment.content }}
+                        </span><br>
+                    </span>
+                </p>
+            </div>
+        </div>
     </div>
 </div>
