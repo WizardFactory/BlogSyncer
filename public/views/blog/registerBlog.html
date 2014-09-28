@@ -4,10 +4,16 @@
         <div style="padding:10px;">
             <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
         </div>
-        <div class="button-parent" style="margin:10px; padding:10px; background-color: darkgray;" ng-repeat="group in groups track by $index">
-            <a class="button {{site.provider.providerName}}-normal" ng-repeat="site in group" ng-click="onClickGroup($parent.$index, $index);">
+        <div class="btn btn-lg btn-default" style="margin:10px; padding:10px;" ng-repeat="group in groups track by $index"
+             style="font-size: 16px;
+                margin-bottom: 5px;
+                border-radius: 3px;
+                display: block;
+                text-align: left">
+            <a ng-repeat="site in group" ng-click="onClickGroup($parent.$index, $index);">
                 <img src="https://cdn2.iconfinder.com/data/icons/freecns-cumulus/16/519692-200_CircledMinus-128.png" width="16px" height="16px" ng-show="button[0]==='Confirm'"/>
-                {{site.provider.providerName}} : {{site.blog.blog_id}}
+                <img ng-src="views/imgs/{{site.provider.providerName}}.png" width="38" height="38">&nbsp;&nbsp;
+                {{site.provider.providerName}} : {{site.blog.blog_id}}&nbsp;&nbsp;
             </a>
         </div>
         <div style="padding:10px;">
@@ -17,7 +23,13 @@
             </a>
         </div>
         <div style="padding:10px;" ng-if="button[1]==='Register'">
-            <a class="button {{site.provider.providerName}}-{{selected[$index]}}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
+            <a class="btn btn-lg btn-default" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index"
+               style="font-size: 16px;
+                margin-bottom: 5px;
+                border-radius: 3px;
+                display: block;
+                text-align: left">
+                <img ng-src="views/imgs/{{site.provider.providerName}}.png" width="38" height="38">&nbsp;&nbsp;
                 {{site.provider.providerName}} : {{site.blog.blog_id}}
             </a>
         </div>

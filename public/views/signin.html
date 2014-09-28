@@ -14,13 +14,27 @@
     <h2 class="form-signin-heading">{{ message }}</h2>
     <div align="left">
         <div style="padding:10px;">
-            <a class="button {{ provider.providerName }}-normal" ng-repeat="provider in user.providers">{{ provider.providerName }} : {{provider.displayName}}</a>
+            <p class="btn btn-lg btn-default" ng-repeat="provider in user.providers"
+               style="font-size: 16px;
+                margin-bottom: 5px;
+                border-radius: 3px;
+                display: block;
+                text-align: left">
+                <img ng-src="views/imgs/{{ provider.providerName }}.png" width="38" height="38">&nbsp;&nbsp;
+                {{ provider.providerName }} : {{provider.displayName}}</p>
         </div>
         <div ng-if="user.id" style="padding:10px;">
             <a href="/logout">Logout</a>
         </div>
         <div style="padding:10px;">
-            <a class="button {{ provider }}-normal" ng-href="/{{ provider }}/authorize" ng-repeat="provider in providers">Sign in with {{ provider }}</a>
+            <a class="btn btn-lg btn-default" ng-href="/{{ provider }}/authorize" ng-repeat="provider in providers"
+                style="font-size: 16px;
+                margin-bottom: 5px;
+                border-radius: 3px;
+                display: block;
+                text-align: left">
+                <img ng-src="views/imgs/{{ provider }}.png" width="38" height="38">&nbsp;&nbsp;
+                {{ provider }}</a>
         </div>
     </div>
 </div>

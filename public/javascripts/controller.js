@@ -3,7 +3,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
 
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
-    $scope.signstat = 'Sign in';
+    $scope.signstat = '로그인';
 
     // add DropDown Blog
     $scope.options = [
@@ -26,7 +26,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
                     else {
                         var user = data;
                         User.setUser(user);
-                        $scope.signstat = 'My account';
+                        $scope.signstat = "내계정";
                         $scope.username = user.providers[0].displayName;
                         console.log('Change username, signstat');
                     }
@@ -130,6 +130,8 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     //set/get Child port is not working now.
     $scope.child_port = 20149;
 
+    var childio;
+
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
             if ($scope.groups.length > 0) {
@@ -184,7 +186,8 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             }
         }
         if (group.length > 0) {
-            $scope.groups.push(group);
+            //$scope.groups.push(group);
+            childio.emit('blog', {"msg":'addGroup', "user":$scope.user, "group":group});
         }
     }
 
@@ -196,7 +199,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         }
 
         var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-        var childio = io.connect(child_url);
+        childio = io.connect(child_url);
         console.log('child_url='+child_url);
 
         if (childio.connected === true) {
