@@ -143,7 +143,7 @@ router.get('/mystories', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        log.debug(data);
+        //log.debug(data);
         res.send(data);
     });
 });
@@ -169,7 +169,7 @@ router.get('/bot_bloglist', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        log.debug(data);
+        //log.debug(data);
         var nickname = data.properties.nickname;
         var blog_url = "stroy.kakao.com/" + nickname;
         var send_data = {};
@@ -235,22 +235,23 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             "authorization": "Bearer " + p.accessToken
         }
     }, function (err, response, data) {
-        log.debug(data);
+        //log.debug(data);
 
         var send_data = {};
         send_data.provider_name = 'kakao';
         send_data.blog_id = blog_id;
-        send_data.post_count = data.length;
         send_data.posts = [];
 
         for (var i = 0; i<data.length; i++) {
             var raw_post = data[i];
-            var post_date = new Date(raw_post.created_at);
-            var after_date = new Date(after);
+            if (after !== undefined) {
+                var post_date = new Date(raw_post.created_at);
+                var after_date = new Date(after);
 
-            if (post_date < after_date) {
-                //log.debug('post is before');
-                continue;
+                if (post_date < after_date) {
+                    //log.debug('post is before');
+                    continue;
+                }
             }
 
             var send_post = {};
@@ -264,6 +265,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             send_data.posts.push(send_post);
         }
+        send_data.post_count = send_data.posts.length;
         res.send(send_data);
     });
 });
@@ -296,7 +298,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         }
     }, function (err, response, data) {
 
-        log.debug(data);
+        //log.debug(data);
 
         var send_data = {};
         send_data.provider_name = 'kakao';

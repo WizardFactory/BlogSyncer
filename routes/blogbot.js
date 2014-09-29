@@ -120,12 +120,20 @@ BlogBot.getAndPush = function(user) {
     log.debug("start get blog of user" + user.id);
     var blogDb = BlogBot.findBlogDbByUser(user);
     var postDb = BlogBot.findPostDbByUser(user);
+    var groupDb = BlogBot.findGroupDbByUser(user);
     var sites = blogDb.sites;
     var after = postDb.lastUpdateTime.toISOString();
-    log.debug(after);
+    //log.debug(after);
 
     for (var i = 0; i < sites.length; i++) {
         for (var j = 0; j < sites[i].blogs.length; j++) {
+            //if this blog was not grouped pass
+            var groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
+            if (groups.length === 0) {
+               log.info("It has not group user="+user.id+" provider="+sites[i].provider.providerName +
+                        " blog="+sites[i].blogs[j].blog_id);
+               continue;
+            }
             BlogBot.request_get_posts(user, sites[i].provider.providerName, sites[i].blogs[j].blog_id,
                             {"after":after}, BlogBot.push_posts_to_blogs);
         }
@@ -299,7 +307,11 @@ BlogBot.add_posts_to_db = function(user, recv_posts) {
 
     //TODO: change from title to id
     for(var i = 0; i<recv_posts.posts.length;i++) {
-        if (recv_posts.posts[i].title !== undefined) {
+
+        BlogBot._makeTitle(recv_posts.posts[i]);
+        //log.debug(recv_posts.posts[i]);
+
+        if (recv_posts.posts[i].title != undefined) {
             var post = postDb.find_post_by_title(recv_posts.posts[i].title);
 
             //log.debug(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
@@ -494,21 +506,34 @@ BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
 };
 
 BlogBot._makeTitle = function (post) {
-     if (post.content !== undefined && post.content.length != 0) {
 
-        var indexNewLine = post.content.indexOf("\n");
-
-        if (indexNewLine < 30) {
-            post.title = post.content.substr(0, indexNewLine);
+    if (post.title !== undefined) {
+        if (post.title.length > 0) {
             return;
         }
+    }
 
-        if (post.content.length < 30) {
-            post.title = post.content;
-            return;
+    if (post.content !== undefined && post.content.length > 0) {
+
+        var indexNewLine = 0;
+
+        indexNewLine= post.content.indexOf("\n");
+        log.error("indexNewLine="+indexNewLine);
+        if (indexNewLine > 0) {
+            if (indexNewLine < 30) {
+                post.title = post.content.substr(0, indexNewLine);
+            }
+            else {
+                post.title = post.content.substr(0, 27);
+            }
+        }
+        else if (post.content.length < 30) {
+           post.title = post.content;
+        }
+        else {
+            post.title = post.content.substr(0,27);
         }
 
-        post.title = post.content.substr(0,27);
         return;
     }
 
@@ -517,7 +542,11 @@ BlogBot._makeTitle = function (post) {
         return;
     }
 
-    log.debug("Fail to make title!!!");
+    if (post.id) {
+        post.title = post.id;
+    }
+
+    log.error("Fail to make title!!!");
 };
 
 BlogBot.request_post_content = function (user, post, provider_name, blog_id, callback) {
@@ -528,9 +557,9 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "userid=" + user.id;
 
     //send_data title, content, tags, categories
-    if (post.title == undefined) {
-        BlogBot._makeTitle(post);
-    }
+//    if (post.title == undefined) {
+//        BlogBot._makeTitle(post);
+//    }
 
     var opt = { form: post };
 
