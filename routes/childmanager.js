@@ -79,7 +79,13 @@ childmanager.sendMessage = function(user, message) {
                 break;
             }
         }
+        //if it's found child stop for to finding process
+        if (child) {
+            break;
+        }
     }
+
+    log.debug("i="+i+" len="+len);
 
     if (i == len) {
         var msg = 'Fail to find process of userid='+user.id;
