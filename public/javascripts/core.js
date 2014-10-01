@@ -1,7 +1,7 @@
 /**
  * Created by aleckim on 2014. 5. 15..
  */
-var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize']);
+var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap']);
 
 // define service
 bs.factory('User', function () {

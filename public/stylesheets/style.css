@@ -6,3 +6,9 @@ body {
     min-height: 2000px;
     padding-top: 70px;
 }
+
+@media (min-width: 768px) {
+    .collapse.dis {
+        display: block;
+    }
+}
