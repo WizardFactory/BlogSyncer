@@ -4,6 +4,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = '로그인';
+    $scope.isCollapsed = true;
 
     // add DropDown Blog
     $scope.options = [
