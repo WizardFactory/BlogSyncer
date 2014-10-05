@@ -7,7 +7,7 @@ var userdb = require('../models/userdb');
 var express = require('express');
 var passport = require('passport');
 var TwitterStrategy = require('passport-twitter').Strategy;
-var childm = require('./childmanager');
+var blogBot = require('./blogbot');
 
 var router = express.Router();
 
@@ -43,7 +43,8 @@ passport.use(new TwitterStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
-        childm.sendMessage(user, 'findOrCreate');
+        blogBot.start(user);
+        blogBot.findOrCreate(user);
 
         process.nextTick(function () {
             return done(null, user);

@@ -29,22 +29,26 @@ open_child_socket = function (port) {
             }
             else if(data.msg == 'getPosts') {
                 log.debug('recv msg =' + data.msg);
-                blogBot.getPosts(socket, data.user);
+                var posts = blogBot.getPosts(data.user);
+                socket.emit('posts', {"post_db":posts});
             }
             else if(data.msg == 'getComments') {
                 log.debug('recv msg =' + data.msg + " postIDs = "+data.post_ids.length);
                 blogBot.getComments(socket, data.user, data.post_ids);
             }
-            else if(data.msg == 'get_reply_count') {
+            else if(data.msg == 'getReplies') {
                 log.debug('recv msg =' + data.msg + " post_ids = " + data.post_ids.length);
                 for (var i=0;i<data.post_ids.length;i++) {
                    log.debug('get reply count post_ids='+data.post_ids[i]);
-                   blogBot.get_reply_count(socket, data.user, data.post_ids[i]);
+                   blogBot.getReplies(data.user, data.post_ids[i], function (sendData) {
+                     socket.emit('replies', sendData);
+                   });
                 }
             }
             else if (data.msg == 'getHistories') {
                 log.debug('recv msg =' + data.msg);
-                blogBot.getHistorys(socket, data.user);
+                var histories = blogBot.getHistories(data.user);
+                socket.emit('histories', {"histories":histories});
             }
             else if (data.msg == 'addGroup') {
                 log.debug('recv msg =' + data.msg);

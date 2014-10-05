@@ -6,7 +6,7 @@ var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap'])
 // define service
 bs.factory('User', function () {
     var user= {};
-    var port = -1;
+//    var port = -1;
 
     return {
         getUser: function () {
@@ -14,16 +14,16 @@ bs.factory('User', function () {
         },
         setUser: function (usr) {
            user = usr;
-        },
-        getChildPort: function() {
-           console.log('getChildPort port='+port);
-           return port;
-        },
-        setChildPort: function(prt) {
-            console.log('setChildPort port='+prt);
-            port = prt;
-            console.log('port='+port);
         }
+//        getChildPort: function() {
+//           console.log('getChildPort port='+port);
+//           return port;
+//        },
+//        setChildPort: function(prt) {
+//            console.log('setChildPort port='+prt);
+//            port = prt;
+//            console.log('port='+port);
+//        }
     };
 });
 

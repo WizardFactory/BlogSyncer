@@ -8,7 +8,7 @@ var express = require('express');
 var passport = require('passport');
 var request = require('request');
 var FacebookStrategy = require('passport-facebook').Strategy;
-var childm = require('./childmanager');
+var blogBot = require('./blogbot');
 var router = express.Router();
 
 var svcConfig = require('../models/svcConfig.json');
@@ -46,7 +46,9 @@ passport.use(new FacebookStrategy({
         };
 
         var user = userdb.findOrCreate(req.user, provider);
-        childm.sendMessage(user, 'findOrCreate');
+
+        blogBot.start(user);
+        blogBot.findOrCreate(user);
 
         process.nextTick(function () {
             return done(null, user);

@@ -490,18 +490,17 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
     return;
 };
 
-BlogBot.getHistorys = function (socket, user) {
+BlogBot.getHistories = function (user) {
 
     var historyDb = BlogBot.findHistoryDbByUser(user);
-
+    var histories = [];
     if (historyDb == undefined) {
         log.error('Fail to find historyDb of userId='+user.id);
-        socket.emit('histories', {"histories":[]});
-        return;
+        return histories;
     }
 
     log.info('histories length='+historyDb.histories.length);
-    socket.emit('histories', {"histories":historyDb.histories});
+    return historyDb.histories;
 };
 
 BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
@@ -593,15 +592,14 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
 };
 
 /*****************************************************/
-BlogBot.getPosts = function (socket, user) {
+BlogBot.getPosts = function (user) {
 
     var postDb = BlogBot.findPostDbByUser(user);
-
+    var posts = [];
     log.debug('BlogBot.getPosts : userid='+ user.id);
     if (postDb === undefined) {
         log.debug('Fail to find postdb of user='+user.id);
-        socket.emit('posts', {"post_db":[]});
-        return;
+        return posts;
     }
 
     //var userID = this.user.id;
@@ -624,11 +622,10 @@ BlogBot.getPosts = function (socket, user) {
 //    });
 
     log.debug('posts length='+postDb.posts.length);
-    socket.emit('posts', {"post_db":postDb.posts});
-
-    return;
+    return postDb.posts;
 };
 
+//unused this functions
 BlogBot.getComments = function (socket, user, postID) {
     log.debug('BlogBot.getComments : '+ user.id);
     var userID = user.id;
@@ -652,9 +649,9 @@ BlogBot.getComments = function (socket, user, postID) {
     return;
 };
 
-BlogBot.get_reply_count = function (socket, user, post_id) {
+BlogBot.getReplies = function (user, postID, callback) {
     var postDb = BlogBot.findPostDbByUser(user);
-    var post = postDb.find_post_by_id(post_id);
+    var post = postDb.find_post_by_id(postID);
 
     for (var i=0; i<post.infos.length; i++) {
 
@@ -679,9 +676,39 @@ BlogBot.get_reply_count = function (socket, user, post_id) {
             send_data.postID = recv_post.id;
             send_data.replies = recv_post.replies;
             //log.debug(send_data);
-            socket.emit('reply_count', send_data);
+            callback(send_data);
         });
     }
+    return;
+};
+
+
+BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callback) {
+
+    BlogBot.request_get_posts(user, providerName, blogID,
+        {"post_id":postID},
+        function (user, recv_posts) {
+
+            if (recv_posts === undefined)  {
+                log.error("Fail to get recv_posts");
+                return;
+            }
+
+            if (recv_posts.posts === undefined)  {
+                log.error("Fail to get recv_posts.posts");
+                return;
+            }
+
+            var recv_post = recv_posts.posts[0];
+            var send_data = {};
+            send_data.providerName = recv_posts.provider_name;
+            send_data.blogID = recv_posts.blog_id;
+            send_data.postID = recv_post.id;
+            send_data.replies = recv_post.replies;
+            //log.debug(send_data);
+            callback(send_data);
+        });
+
     return;
 };
 

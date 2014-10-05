@@ -17,8 +17,6 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     console.log('Start mainCtrl');
 
     if (!$scope.user.id) {
-        var httpGet = function() {
-            var deferred = $q.defer();
             $http.get('/user')
                 .success(function (data) {
                     if (data == 'NAU') {
@@ -31,51 +29,10 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
                         $scope.username = user.providers[0].displayName;
                         console.log('Change username, signstat');
                     }
-                    deferred.resolve();
                 })
                 .error(function (data) {
                     window.alert('Error: ' + data);
                 });
-
-            return deferred.promise;
-        };
-
-        var firsttime_skip = 0;
-        httpGet()
-            .then(function () {
-                console.log('user id = '+ User.getUser().id);
-                if (User.getUser().id) {
-                    console.log('get_child_port');
-                    if (firsttime_skip) {
-                        $http.get('/user/child_port')
-                            .success(function (data) {
-                                console.log(User.getUser());
-                                console.log('recv child_port =' + data.child_port);
-                                User.setChildPort(data.child_port);
-                            })
-                            .error(function (data) {
-                                window.alert('Error: ' + data);
-                            });
-                    }
-                    else {
-                        firsttime_skip = 1;
-                    }
-                }
-                else {
-                    console.log('you have to signin~');
-                }
-            });
-    }
-    else
-    {
-        $http.get('/child_port')
-            .success(function (data) {
-                console.log('recv child_port =' + data.child_port);
-                return data;
-            })
-            .error(function (data) {
-                window.alert('Error: ' + data);
-            });
     }
 });
 
@@ -85,17 +42,11 @@ bs.controller('homeCtrl', function ($q, $scope, $http, User) {
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-    $scope.child_port = User.getChildPort();
-    //set/get Child port is not working now.
-    $scope.child_port = 20149;
     $scope.message = 'Your blog ctrl';
 });
 
 bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-    $scope.child_port = User.getChildPort();
-    //set/get Child port is not working now.
-    $scope.child_port = 20149;
     $scope.title = "Blog Sync Histories";
     $scope.histories = [];
 
@@ -105,18 +56,14 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
         console.log('you have to signin~');
     }
 
-    var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-    var childio = io.connect(child_url);
-    console.log('child_url='+child_url);
-
-    childio.emit('blog', {"msg":'getHistories',"user":user});
-
-    childio.on('histories', function(data){
-        console.log(data);
-        $scope.$apply(function () {
-            $scope.histories = data.histories;
+    $http.get('/blogs/histories')
+        .success(function (data) {
+           $scope.histories = data.histories;
+        })
+        .error(function (data) {
+            window.alert('Error: ' + data);
         });
-    });
+
 });
 
 
@@ -127,12 +74,6 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     $scope.groups = [];
     $scope.sites = [];
     $scope.selected = [];
-
-    $scope.child_port = User.getChildPort();
-    //set/get Child port is not working now.
-    $scope.child_port = 20149;
-
-    var childio;
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
@@ -190,7 +131,13 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         if (group.length > 0) {
             $scope.groups.push(group);
             console.log(group);
-            childio.emit('blog', {"msg":'addGroup', "user":$scope.user, "group":group});
+            $http.post("/blogs/group",{"group":group})
+                .success(function (data) {
+                    console.log(data);
+                })
+                .error(function (data) {
+                    window.alert('Error: ' + data);
+                });
         }
     }
 
@@ -201,38 +148,30 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             return;
         }
 
-        var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-        childio = io.connect(child_url);
-        console.log('child_url='+child_url);
-
-        if (childio.connected === true) {
-            childio.emit('blog', {"msg":'getSites', "user":user});
-            childio.emit('blog', {"msg":'getGroups', "user":user});
-        } else {
-            childio.on('connect', function () {
-                childio.emit('blog', {"msg":'getSites', "user":user});
-                childio.emit('blog', {"msg":'getGroups', "user":user});
-            });
-        }
-
-        childio.on('sites', function(data){
-            console.log(data);
-            $scope.$apply(function () {
+        console.log("init: blogs/sites");
+        $http.get("/blogs/sites")
+            .success(function (data) {
+                console.log(data);
                 for (var i = 0; i < data.sites.length; i += 1) {
                     for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
                         var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
                         $scope.sites.push(site);
                     }
                 }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
             });
-        });
 
-        childio.on('groups', function(data){
-            console.log(data);
-            $scope.$apply(function () {
+        console.log("init: blogs/groups");
+        $http.get("/blogs/groups")
+            .success(function (data) {
+                console.log(data);
                 $scope.groups = data.groups;
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
             });
-        });
 
         disselectAllBlog();
     }
@@ -243,16 +182,13 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
     $scope.message = 'Collect Feedback';
-
-    $scope.child_port = User.getChildPort();
-    //set/get Child port is not working now.
-    $scope.child_port = 20149;
     $scope.posts = [];
     $scope.getReplyContent = function (providerName, blogID, postID) {
        //window.alert("getReplyContent = " + providerName + blogID + postID);
        var url = providerName + "/bot_comments/" + blogID + "/" + postID;
        $http.get(url)
                 .success(function (data) {
+                    console.log(data);
                     var indexes = _getPost(data.providerName, data.blogID, data.postID);
                     console.log("postIndex="+indexes.postIndex+" infoIndex="+indexes.postIndex);
                     console.log(data.comments);
@@ -267,7 +203,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
         for (var i = 0; i<$scope.posts.length; i++) {
             for (var j=0; j<$scope.posts[i].infos.length; j++) {
                 var info = $scope.posts[i].infos[j];
-                console.log(info);
+                //console.log(info);
                 if (info.provider_name === providerName && info.blog_id === blogID
                             && info.post_id == postID.toString()) {
                     return {"postIndex":i, "infoIndex":j};
@@ -275,7 +211,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
             }
         }
         console.log("Fail to find post of provider="+providerName+",blog="+blogID+",postID"+postID);
-    };
+    }
 
     function init() {
     	var user = $scope.user;
@@ -284,56 +220,54 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
             return;
         }
 
-        var child_url = 'http://www.justwapps.com:'+ $scope.child_port +'/blog';
-        var childio = io.connect(child_url);
-        console.log('child_url='+child_url);
+        $http.get('/blogs/posts')
+            .success(function (data) {
+                var i;
+                var j;
+                console.log(data);
 
-        childio.emit('blog', {"msg":'getPosts',"user":user});
-        childio.on('connect', function(){
-            childio.emit('blog', {"msg":'getPosts',"user":user});
-        });
+                if (data.posts.length == 0) {
+                    console.log("posts is zero");
+                    return;
+                }
 
-        childio.on('posts', function(data){
-            var post_ids = [];
-            for (var i=0; i<data.post_db.length; i++) {
-                console.log('push post_id='+data.post_db[i].id);
-                post_ids.push(data.post_db[i].id);
-            }
-            var messages = {"msg":'get_reply_count',"user":user,"post_ids":post_ids};
-            console.log('send get_reply_count post_ids='+post_ids.length);
-            childio.emit('blog', messages );
+                $scope.posts = data.posts;
 
-            $scope.$apply(function () {
-                $scope.posts = data.post_db;
+                for (i=0; i<data.posts.length; i++) {
+                    var post = data.posts[i];
+
+                    console.log('push post_id=' + data.posts[i].id);
+
+                    for (j=0; j<post.infos.length; j++) {
+                        var url;
+
+                        url = "/blogs/replies";
+                        url += "/"+ post.infos[j].provider_name;
+                        url += "/"+ post.infos[j].blog_id;
+                        url += "/"+ post.infos[j].post_id;
+
+                        $http.get(url)
+                            .success(function (data) {
+                                var indexes;
+
+                                if (data == undefined) {
+                                    console.log("Fail to get data");
+                                    return;
+                                }
+
+                                indexes = _getPost(data.providerName, data.blogID, data.postID);
+                                console.log(indexes);
+                                $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
+                            })
+                            .error(function (data) {
+                                window.alert('Error: ' + data);
+                            });
+                    }
+                }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
             });
-        });
-
-        childio.on('reply_count', function(data) {
-            console.log('reply_count');
-            console.log(data);
-
-            var indexes = _getPost(data.providerName, data.blogID, data.postID);
-
-            $scope.$apply(function () {
-                console.log('provider='+data.provider_name+' blog='+data.blog_id+
-                    ' add comment_count, like_count');
-                $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
-            });
-        });
-
-//        // About blogCollectFeedback
-//        var postsID = 0;
-//        childio.on('connect', function(data){
-//            var messages = { "msg":'getComments', "user":user, "postID":postsID };
-//            childio.emit('blog', messages );
-//        });
-//        childio.on('comments', function(data){
-//            var comments = data.comments[0].content;
-//            $scope.$apply(function() {
-//                $scope.comments = comments;
-//            });
-//        });
-
     }
 
     init();
