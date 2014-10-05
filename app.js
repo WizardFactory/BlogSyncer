@@ -63,7 +63,7 @@ app.use('/tumblr', tumblr);
 app.use('/twitter', twitter);
 app.use('/Wordpress', Wordpress);
 app.use('/tistory', tistory);
-app.use('/blog', blogRoutes);
+app.use('/blogs', blogRoutes);
 
 app.use('/user', function (req, res) {
    if (!req.user) {
@@ -81,25 +81,11 @@ app.use('/logout', function (req, res) {
     res.redirect("/#");
 });
 
-var childm = require('./routes/childmanager');
+var blogBot = require('./routes/blogbot');
 
-app.route('/child_port')
-    .get(function (req, res) {
-        console.log('get child_port of user');
-
-        if (req.user) {
-            var port = childm.get_child_port(req.user);
-            console.log('route: child_port='+port);
-            res.send({'child_port':port});
-        }
-        else {
-            var errorMsg = 'You have to login first!';
-            console.log(errorMsg);
-            res.send(errorMsg);
-            res.redirect("/#/signin");
-        }
-    });
-
+setInterval(function() {
+    blogBot.task();
+}, 1000*60); //1 min
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
