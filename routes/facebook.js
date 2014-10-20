@@ -2,7 +2,8 @@
  * Created by aleckim on 2014. 7. 14..
  */
 
-var userdb = require('../models/userdb');
+// load up the user model
+var User       = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
@@ -45,14 +46,78 @@ passport.use(new FacebookStrategy({
             "displayName": profile.displayName
         };
 
-        var user = userdb.findOrCreate(req.user, provider);
+        if (req.user) {
+            User.findOne({'providers.providerName':provider.providerName
+                    , 'providers.providerId': provider.providerId},
+                function (err, user) {
 
-        blogBot.start(user);
-        blogBot.findOrCreate(user);
+                    if (err) {
+                        return done(err);
+                    }
 
-        process.nextTick(function () {
-            return done(null, user);
-        });
+                    // if there is a user id already but no token (user was linked at one point and then removed)
+                    if (user) {
+                        return done(null, user);
+                    }
+                    else {
+                        User.findById(req.user._id, function (err, user) {
+                            if (err) {
+                                log.error(err);
+                                return done(err);
+                            }
+                            if (!user) {
+                                log.error("Fail to get user id="+req.user._id);
+                                log.error(err);
+                                return done(err);
+                            }
+                            // if there is no provider, add to User
+                            user.providers.push(provider);
+                            user.save(function(err) {
+
+                                if (err) {
+                                    return done(err);
+                                }
+
+                                blogBot.findOrCreate(user);
+                                return done(null, user);
+                            });
+                        });
+                    }
+
+                } );
+        }
+        else {
+            User.findOne({'providers.providerName':provider.providerName,
+                    'providers.providerId': provider.providerId},
+                function (err, user) {
+
+                    if (err) {
+                        return done(err);
+                    }
+
+                    if (user) {
+                        log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
+                        blogBot.start(user);
+                        blogBot.findOrCreate(user);
+                        return done(null, user);
+                    }
+                    else {
+                        // if there is no provider, create new user
+                        var newUser = new User();
+                        newUser.providers = [];
+
+                        newUser.providers.push(provider);
+                        newUser.save(function(err) {
+                            if (err)
+                                return done(err);
+
+                            blogBot.start(newUser);
+                            blogBot.findOrCreate(newUser);
+                            return done(null, newUser);
+                        });
+                    }
+                } );
+        }
     }
 ));
 
@@ -73,7 +138,7 @@ getUserId = function (req) {
     var userid = 0;
 
     if (req.user) {
-        userid = req.user.id;
+        userid = req.user._id;
     }
     else if (req.query.userid)
     {
@@ -92,7 +157,7 @@ router.get('/me', function (req, res) {
         res.redirect("/#/signin");
     }
     else {
-        var p = userdb.findProvider(req.user.id, "facebook");
+        var p = userdb.findProvider(req.user._id, "facebook");
 
         var api_url = FACEBOOK_API_URL+"/me";
 

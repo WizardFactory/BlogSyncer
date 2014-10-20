@@ -5,7 +5,7 @@ var log         = require('winston');
 
 var API_WORDPRESS_COM = "https://public-api.wordpress.com/rest/v1";
 
-getUserId = function (req) {
+function _getUserID(req) {
     var userid = 0;
 
     if (req.user) {
@@ -18,10 +18,10 @@ getUserId = function (req) {
     }
 
     return userid;
-};
+}
 
 function getWPPosts(req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     log.debug(user_id);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
@@ -52,7 +52,7 @@ function getWPPosts(req, res) {
 }
 
 function getWPComments(req, res) {
-    var user_id = getUserId(req);
+    var user_id = _getUserID(req);
     if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);

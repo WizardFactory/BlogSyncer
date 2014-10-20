@@ -24,33 +24,43 @@ BlogBot.users = [];
 
 BlogBot.findBlogDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+        if (this.users[i].user._id == user._id) {
             return this.users[i].blogDb;
         }
     }
     log.debug('users='+this.users.length);
-    log.debug('Fail to find user '+user.id);
+    log.debug('Fail to find user '+user._id);
 };
 
 BlogBot.findPostDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].postDb;
         }
     }
+
+    log.error("Fail to find post db by user");
 };
 
 BlogBot.findHistoryDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].historyDb;
         }
     }
+
+    log.error("Fail to find history db by user");
 };
 
 BlogBot.findGroupDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].groupDb;
         }
     }
@@ -187,8 +197,8 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
                               {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
      */
 
-    if (recv_blogs === undefined) {
-        log.debug("Fail to get recv_blogs");
+    if (recv_blogs == undefined) {
+        log.debug("add_blogs_to_db Fail to get recv_blogs");
         return;
     }
 
@@ -196,8 +206,8 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     var blogs = recv_blogs.blogs;
     var blogDb = BlogBot.findBlogDbByUser(user);
 
-    if (blogDb === undefined) {
-        log.debug('add_blogs_to_db : Fail to find blogDb of user='+user.id);
+    if (blogDb == undefined) {
+        log.debug('add_blogs_to_db : Fail to find blogDb of user='+user._id);
         return;
     }
 
@@ -234,9 +244,11 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
 };
 
 BlogBot.findOrCreate = function (user) {
-    log.debug("find or create blog db of user " + user.id);
+    var i;
 
-    for (var i = 0; i < user.providers.length; i++)
+    log.debug("find or create blog db of user " + user._id);
+
+    for (i = 0; i < user.providers.length; i++)
     {
         var p = user.providers[i];
         BlogBot.request_get_bloglist(user, p.providerName, p.providerId, BlogBot.add_blogs_to_db);
@@ -401,13 +413,13 @@ function _checkError(err, response, body) {
     }
 };
 
-BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callback) {
-    var url = "http://www.justwapps.com/" + provider_name + "/bot_bloglist";
+BlogBot.request_get_bloglist = function(user, providerName, providerId, callback) {
+    var url = "http://www.justwapps.com/" + providerName + "/bot_bloglist";
     url += "?";
-    url += "providerid=" + provider_id;
+    url += "providerid=" + providerId;
     url += "&";
 
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug("url=" + url);
     request.get(url, function (err, response, body) {
@@ -432,7 +444,7 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
     var url = "http://www.justwapps.com/"+provider_name + "/bot_post_count/";
     url += blog_id;
     url += "?";
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug("url="+url);
     request.get(url, function (err, response, body) {
@@ -472,7 +484,7 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
         url += "&";
     }
 
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug(url);
     request.get(url, function (err, response, body) {
@@ -495,7 +507,7 @@ BlogBot.getHistories = function (user) {
     var historyDb = BlogBot.findHistoryDbByUser(user);
     var histories = [];
     if (historyDb == undefined) {
-        log.error('Fail to find historyDb of userId='+user.id);
+        log.error('Fail to find historyDb of userId='+user._id);
         return histories;
     }
 
@@ -505,7 +517,7 @@ BlogBot.getHistories = function (user) {
 
 BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
     var historyDb = BlogBot.findHistoryDbByUser(user);
-    log.debug('BlogBot.addHistory : userId='+ user.id);
+    log.debug('BlogBot.addHistory : userId='+ user._id);
     historyDb.addHistory(srcPost, postStatus, dstPost);
 };
 
@@ -557,7 +569,7 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "/new";
     url += "/"+encodeURIComponent(blog_id);
     url += "?";
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     //send_data title, content, tags, categories
 //    if (post.title == undefined) {
@@ -596,13 +608,13 @@ BlogBot.getPosts = function (user) {
 
     var postDb = BlogBot.findPostDbByUser(user);
     var posts = [];
-    log.debug('BlogBot.getPosts : userid='+ user.id);
+    log.debug('BlogBot.getPosts : userid='+ user._id);
     if (postDb === undefined) {
-        log.debug('Fail to find postdb of user='+user.id);
+        log.debug('Fail to find postdb of user='+user._id);
         return posts;
     }
 
-    //var userID = this.user.id;
+    //var userID = this.user._id;
     //log.debug(this.user);
 //    var p = this.user.providers[0];
 //    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts";
@@ -627,8 +639,8 @@ BlogBot.getPosts = function (user) {
 
 //unused this functions
 BlogBot.getComments = function (socket, user, postID) {
-    log.debug('BlogBot.getComments : '+ user.id);
-    var userID = user.id;
+    log.debug('BlogBot.getComments : '+ user._id);
+    var userID = user._id;
     //log.debug(user);
     var p = user.providers[0];
 

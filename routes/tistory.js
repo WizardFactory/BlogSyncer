@@ -48,13 +48,78 @@ passport.use(new TistoryStrategy({
             "displayName": profile.id
         };
 
-        var user = userdb.findOrCreate(req.user, provider);
-        blogBot.start(user);
-        blogBot.findOrCreate(user);
+        if (req.user) {
+            User.findOne({'providers.providerName':provider.providerName
+                    , 'providers.providerId': provider.providerId},
+                function (err, user) {
 
-        process.nextTick(function () {
-            return done(null, user);
-        });
+                    if (err) {
+                        return done(err);
+                    }
+
+                    // if there is a user id already but no token (user was linked at one point and then removed)
+                    if (user) {
+                        return done(null, user);
+                    }
+                    else {
+                        User.findById(req.user._id, function (err, user) {
+                            if (err) {
+                                log.error(err);
+                                return done(err);
+                            }
+                            if (!user) {
+                                log.error("Fail to get user id="+req.user._id);
+                                log.error(err);
+                                return done(err);
+                            }
+                            // if there is no provider, add to User
+                            user.providers.push(provider);
+                            user.save(function(err) {
+
+                                if (err) {
+                                    return done(err);
+                                }
+
+                                blogBot.findOrCreate(user);
+                                return done(null, user);
+                            });
+                        });
+                    }
+
+                } );
+        }
+        else {
+            User.findOne({'providers.providerName':provider.providerName,
+                    'providers.providerId': provider.providerId},
+                function (err, user) {
+
+                    if (err) {
+                        return done(err);
+                    }
+
+                    if (user) {
+                        log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
+                        blogBot.start(user);
+                        blogBot.findOrCreate(user);
+                        return done(null, user);
+                    }
+                    else {
+                        // if there is no provider, create new user
+                        var newUser = new User();
+                        newUser.providers = [];
+
+                        newUser.providers.push(provider);
+                        newUser.save(function(err) {
+                            if (err)
+                                return done(err);
+
+                            blogBot.start(newUser);
+                            blogBot.findOrCreate(newUser);
+                            return done(null, newUser);
+                        });
+                    }
+                });
+        }
     }
 ));
 
@@ -82,6 +147,12 @@ function _getUserID(req) {
        //this request form child process;
        userid = req.query.userid;
     }
+    else {
+        var errorMsg = 'You have to login first!';
+        log.debug(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+    }
 
     return userid;
 }
@@ -102,67 +173,66 @@ function _checkError(err, response, body) {
 router.get('/info', function (req, res) {
     var user_id = _getUserID(req);
     if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
         return;
     }
 
-    var p = userdb.findProvider(user_id, "tistory");
+    User.findById(user_id, function (err, user) {
+        var p;
+        var api_url;
 
-    var api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
+        p = user.findProvider("tistory");
+        api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
 
-    log.debug(api_url);
-    request.get(api_url, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
-        if (hasError !== undefined) {
-            res.send(hasError);
-            return;
-        }
-        log.debug(body);
-        res.send(body);
+        log.debug(api_url);
+
+        _requestGet(api_url, p.accessToken, function (err, response, body) {
+
+            var hasError = _checkError(err, response, body);
+            if (hasError !== undefined) {
+                res.send(hasError);
+                return;
+            }
+            log.debug(body);
+            res.send(body);
+        });
     });
 });
 
 router.get('/post/list/:simpleName', function (req, res) {
     var user_id = _getUserID(req);
+
     if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
         return;
     }
 
-    var p = userdb.findProvider(user_id, "tistory");
-    var blog_name = req.params.simpleName;
-    var api_url = TISTORY_API_URL+"/post/list?access_token="+ p.accessToken;
-    api_url = api_url + "&targetUrl=" + blog_name;
-    api_url = api_url + "&output=json";
+    User.findById(user_id, function (err, user) {
+        var p;
+        var api_url;
+        var blog_name = req.params.simpleName;
 
-    log.debug(api_url);
-    request.get(api_url, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
-        if (hasError !== undefined) {
-            res.send(hasError);
-            return;
-        }
-        //log.debug(body);
-        res.send(body);
+        p = user.findProvider("tistory");
+        api_url = TISTORY_API_URL+"/post/list?access_token="+ p.accessToken;
+        api_url = api_url + "&targetUrl=" + blog_name;
+        api_url = api_url + "&output=json";
+
+        log.debug(api_url);
+
+        _requestGet(api_url, p.accessToken, function (err, response, body) {
+            var hasError = _checkError(err, response, body);
+            if (hasError !== undefined) {
+                res.send(hasError);
+                return;
+            }
+            //log.debug(body);
+            res.send(body);
+        });
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
-
-    log.debug(req.url);
-
     var user_id = _getUserID(req);
+
     if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
         return;
     }
 
