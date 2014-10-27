@@ -181,12 +181,23 @@ BlogBot.start = function (user) {
     var groups = [];
     userInfo.groupDb = new groupdb(groups);
     this.users.push(userInfo);
-    return;
+};
+
+BlogBot.isStarted = function (user) {
+    var i;
+
+    for(i=0; i<this.users.length; i++) {
+        if (this.users[i]._id === user._id) {
+            return true;
+        }
+    }
+
+    log.debug("Fail to find user in blogBot");
+    return false;
 };
 
 BlogBot.stop = function (user) {
     log.debug("stop get blog of user " + user.id);
-    return;
 };
 
 BlogBot.add_blogs_to_db = function (user, recv_blogs) {
@@ -196,6 +207,8 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
                             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
                               {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
      */
+
+    var i = 0;
 
     if (recv_blogs == undefined) {
         log.debug("add_blogs_to_db Fail to get recv_blogs");
@@ -215,12 +228,9 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     var site = blogDb.findSiteByProvider(provider.providerName);
 
     if (site) {
-        for (var i = 0; i<blogs.length; i++) {
+        for (i = 0; i<blogs.length; i++) {
             var blog = blogDb.find_blog_by_blog_id(site, blogs[i].blog_id);
-            if (blog) {
-                continue;
-            }
-            else {
+            if (!blog) {
                 site.blogs.push(blogs[i]);
                 BlogBot.request_get_post_count(user, site.provider.providerName, blogs[i].blog_id,
                                 BlogBot.add_posts_from_new_blog);
@@ -229,7 +239,7 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     }
     else {
         site = blogDb.addProvider(provider, blogs);
-        for (var i = 0; i < site.blogs.length; i++) {
+        for (i = 0; i < site.blogs.length; i++) {
             BlogBot.request_get_post_count(user, site.provider.providerName, site.blogs[i].blog_id,
                             BlogBot.add_posts_from_new_blog);
         }
@@ -239,8 +249,6 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
 //    for (var j = 0; j < site.blogs.length; j++) {
 //        log.debug(site.blogs[j]);
 //    }
-
-    return;
 };
 
 BlogBot.findOrCreate = function (user) {
@@ -253,8 +261,6 @@ BlogBot.findOrCreate = function (user) {
         var p = user.providers[i];
         BlogBot.request_get_bloglist(user, p.providerName, p.providerId, BlogBot.add_blogs_to_db);
     }
-
-    return;
 };
 
 BlogBot.getSites = function (user) {
@@ -337,8 +343,6 @@ BlogBot.add_posts_to_db = function(user, recv_posts) {
     }
 
     //postDb.saveFile();
-
-    return;
 };
 
 BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, callback) {
@@ -397,7 +401,6 @@ BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     }
     //else for nothing
 
-    return;
 };
 
 function _checkError(err, response, body) {
@@ -406,12 +409,12 @@ function _checkError(err, response, body) {
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'blogbot API error: ' + response.statusCode + ' ' + err;
+        var errCode = body.meta ? body.meta.msg : body.error;
+        var errStr = 'blogbot API error: ' + response.statusCode + ' ' + errCode;
         log.error(errStr);
         return new Error(errStr);
     }
-};
+}
 
 BlogBot.request_get_bloglist = function(user, providerName, providerId, callback) {
     var url = "http://www.justwapps.com/" + providerName + "/bot_bloglist";
@@ -436,8 +439,6 @@ BlogBot.request_get_bloglist = function(user, providerName, providerId, callback
 
         callback(user, recvBlogs);
     });
-
-    return;
 };
 
 BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback) {
@@ -460,8 +461,6 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
 
         callback(user, recv_post_count);
     });
-
-    return;
 };
 
 BlogBot.request_get_posts = function(user, provider_name, blog_id, options, callback) {
@@ -498,8 +497,6 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
         var recv_posts = JSON.parse(body);
         callback(user, recv_posts);
     });
-
-    return;
 };
 
 BlogBot.getHistories = function (user) {
@@ -531,7 +528,7 @@ BlogBot._makeTitle = function (post) {
 
     if (post.content !== undefined && post.content.length > 0) {
 
-        var indexNewLine = 0;
+        var indexNewLine;
 
         indexNewLine= post.content.indexOf("\n");
         if (indexNewLine > 0) {
@@ -599,8 +596,6 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
         }
         //add success to history
     });
-
-    return;
 };
 
 /*****************************************************/
@@ -657,8 +652,6 @@ BlogBot.getComments = function (socket, user, postID) {
 //        log.debug(jsonData);
 //        socket.emit('comments', jsonData);
 //    });
-
-    return;
 };
 
 BlogBot.getReplies = function (user, postID, callback) {
@@ -691,7 +684,6 @@ BlogBot.getReplies = function (user, postID, callback) {
             callback(send_data);
         });
     }
-    return;
 };
 
 
@@ -720,8 +712,6 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
             //log.debug(send_data);
             callback(send_data);
         });
-
-    return;
 };
 
 module.exports = BlogBot;
