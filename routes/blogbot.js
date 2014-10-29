@@ -24,33 +24,43 @@ BlogBot.users = [];
 
 BlogBot.findBlogDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+        if (this.users[i].user._id == user._id) {
             return this.users[i].blogDb;
         }
     }
     log.debug('users='+this.users.length);
-    log.debug('Fail to find user '+user.id);
+    log.debug('Fail to find user '+user._id);
 };
 
 BlogBot.findPostDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].postDb;
         }
     }
+
+    log.error("Fail to find post db by user");
 };
 
 BlogBot.findHistoryDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].historyDb;
         }
     }
+
+    log.error("Fail to find history db by user");
 };
 
 BlogBot.findGroupDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
-        if (this.users[i].user.id === user.id) {
+
+        //left is object, right is string from frontend
+        if (this.users[i].user._id == user._id) {
             return this.users[i].groupDb;
         }
     }
@@ -171,12 +181,23 @@ BlogBot.start = function (user) {
     var groups = [];
     userInfo.groupDb = new groupdb(groups);
     this.users.push(userInfo);
-    return;
+};
+
+BlogBot.isStarted = function (user) {
+    var i;
+
+    for(i=0; i<this.users.length; i++) {
+        if (this.users[i]._id === user._id) {
+            return true;
+        }
+    }
+
+    log.debug("Fail to find user in blogBot");
+    return false;
 };
 
 BlogBot.stop = function (user) {
     log.debug("stop get blog of user " + user.id);
-    return;
 };
 
 BlogBot.add_blogs_to_db = function (user, recv_blogs) {
@@ -187,8 +208,10 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
                               {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
      */
 
-    if (recv_blogs === undefined) {
-        log.debug("Fail to get recv_blogs");
+    var i = 0;
+
+    if (recv_blogs == undefined) {
+        log.debug("add_blogs_to_db Fail to get recv_blogs");
         return;
     }
 
@@ -196,8 +219,8 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     var blogs = recv_blogs.blogs;
     var blogDb = BlogBot.findBlogDbByUser(user);
 
-    if (blogDb === undefined) {
-        log.debug('add_blogs_to_db : Fail to find blogDb of user='+user.id);
+    if (blogDb == undefined) {
+        log.debug('add_blogs_to_db : Fail to find blogDb of user='+user._id);
         return;
     }
 
@@ -205,12 +228,9 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     var site = blogDb.findSiteByProvider(provider.providerName);
 
     if (site) {
-        for (var i = 0; i<blogs.length; i++) {
+        for (i = 0; i<blogs.length; i++) {
             var blog = blogDb.find_blog_by_blog_id(site, blogs[i].blog_id);
-            if (blog) {
-                continue;
-            }
-            else {
+            if (!blog) {
                 site.blogs.push(blogs[i]);
                 BlogBot.request_get_post_count(user, site.provider.providerName, blogs[i].blog_id,
                                 BlogBot.add_posts_from_new_blog);
@@ -219,7 +239,7 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     }
     else {
         site = blogDb.addProvider(provider, blogs);
-        for (var i = 0; i < site.blogs.length; i++) {
+        for (i = 0; i < site.blogs.length; i++) {
             BlogBot.request_get_post_count(user, site.provider.providerName, site.blogs[i].blog_id,
                             BlogBot.add_posts_from_new_blog);
         }
@@ -229,20 +249,18 @@ BlogBot.add_blogs_to_db = function (user, recv_blogs) {
 //    for (var j = 0; j < site.blogs.length; j++) {
 //        log.debug(site.blogs[j]);
 //    }
-
-    return;
 };
 
 BlogBot.findOrCreate = function (user) {
-    log.debug("find or create blog db of user " + user.id);
+    var i;
 
-    for (var i = 0; i < user.providers.length; i++)
+    log.debug("find or create blog db of user " + user._id);
+
+    for (i = 0; i < user.providers.length; i++)
     {
         var p = user.providers[i];
         BlogBot.request_get_bloglist(user, p.providerName, p.providerId, BlogBot.add_blogs_to_db);
     }
-
-    return;
 };
 
 BlogBot.getSites = function (user) {
@@ -325,8 +343,6 @@ BlogBot.add_posts_to_db = function(user, recv_posts) {
     }
 
     //postDb.saveFile();
-
-    return;
 };
 
 BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, callback) {
@@ -385,7 +401,6 @@ BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     }
     //else for nothing
 
-    return;
 };
 
 function _checkError(err, response, body) {
@@ -394,20 +409,20 @@ function _checkError(err, response, body) {
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'blogbot API error: ' + response.statusCode + ' ' + err;
+        var errCode = body.meta ? body.meta.msg : body.error;
+        var errStr = 'blogbot API error: ' + response.statusCode + ' ' + errCode;
         log.error(errStr);
         return new Error(errStr);
     }
-};
+}
 
-BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callback) {
-    var url = "http://www.justwapps.com/" + provider_name + "/bot_bloglist";
+BlogBot.request_get_bloglist = function(user, providerName, providerId, callback) {
+    var url = "http://www.justwapps.com/" + providerName + "/bot_bloglist";
     url += "?";
-    url += "providerid=" + provider_id;
+    url += "providerid=" + providerId;
     url += "&";
 
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug("url=" + url);
     request.get(url, function (err, response, body) {
@@ -424,15 +439,13 @@ BlogBot.request_get_bloglist = function(user, provider_name, provider_id, callba
 
         callback(user, recvBlogs);
     });
-
-    return;
 };
 
 BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback) {
     var url = "http://www.justwapps.com/"+provider_name + "/bot_post_count/";
     url += blog_id;
     url += "?";
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug("url="+url);
     request.get(url, function (err, response, body) {
@@ -448,8 +461,6 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
 
         callback(user, recv_post_count);
     });
-
-    return;
 };
 
 BlogBot.request_get_posts = function(user, provider_name, blog_id, options, callback) {
@@ -472,7 +483,7 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
         url += "&";
     }
 
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     log.debug(url);
     request.get(url, function (err, response, body) {
@@ -486,8 +497,6 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
         var recv_posts = JSON.parse(body);
         callback(user, recv_posts);
     });
-
-    return;
 };
 
 BlogBot.getHistories = function (user) {
@@ -495,7 +504,7 @@ BlogBot.getHistories = function (user) {
     var historyDb = BlogBot.findHistoryDbByUser(user);
     var histories = [];
     if (historyDb == undefined) {
-        log.error('Fail to find historyDb of userId='+user.id);
+        log.error('Fail to find historyDb of userId='+user._id);
         return histories;
     }
 
@@ -505,7 +514,7 @@ BlogBot.getHistories = function (user) {
 
 BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
     var historyDb = BlogBot.findHistoryDbByUser(user);
-    log.debug('BlogBot.addHistory : userId='+ user.id);
+    log.debug('BlogBot.addHistory : userId='+ user._id);
     historyDb.addHistory(srcPost, postStatus, dstPost);
 };
 
@@ -519,7 +528,7 @@ BlogBot._makeTitle = function (post) {
 
     if (post.content !== undefined && post.content.length > 0) {
 
-        var indexNewLine = 0;
+        var indexNewLine;
 
         indexNewLine= post.content.indexOf("\n");
         if (indexNewLine > 0) {
@@ -557,7 +566,7 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "/new";
     url += "/"+encodeURIComponent(blog_id);
     url += "?";
-    url += "userid=" + user.id;
+    url += "userid=" + user._id;
 
     //send_data title, content, tags, categories
 //    if (post.title == undefined) {
@@ -587,8 +596,6 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
         }
         //add success to history
     });
-
-    return;
 };
 
 /*****************************************************/
@@ -596,13 +603,13 @@ BlogBot.getPosts = function (user) {
 
     var postDb = BlogBot.findPostDbByUser(user);
     var posts = [];
-    log.debug('BlogBot.getPosts : userid='+ user.id);
+    log.debug('BlogBot.getPosts : userid='+ user._id);
     if (postDb === undefined) {
-        log.debug('Fail to find postdb of user='+user.id);
+        log.debug('Fail to find postdb of user='+user._id);
         return posts;
     }
 
-    //var userID = this.user.id;
+    //var userID = this.user._id;
     //log.debug(this.user);
 //    var p = this.user.providers[0];
 //    var url = "http://www.justwapps.com/blog/blogCollectFeedback/posts";
@@ -627,8 +634,8 @@ BlogBot.getPosts = function (user) {
 
 //unused this functions
 BlogBot.getComments = function (socket, user, postID) {
-    log.debug('BlogBot.getComments : '+ user.id);
-    var userID = user.id;
+    log.debug('BlogBot.getComments : '+ user._id);
+    var userID = user._id;
     //log.debug(user);
     var p = user.providers[0];
 
@@ -645,8 +652,6 @@ BlogBot.getComments = function (socket, user, postID) {
 //        log.debug(jsonData);
 //        socket.emit('comments', jsonData);
 //    });
-
-    return;
 };
 
 BlogBot.getReplies = function (user, postID, callback) {
@@ -679,7 +684,6 @@ BlogBot.getReplies = function (user, postID, callback) {
             callback(send_data);
         });
     }
-    return;
 };
 
 
@@ -708,8 +712,6 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
             //log.debug(send_data);
             callback(send_data);
         });
-
-    return;
 };
 
 module.exports = BlogBot;

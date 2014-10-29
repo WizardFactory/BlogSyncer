@@ -26,9 +26,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var passport = require('passport');
 var session = require('express-session');
-
-
-var userdb = require('./models/userdb');
+var mongoose = require('mongoose');
 
 var facebook = require('./routes/facebook');
 var google = require('./routes/google');
@@ -42,6 +40,8 @@ var blogRoutes = require('./routes/blogRoutes');
 var log = require('./routes/log');
 
 var app = express();
+
+mongoose.connect("mongodb://localhost/user"); // connect to our database
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -70,7 +70,6 @@ app.use('/user', function (req, res) {
         res.write('NAU');
    }
    else {
-       console.log('user ' + JSON.stringify(req.user));
        res.write(JSON.stringify(req.user));
    }
    res.end();
@@ -85,7 +84,7 @@ var blogBot = require('./routes/blogbot');
 
 setInterval(function() {
     blogBot.task();
-}, 1000*60); //1 min
+}, 1000*30); //1 min
 
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {

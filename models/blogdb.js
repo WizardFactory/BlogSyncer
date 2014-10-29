@@ -11,7 +11,7 @@ function blogdb(sites) {
     this.sites = sites;
 }
 
-/* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
+/* 오직 자신만이 정보를 가지고 있음 by alec */
 /* 1user -> sites[] -> provider,blogs[] -> posts[] */
 //blogdb.sites = [];
 /*
