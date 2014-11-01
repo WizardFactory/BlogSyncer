@@ -14,8 +14,8 @@ function postdb(posts) {
 
 /* 오직 자신만이 정보를 가지고 있음 by alec*/
 
-//postdb.lastUpdateTime = {};
-//postdb.posts = [];
+//PostDb.lastUpdateTime = {};
+//PostDb.posts = [];
 /* posts[] -> id, title, categories[], tags[], modified, infos[]-> blog, post_info */
 /*
    [

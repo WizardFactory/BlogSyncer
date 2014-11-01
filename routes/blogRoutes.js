@@ -9,8 +9,17 @@ var router = express.Router();
 
 var blogBot = require('./blogbot');
 
+/**
+ *
+ * @param req
+ * @param res
+ * @returns {user|*}
+ * @private
+ */
 function _getUser(req, res) {
-    if (req.user == undefined) {
+    "use strict";
+
+    if (req.user === undefined) {
         var errorMsg = 'You have to login first!';
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -25,7 +34,7 @@ router.get('/sites', function (req, res) {
     var sites;
 
     user = _getUser(req,res);
-    if (user == undefined) {
+    if (user === undefined) {
         return;
     }
 
@@ -34,11 +43,12 @@ router.get('/sites', function (req, res) {
 });
 
 router.get('/posts', function (req, res) {
+    "use strict";
     var user;
     var posts;
 
     user = _getUser(req,res);
-    if (user == undefined) {
+    if (user === undefined) {
         return;
     }
 
@@ -55,7 +65,7 @@ router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
     var i;
 
     user = _getUser(req,res);
-    if (user == undefined) {
+    if (user === undefined) {
         log.error("Fail to get user");
         res.send();
         return;
