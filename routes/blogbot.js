@@ -40,6 +40,36 @@ BlogBot.findPostDbByUser = function(user) {
     }
 };
 
+BlogBot.findPostDbByUserWithCnt = function(user, reqStartNum, reqTotalCnt) {
+    var postDb = [];
+    for (var i=0; i<this.users.length; i++) {
+        if (this.users[i].user.id === user.id) {
+            postDb =  this.users[i].postDb;
+            break;
+        }
+    }
+
+    if(postDb.posts[0] === undefined) {
+        log.debug('postDb is not configured !!!');
+        //return;
+    }
+
+    var parsePostDb = {};
+    parsePostDb.posts = [];
+    var rangeStartNum = Number(reqStartNum);
+    var rangeTotalNum = Number(reqTotalCnt);
+    var rangeLastNum = rangeStartNum + rangeTotalNum;
+
+    for (var j=reqStartNum; j < rangeLastNum; j++ ) {
+        if(postDb.posts[j] === undefined)
+            break;
+
+        parsePostDb.posts.push(postDb.posts[j]);
+    }
+
+    return parsePostDb;
+};
+
 BlogBot.findHistoryDbByUser = function(user) {
     for (var i=0; i<this.users.length; i++) {
         if (this.users[i].user.id === user.id) {
@@ -592,11 +622,11 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
 };
 
 /*****************************************************/
-BlogBot.getPosts = function (user) {
+BlogBot.getPosts = function (user, startNum, totalNum) {
 
-    var postDb = BlogBot.findPostDbByUser(user);
+    var postDb = BlogBot.findPostDbByUserWithCnt(user, startNum, totalNum);
     var posts = [];
-    log.debug('BlogBot.getPosts : userid='+ user.id);
+    log.debug('BlogBot.getPosts : userid='+ user.id + ', startNum=' + startNum + ', totalNum=' + totalNum);
     if (postDb === undefined) {
         log.debug('Fail to find postdb of user='+user.id);
         return posts;

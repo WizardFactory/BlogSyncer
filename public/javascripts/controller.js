@@ -179,7 +179,58 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     init();
 });
 
-bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout) {
+    var reqStartNum;
+    var reqTotalNum;
+
+    function _getPost(providerName, blogID, postID) {
+        for (var i = 0; i<$scope.posts.length; i++) {
+            for (var j=0; j<$scope.posts[i].infos.length; j++) {
+                var info = $scope.posts[i].infos[j];
+                //console.log(info);
+                if (info.provider_name === providerName && info.blog_id === blogID
+                    && info.post_id == postID.toString()) {
+                    return {"postIndex":i, "infoIndex":j};
+                }
+            }
+        }
+        console.log("Fail to find post of provider="+providerName+",blog="+blogID+",postID"+postID);
+    }
+
+    function _getReplies(data) {
+        for (i = 0; i < data.posts.length; i++) {
+            var post = data.posts[i];
+
+            console.log('push post_id=' + data.posts[i].id);
+
+            for (j = 0; j < post.infos.length; j++) {
+                var url;
+
+                url = "/blogs/replies";
+                url += "/" + post.infos[j].provider_name;
+                url += "/" + post.infos[j].blog_id;
+                url += "/" + post.infos[j].post_id;
+
+                $http.get(url)
+                    .success(function (data) {
+                        var indexes;
+
+                        if (data == undefined) {
+                            console.log("Fail to get data");
+                            return;
+                        }
+
+                        indexes = _getPost(data.providerName, data.blogID, data.postID);
+                        console.log(indexes);
+                        $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
+                    })
+                    .error(function (data) {
+                        window.alert('Error: ' + data);
+                    });
+            }
+        }
+    }
+
     $scope.user = User.getUser();
     $scope.message = 'Collect Feedback';
     $scope.posts = [];
@@ -199,28 +250,47 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
                 });
     };
 
-    function _getPost(providerName, blogID, postID) {
-        for (var i = 0; i<$scope.posts.length; i++) {
-            for (var j=0; j<$scope.posts[i].infos.length; j++) {
-                var info = $scope.posts[i].infos[j];
-                //console.log(info);
-                if (info.provider_name === providerName && info.blog_id === blogID
-                            && info.post_id == postID.toString()) {
-                    return {"postIndex":i, "infoIndex":j};
+    $scope.requestMorePosts = function () {
+        console.log("requestMorePosts");
+
+        var url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
+        console.log(url);
+        $http.get(url)
+            .success(function (data) {
+                var i;
+                var j;
+
+                if (data.posts.length == 0) {
+                    console.log("posts is zero");
+                    return;
                 }
-            }
-        }
-        console.log("Fail to find post of provider="+providerName+",blog="+blogID+",postID"+postID);
+
+                reqStartNum += data.posts.length;
+
+                $timeout(function () {
+                    $scope.posts = $scope.posts.concat(data.posts);
+
+                    _getReplies(data);
+
+                }, 0);
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
     }
 
     function init() {
-    	var user = $scope.user;
+        reqStartNum = 0;
+        reqTotalNum = 20;
+        var user = $scope.user;
         if (user.id == undefined) {
             console.log('you have to signin~');
             return;
         }
 
-        $http.get('/blogs/posts')
+        var url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
+
+        $http.get(url)
             .success(function (data) {
                 var i;
                 var j;
@@ -231,39 +301,11 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
                     return;
                 }
 
+                reqStartNum += data.posts.length;
+
                 $scope.posts = data.posts;
 
-                for (i=0; i<data.posts.length; i++) {
-                    var post = data.posts[i];
-
-                    console.log('push post_id=' + data.posts[i].id);
-
-                    for (j=0; j<post.infos.length; j++) {
-                        var url;
-
-                        url = "/blogs/replies";
-                        url += "/"+ post.infos[j].provider_name;
-                        url += "/"+ post.infos[j].blog_id;
-                        url += "/"+ post.infos[j].post_id;
-
-                        $http.get(url)
-                            .success(function (data) {
-                                var indexes;
-
-                                if (data == undefined) {
-                                    console.log("Fail to get data");
-                                    return;
-                                }
-
-                                indexes = _getPost(data.providerName, data.blogID, data.postID);
-                                console.log(indexes);
-                                $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
-                            })
-                            .error(function (data) {
-                                window.alert('Error: ' + data);
-                            });
-                    }
-                }
+                _getReplies(data);
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
@@ -271,6 +313,8 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
     }
 
     init();
+
+
 });
 
 bs.controller('signinCtrl', function ($scope, $http, User) {
@@ -284,3 +328,5 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
         $scope.message = 'Please sign in';
     }
 });
+
+
