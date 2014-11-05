@@ -2,7 +2,6 @@
  * Created by aleckim on 2014. 7. 20..
  */
 
-
 var request = require('request');
 var express = require('express');
 var url = require('url');
@@ -30,8 +29,8 @@ passport.deserializeUser(function(obj, done) {
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
-            , 'providers.providerId': provider.providerId},
+    User.findOne({'providers.providerName':provider.providerName,
+            'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;

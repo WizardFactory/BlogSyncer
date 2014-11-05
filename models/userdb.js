@@ -2,9 +2,9 @@
  * Created by aleckim on 2014. 7. 11..
  */
 
+var log = require('winston');
 var mongoose = require('mongoose');
 
-// define Schema =================
 var userSchema = mongoose.Schema({
     providers : [{providerName: String,
                 providerId : String,
@@ -13,9 +13,14 @@ var userSchema = mongoose.Schema({
                 displayName : String }]
 });
 
-
+/**
+ *
+ * @param providerName
+ * @param providerId
+ * @returns {*}
+ */
 userSchema.methods.findProvider = function(providerName, providerId) {
-    var u;
+    "use strict";
     var i;
     var p;
     var tmp;
@@ -23,7 +28,7 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     for ( i=0; i<this.providers.length; i++) {
         tmp = this.providers[i];
         if (tmp.providerName === providerName) {
-            if (providerId == undefined) {
+            if (providerId === undefined) {
                 p = tmp;
                 break;
             }
@@ -35,7 +40,7 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     }
 
     if (i === this.providers.length) {
-        console.log("Fail to find providers");
+        log.error("Fail to find providers");
     }
 
     return p;

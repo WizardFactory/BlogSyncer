@@ -129,7 +129,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             }
         }
         if (group.length > 0) {
-            $scope.groups.push(group);
+            $scope.groups.push({"group":group});
             console.log(group);
             $http.post("/blogs/group",{"group":group})
                 .success(function (data) {
@@ -143,7 +143,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
     function init() {
     	var user = $scope.user;
-        if (user._id == undefined) {
+        if (!user._id) {
             console.log('you have to signin~');
             return;
         }

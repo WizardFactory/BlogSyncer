@@ -5,7 +5,9 @@
             <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
         </div>
         <div style="margin:10px; padding:10px;" ng-repeat="group in groups track by $index">
-            <a class="btn btn-lg btn-default" ng-repeat="site in group" ng-click="onClickGroup($parent.$index, $index);"
+            <a class="btn btn-lg btn-default" ng-repeat="site in group
+
+            .group" ng-click="onClickGroup($parent.$index, $index);"
                style="font-size: 16px;
                 margin-bottom: 5px;
                 border-radius: 3px;
