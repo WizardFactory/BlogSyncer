@@ -9,6 +9,7 @@ var SiteDb = require('../models/blogdb');
 var PostDb = require('../models/postdb');
 var HistoryDb = require('../models/historydb');
 var GroupDb = require('../models/groupdb');
+var User = require('../models/userdb');
 var log = require('winston');
 
 /**
@@ -51,8 +52,7 @@ BlogBot.findDbByUser = function (user, dbName) {
         }
     }
 
-    log.error("Fail to find user._id="+user._id + "typeof=" + typeof user._id);
-    return undefined;
+    log.error("Fail to find user._id="+user._id + " typeof=" + typeof user._id);
 };
 
 /**
@@ -62,7 +62,7 @@ BlogBot.findDbByUser = function (user, dbName) {
  */
 BlogBot.send_post_to_blogs = function (user, recv_posts) {
     "use strict";
-    if (recv_posts === undefined)  {
+    if (!recv_posts)  {
         log.error("Fail to get recv_posts");
         return;
     }
@@ -99,7 +99,7 @@ BlogBot.send_post_to_blogs = function (user, recv_posts) {
  */
 BlogBot.push_posts_to_blogs = function(user, recv_posts) {
     "use strict";
-    if (recv_posts === undefined)  {
+    if (!recv_posts)  {
         log.error("Fail to get recv_posts");
         return;
     }
@@ -143,7 +143,7 @@ BlogBot.getAndPush = function(user) {
             //if this blog was not grouped pass
             var groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
             if (groups.length === 0) {
-               log.info("It has not group user="+user.id+" provider="+sites[i].provider.providerName +
+               log.info("It has not group user="+user._id+" provider="+sites[i].provider.providerName +
                         " blog="+sites[i].blogs[j].blog_id);
                continue;
             }
@@ -167,6 +167,22 @@ BlogBot.task = function() {
     }
 };
 
+BlogBot.load = function () {
+    "use strict";
+
+   User.find({}, function(err, users) {
+       var i;
+
+       if (err) {
+           log.error("Fail to find of users");
+           return;
+       }
+
+       for (i=0; i<users.length; i++) {
+           BlogBot.start(users[i]);
+       }
+   });
+};
 /**
  *
  * @param {User} user
@@ -174,36 +190,55 @@ BlogBot.task = function() {
 BlogBot.start = function (user) {
     "use strict";
     var userInfo = {};
-    var posts = [];
     var histories = [];
-    var groups = [];
+    var posts = [];
 
     log.debug("start BlogBot of user._id="+user._id);
     userInfo.user = user;
 
     SiteDb.findOne({userId:user._id}, function (err, siteDb) {
         if (err) {
-            log.error("Fail to findOne of user._id" + user._id);
+            log.error("Fail to findOne of user._id=" + user._id);
+            return;
         }
         if (siteDb) {
             userInfo.blogDb = siteDb;
         }
         else {
-            var newSite = new SiteDb();
-            newSite.userId = user._id;
-            userInfo.blogDb = newSite;
+            var newSiteDb = new SiteDb();
+            newSiteDb.userId = user._id;
+            userInfo.blogDb = newSiteDb;
 
-            newSite.save(function (err) {
+            newSiteDb.save(function (err) {
                 if (err) {
                     log.error("Fail to save new site");
                 }
             });
-            log.info("make new sitedb for user._id="+user._id);
+            log.info("make new siteDb for user._id="+user._id);
+            BlogBot.findOrCreate(user);
         }
-        //log.debug(userInfo.blogDb);
+    });
+    GroupDb.findOne({userId:user._id}, function (err, groupDb) {
+        if (err) {
+            log.error("Fail to findOne of user._id="+user._id);
+            return;
+        }
+        if (groupDb) {
+            userInfo.groupDb = groupDb;
+        }
+        else {
+            var newGroupDb = new GroupDb();
+            newGroupDb.userId = user._id;
+            userInfo.groupDb = newGroupDb;
+            newGroupDb.save(function (err) {
+                if (err) {
+                    log.error("Fail to save new group");
+                }
+            });
+            log.info("make new groupDb for user._id="+user._id);
+        }
     });
 
-    userInfo.groupDb = new GroupDb(groups);
     userInfo.postDb = new PostDb(posts);
     userInfo.postDb.lastUpdateTime = new Date();
     userInfo.historyDb = new HistoryDb(histories);
@@ -246,56 +281,57 @@ BlogBot.stop = function (user) {
  */
 BlogBot.add_blogs_to_db = function (user, recv_blogs) {
     "use strict";
+    var provider;
+    var blogs;
+    var blogDb;
+    var i;
+    var site;
 
-    if (recv_blogs === undefined) {
-        log.debug("add_blogs_to_db Fail to get recv_blogs");
+    if (!recv_blogs) {
+        log.error("add_blogs_to_db Fail to get recv_blogs");
         return;
     }
 
-    var provider = recv_blogs.provider;
-    var blogs = recv_blogs.blogs;
-    var blogDb = BlogBot.findDbByUser(user, "blog");
+    provider = recv_blogs.provider;
+    if (!provider) {
+        log.error('add_blogs_to_db : provider is undefined of user='+user._id);
+        return;
+    }
+    blogs = recv_blogs.blogs;
 
-    if (blogDb === undefined) {
-        log.debug('add_blogs_to_db : Fail to find blogDb of user='+user._id);
+    log.info(provider);
+    log.info(blogs);
+
+    blogDb = BlogBot.findDbByUser(user, "blog");
+    if (!blogDb) {
+        log.error('add_blogs_to_db : Fail to find blogDb of user='+user._id);
         return;
     }
 
-    //log.debug(provider);
-    SiteDb.findOne({'userId': user._id}, function (err, siteDb) {
-        var i;
-        var site;
-
-        if (err) {
-            log.error("Fail to find db of user._id=", user._id);
-            return err;
-        }
-
-        site = siteDb.findSiteByProvider(provider.providerName, provider.providerId);
-        if (site) {
-            for (i=0; i<blogs.length; i++) {
-                var blog = siteDb.findBlogFromSite(site, blogs[i].blog_id);
-                if (!blog) {
-                    site.blogs.push(blogs[i]);
-                    BlogBot.request_get_post_count(user, site.provider.providerName, blogs[i].blog_id,
-                        BlogBot.add_posts_from_new_blog);
-                }
-            }
-        }
-        else {
-            siteDb.sites.push({provider: provider, blogs: blogs});
-            for (i=0; i<blogs.length; i++) {
-                BlogBot.request_get_post_count(user, provider.providerName, blogs[i].blog_id,
+    site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
+    if (site) {
+        for (i=0; i<blogs.length; i++) {
+            var blog = blogDb.findBlogFromSite(site, blogs[i].blog_id);
+            if (!blog) {
+                site.blogs.push(blogs[i]);
+                BlogBot.request_get_post_count(user, site.provider.providerName, blogs[i].blog_id,
                     BlogBot.add_posts_from_new_blog);
             }
         }
-        siteDb.save(function(err) {
-            if (err) {
-                log.error("Fail to save siteDb");
-            }
-        });
-        log.debug("provider Name=" + provider.providerName + " Id=" + provider.providerId);
+    }
+    else {
+        blogDb.sites.push({provider: provider, blogs: blogs});
+        for (i=0; i<blogs.length; i++) {
+            BlogBot.request_get_post_count(user, provider.providerName, blogs[i].blog_id,
+                BlogBot.add_posts_from_new_blog);
+        }
+    }
+    blogDb.save(function(err) {
+        if (err) {
+            log.error("Fail to save siteDb");
+        }
     });
+    log.debug("provider Name=" + provider.providerName + " Id=" + provider.providerId);
 };
 
 /**
@@ -323,14 +359,31 @@ BlogBot.getSites = function (user) {
 
 BlogBot.addGroup = function(user, group) {
     "use strict";
-    var groupDb = BlogBot.findDbByUser(user, "group");
-    groupDb.groups.push(group);
+    var groupDb;
+    if (!group) {
+        log.error("group is undefined of user._id=", user._uid);
+    }
+
+    log.info("group len="+group.length);
+    groupDb = BlogBot.findDbByUser(user, "group");
+    groupDb.groups.push({"group":group});
+    groupDb.save(function (err) {
+       if (err)  {
+           log.error("Fail to save group in addGroup");
+           log.error(err);
+       }
+    });
 };
 
 BlogBot.setGroups = function(user, groups) {
     "use strict";
     var groupDb = BlogBot.findDbByUser(user, "group");
     groupDb.groups = groups;
+    groupDb.save(function (err) {
+        if (err)  {
+            log.error("Fail to save group in addGroup");
+        }
+    });
 };
 
 BlogBot.getGroups = function(user) {
@@ -346,27 +399,29 @@ BlogBot.getGroups = function(user) {
  */
 BlogBot.add_postinfo_to_db = function (user, recv_posts) {
     "use strict";
-    if (recv_posts === undefined) {
+    var postDb;
+    var post;
+
+    if (!recv_posts) {
         log.error("Fail to get recv_posts");
         return;
     }
 
-    if (recv_posts.posts === undefined) {
+    if (!recv_posts.posts) {
         log.error("BlogBot.add_postinfo_to_db: Broken posts");
         return;
     }
 
-    if (recv_posts.posts[0].title === undefined) {
+    if (!recv_posts.posts[0].title) {
         log.error("Fail to find title !!");
         //TODO content 및 다른 것으로 찾아서 넣는다.
         return;
     }
 
-    var postDb = BlogBot.findDbByUser(user, "post");
+    postDb = BlogBot.findDbByUser(user, "post");
 
-    var post = postDb.find_post_by_title(recv_posts.posts[0].title);
-
-    if (post === undefined) {
+    post = postDb.find_post_by_title(recv_posts.posts[0].title);
+    if (!post) {
         log.error("Fail to found post by title"+recv_posts.posts[0].title);
         return;
     }
@@ -382,23 +437,27 @@ BlogBot.add_postinfo_to_db = function (user, recv_posts) {
  */
 BlogBot.add_posts_to_db = function(user, recv_posts) {
     "use strict";
-    if (recv_posts === undefined) {
+    var postDb;
+    var i;
+    var post;
+
+    if (!recv_posts) {
         log.error("Fail to get recv_posts");
         return;
     }
 
     log.debug('BlogBot.add_posts_to_db');
 
-    var postDb = BlogBot.findDbByUser(user, "post");
+    postDb = BlogBot.findDbByUser(user, "post");
 
     //TODO: change from title to id
-    for(var i = 0; i<recv_posts.posts.length;i++) {
+    for(i = 0; i<recv_posts.posts.length;i++) {
 
         BlogBot._makeTitle(recv_posts.posts[i]);
 
         //log.debug(recv_posts.posts[i]);
-        if (recv_posts.posts[i].title !== undefined) {
-            var post = postDb.find_post_by_title(recv_posts.posts[i].title);
+        if (recv_posts.posts[i].title) {
+            post = postDb.find_post_by_title(recv_posts.posts[i].title);
 
             //log.debug(recv_posts.provider_name, recv_posts.blog_id, recv_posts.posts[i]);
             if (post) {
@@ -428,11 +487,11 @@ BlogBot.recursiveGetPosts = function(user, provider_name, blog_id, options, call
 
         callback(user, recv_posts);
 
-        if (recv_posts === undefined) {
+        if (!recv_posts) {
             log.error("Fail to get recv_posts");
             return;
         }
-        if (recv_posts.posts === undefined) {
+        if (!recv_posts.posts) {
             log.error("Fail to get recv_posts.posts");
             return;
         }
@@ -459,7 +518,7 @@ BlogBot.add_posts_from_new_blog = function(user, recv_post_count) {
     "use strict";
     log.debug('BlogBot.add_posts_from_new_blog');
 
-    if (recv_post_count === undefined) {
+    if (!recv_post_count) {
         log.error("Fail to get recv_post_count");
         return;
     }
@@ -515,7 +574,9 @@ function _checkError(err, response, body) {
  */
 BlogBot.request_get_bloglist = function(user, providerName, providerId, callback) {
     "use strict";
-    var url = "http://www.justwapps.com/" + providerName + "/bot_bloglist";
+    var url;
+
+    url = "http://www.justwapps.com/" + providerName + "/bot_bloglist";
     url += "?";
     url += "providerid=" + providerId;
     url += "&";
@@ -524,16 +585,18 @@ BlogBot.request_get_bloglist = function(user, providerName, providerId, callback
 
     log.debug("url=" + url);
     request.get(url, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
+        var hasError;
+        var recvBlogs;
 
-        if (hasError !== undefined) {
+        hasError = _checkError(err, response, body);
+        if (hasError) {
             callback(hasError);
             return;
         }
 
         //log.debug(body);
 
-        var recvBlogs = JSON.parse(body);
+        recvBlogs = JSON.parse(body);
 
         callback(user, recvBlogs);
     });
@@ -557,15 +620,18 @@ BlogBot.request_get_post_count = function(user, provider_name, blog_id, callback
 
     log.debug("url="+url);
     request.get(url, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
-        if (hasError !== undefined) {
+        var hasError;
+        var recv_post_count;
+
+        hasError= _checkError(err, response, body);
+        if (hasError) {
             callback(hasError);
             return;
         }
 
         //log.debug(body);
 
-        var recv_post_count = JSON.parse(body);
+        recv_post_count = JSON.parse(body);
 
         callback(user, recv_post_count);
     });
@@ -605,14 +671,17 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
 
     log.debug(url);
     request.get(url, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
-        if (hasError !== undefined) {
+        var hasError;
+        var recv_posts;
+
+        hasError= _checkError(err, response, body);
+        if (hasError) {
             callback(hasError);
             return;
         }
 
         //log.debug(body);
-        var recv_posts = JSON.parse(body);
+        recv_posts = JSON.parse(body);
         callback(user, recv_posts);
     });
 };
@@ -624,16 +693,16 @@ BlogBot.request_get_posts = function(user, provider_name, blog_id, options, call
  */
 BlogBot.getHistories = function (user) {
     "use strict";
-    var historyDb = BlogBot.findDbByUser(user, "history");
-    var histories = [];
+    var historyDb;
 
-    if (historyDb === undefined) {
-        log.error('Fail to find historyDb of userId='+user._id);
-        return histories;
+    historyDb = BlogBot.findDbByUser(user, "history");
+    if (historyDb) {
+        log.info('histories length='+historyDb.histories.length);
+        return historyDb.histories;
     }
-
-    log.info('histories length='+historyDb.histories.length);
-    return historyDb.histories;
+    else {
+        log.error('Fail to find historyDb of user='+user._id);
+    }
 };
 
 /**
@@ -658,13 +727,13 @@ BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
 BlogBot._makeTitle = function (post) {
     "use strict";
 
-    if (post.title !== undefined) {
+    if (post.title) {
         if (post.title.length > 0) {
             return;
         }
     }
 
-    if (post.content !== undefined && post.content.length > 0) {
+    if (post.content && post.content.length > 0) {
 
         var indexNewLine;
 
@@ -687,13 +756,16 @@ BlogBot._makeTitle = function (post) {
         return;
     }
 
-    if (post.url !== undefined) {
+    if (post.url) {
         post.title = post.url;
+        log.debug("The name was copied from url");
         return;
     }
 
     if (post.id) {
         post.title = post.id;
+        log.debug("The name was copied from id");
+        return;
     }
 
     log.error("Fail to make title!!!");
@@ -719,7 +791,7 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     url += "userid=" + user._id;
 
     //send_data title, content, tags, categories
-//    if (post.title == undefined) {
+//    if (!post.title) {
 //        BlogBot._makeTitle(post);
 //    }
 
@@ -727,22 +799,25 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
 
     log.debug('post='+url);
     request.post(url, opt, function (err, response, body) {
-        var hasError = _checkError(err, response, body);
-        if (hasError !== undefined) {
+        var hasError;
+        var recv_posts;
+
+        hasError = _checkError(err, response, body);
+        if (hasError) {
             callback(hasError);
             return;
         }
 
         //add post info
         //log.debug(body);
-        var recv_posts = JSON.parse(body);
+        recv_posts = JSON.parse(body);
         callback(user, recv_posts);
 
-        if (recv_posts.posts === undefined) {
-            BlogBot.addHistory(user, post, response.statusCode);
+        if (recv_posts.posts) {
+            BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
         }
         else {
-            BlogBot.addHistory(user, post, response.statusCode, recv_posts.posts[0]);
+            BlogBot.addHistory(user, post, response.statusCode);
         }
         //add success to history
     });
@@ -756,16 +831,15 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
 BlogBot.getPosts = function (user) {
     "use strict";
     var postDb;
-    var posts = [];
 
     postDb = BlogBot.findDbByUser(user, "post");
     log.debug('BlogBot.getPosts : userid='+ user._id);
-    if (postDb === undefined) {
-        log.debug('Fail to find PostDb of user='+user._id);
-        return posts;
+    if (postDb) {
+        log.debug('posts length='+postDb.posts.length);
+        return postDb.posts;
     }
-    log.debug('posts length='+postDb.posts.length);
-    return postDb.posts;
+
+    log.error('Fail to find PostDb of user='+user._id);
 };
 
 //unused this functions
@@ -810,12 +884,12 @@ BlogBot.getReplies = function (user, postID, callback) {
                         {"post_id":post.infos[i].post_id},
                         function (user, recv_posts) {
 
-            if (recv_posts === undefined)  {
+            if (!recv_posts)  {
                 log.error("Fail to get recv_posts");
                 return;
             }
 
-            if (recv_posts.posts === undefined)  {
+            if (!recv_posts.posts)  {
                 log.error("Fail to get recv_posts.posts");
                 return;
             }
@@ -846,19 +920,21 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
     BlogBot.request_get_posts(user, providerName, blogID,
         {"post_id":postID},
         function (user, recv_posts) {
+            var recv_post;
+            var send_data;
 
-            if (recv_posts === undefined)  {
+            if (!recv_posts)  {
                 log.error("Fail to get recv_posts");
                 return;
             }
 
-            if (recv_posts.posts === undefined)  {
+            if (!recv_posts.posts)  {
                 log.error("Fail to get recv_posts.posts");
                 return;
             }
 
-            var recv_post = recv_posts.posts[0];
-            var send_data = {};
+            recv_post = recv_posts.posts[0];
+            send_data = {};
             send_data.providerName = recv_posts.provider_name;
             send_data.blogID = recv_posts.blog_id;
             send_data.postID = recv_post.id;

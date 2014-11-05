@@ -102,12 +102,11 @@ router.route('/groups')
         var groups;
 
         user = _getUser(req,res);
-        if (user == undefined) {
+        if (!user) {
             return;
         }
 
         groups = blogBot.getGroups(user);
-        log.info(groups);
         res.send({"groups":groups});
     })
     .put(function (req, res) {
@@ -115,7 +114,7 @@ router.route('/groups')
         var groups;
 
         user = _getUser(req,res);
-        if (user == undefined) {
+        if (!user) {
             return;
         }
 
@@ -125,16 +124,16 @@ router.route('/groups')
     });
 
 router.post('/group', function (req, res) {
+    "use strict";
+
     var user;
-    var group;
 
     user = _getUser(req,res);
-    if (user == undefined) {
+    if (!user) {
         return;
     }
 
-    group = req.body.group;
-    blogBot.addGroup(user, group);
+    blogBot.addGroup(user, req.body.group);
     res.send("Success");
 });
 
