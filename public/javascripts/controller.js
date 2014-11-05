@@ -16,7 +16,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
 
     console.log('Start mainCtrl');
 
-    if (!$scope.user.id) {
+    if (!$scope.user._id) {
             $http.get('/user')
                 .success(function (data) {
                     if (data == 'NAU') {
@@ -52,7 +52,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
 
     var user = $scope.user;
 
-    if (user.id == undefined) {
+    if (user._id == undefined) {
         console.log('you have to signin~');
     }
 
@@ -129,7 +129,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             }
         }
         if (group.length > 0) {
-            $scope.groups.push(group);
+            $scope.groups.push({"group":group});
             console.log(group);
             $http.post("/blogs/group",{"group":group})
                 .success(function (data) {
@@ -143,7 +143,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
     function init() {
     	var user = $scope.user;
-        if (user.id == undefined) {
+        if (!user._id) {
             console.log('you have to signin~');
             return;
         }
@@ -282,8 +282,9 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     function init() {
         reqStartNum = 0;
         reqTotalNum = 20;
-        var user = $scope.user;
-        if (user.id == undefined) {
+
+    	var user = $scope.user;
+        if (user._id == undefined) {
             console.log('you have to signin~');
             return;
         }
@@ -321,7 +322,7 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
-    if ($scope.user.id) {
+    if ($scope.user._id) {
         $scope.message = 'Your accounts';
     }
     else {

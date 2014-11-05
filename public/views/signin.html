@@ -23,7 +23,7 @@
                 <img ng-src="views/imgs/{{ provider.providerName }}.png" width="38" height="38">&nbsp;&nbsp;
                 {{ provider.providerName }} : {{provider.displayName}}</p>
         </div>
-        <div ng-if="user.id" style="padding:10px;">
+        <div ng-if="user._id" style="padding:10px;">
             <a href="/logout">Logout</a>
         </div>
         <div style="padding:10px;">

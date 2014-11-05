@@ -2,105 +2,77 @@
  * Created by aleckim on 2014. 8. 13..
  */
 
-var fs = require('fs');
-var dbfilename = 'blog.db';
-
 var log = require('winston');
+var mongoose = require('mongoose');
 
-function blogdb(sites) {
-    this.sites = sites;
-}
+// define Schema =================
+var siteSchema = mongoose.Schema({
+    userId : Object,
+    sites : [{
+        provider: {
+            providerName: String,
+            providerId: String,
+            accessToken: String,
+            refreshToken: String,
+            displayName: String
+        },
+        blogs: [{
+            blog_id: String,
+            blog_title: String,
+            blog_url: String
+        }]
+    }]
+});
 
-/* 오직 자신만이 정보를 가지고 있음 by dhkim2*/
-/* 1user -> sites[] -> provider,blogs[] -> posts[] */
-//blogdb.sites = [];
-/*
- [
- { "provider":object, "blogs":
-                        [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-                          {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
- { "provider":object, "blogs":
-                        [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-                          {"blog_id":12, "blog_name":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] }
- ];
+/**
+ *
+ * @param {string} providerName
+ * @param {string} providerId
+ * @returns {*}
  */
-
-
-blogdb.prototype.init = function () {
-  try {
-    this.sites = JSON.parse(fs.readFileSync(dbfilename)).blog_db;
-  }
-  catch (e) {
-    log.debug(e);
-    return false;
-  }
-
-  return true;
-};
-
-blogdb.prototype.saveFile = function () {
-  try {
-    fs.writeFile(dbfilename, JSON.stringify({"blog_db":this.sites}), function (err) {
-        if (err) throw err;
-        log.debug("It's saved!");
-    });
-  }
-  catch(e) {
-      log.debug(e);
-      return false;
-  }
-
-  return true;
-};
-
-blogdb.prototype.getProviderCount = function () {
-    return this.sites.length;
-};
-
-blogdb.prototype.findSiteByProvider = function (providerName) {
+siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
+    "use strict";
+    var i;
     var sites = this.sites;
+    var provider;
 
-    for (var i = 0; i < sites.length; i++) {
-        if (sites[i].provider.providerName === providerName) {
-            return sites[i];
+    for (i=0; i<sites.length; i++) {
+        provider = sites[i].provider;
+        if (provider.providerName === providerName) {
+            if (providerId === undefined) {
+                return sites[i];
+            }
+            else {
+               if (provider.providerId === providerId)  {
+                   return sites[i];
+               }
+            }
         }
     }
 
-    log.debug ("Fail to find blog of provider="+providerName);
-
-    return null;
+    log.error("Fail to find site of providerName="+providerName + " providerId="+providerId);
 };
 
-blogdb.prototype.find_blog_by_blog_id = function (site, blog_id) {
-    for (var i = 0; i<site.blogs.length; i++) {
-       if (site.blogs[i].blog_id == blog_id)  {
-           break;
-       }
+/**
+ *
+ * @param site
+ * @param blogId
+ * @returns {*|{blog_id: string, blog_title: string, blog_url: string}}
+ */
+siteSchema.methods.findBlogFromSite = function(site, blogId) {
+    "use strict";
+    var i;
+
+    for (i=0; i<site.blogs.length; i++) {
+        if (site.blogs[i].blog_id === blogId) {
+            return site.blogs[i];
+        }
     }
 
-    if (i == site.blogs.length) {
-        log.debug ('Fail to find blog_id='+blog_id);
-        return null;
-    }
-
-    return site.blogs[i];
+    log.error("Fail to find blog id="+blogId);
 };
 
-blogdb.prototype.change_new_blogs = function (site, new_blogs) {
-    site.blogs.length = 0;
-    site.blogs = new_blogs;
-};
+// create the model for users and expose it to our app
+module.exports = mongoose.model('SiteDb', siteSchema);
 
-blogdb.prototype.addProvider = function (new_provider, new_blogs) {
-    var totalCount = 0;
-
-    this.sites.push({"provider":new_provider, "blogs":new_blogs});
-    //this.saveFile();
-
-    totalCount = this.sites.length;
-
-    return this.sites[totalCount-1];
-};
-
-module.exports = blogdb;
 

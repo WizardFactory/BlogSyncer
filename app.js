@@ -26,9 +26,7 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var passport = require('passport');
 var session = require('express-session');
-
-
-var userdb = require('./models/userdb');
+var mongoose = require('mongoose');
 
 var facebook = require('./routes/facebook');
 var google = require('./routes/google');
@@ -42,6 +40,17 @@ var blogRoutes = require('./routes/blogRoutes');
 var log = require('./routes/log');
 
 var app = express();
+var blogBot = require('./routes/blogbot');
+
+mongoose.connect("mongodb://localhost/user"); // connect to our database
+
+blogBot.load();
+
+setInterval(function() {
+    "use strict";
+
+    blogBot.task();
+}, 1000*30); //1 min
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -66,29 +75,27 @@ app.use('/tistory', tistory);
 app.use('/blogs', blogRoutes);
 
 app.use('/user', function (req, res) {
+    "use strict";
+
    if (!req.user) {
         res.write('NAU');
    }
    else {
-       console.log('user ' + JSON.stringify(req.user));
        res.write(JSON.stringify(req.user));
    }
    res.end();
 });
 
 app.use('/logout', function (req, res) {
+    "use strict";
+
     req.logout();
     res.redirect("/#");
 });
 
-var blogBot = require('./routes/blogbot');
-
-setInterval(function() {
-    blogBot.task();
-}, 1000*60); //1 min
-
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
+    "use strict";
     var err = new Error("Not Found : "+req.url);
     err.status = 404;
     next(err);
@@ -99,7 +106,8 @@ app.use(function(req, res, next) {
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
+    app.use(function(err, req, res) {
+        "use strict";
         res.status(err.status || 500);
         res.render('error', {
             message: err.message,
@@ -110,7 +118,8 @@ if (app.get('env') === 'development') {
 
 // production error handler
 // no stacktraces leaked to user
-app.use(function(err, req, res, next) {
+app.use(function(err, req, res) {
+    "use strict";
     res.status(err.status || 500);
     res.render('error', {
         message: err.message,
