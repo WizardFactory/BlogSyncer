@@ -134,7 +134,7 @@ passport.use(new wordpressStrategy({
                 log.error("Fail to get user ");
                 return done(err);
             }
-            //isNewProvider = true;
+
             if (isNewProvider) {
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
