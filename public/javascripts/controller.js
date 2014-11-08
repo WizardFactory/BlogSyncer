@@ -37,11 +37,12 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
 
 bs.controller('homeCtrl', function ($q, $scope, $http, User) {
     console.log('Start homeCtrl');
+    $scope.title = 'Home';
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-    $scope.message = 'Your blog ctrl';
+    $scope.title = 'Your blog ctrl';
 });
 
 bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
@@ -66,7 +67,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
 
 bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-    $scope.message = 'Your blog groups';
+    $scope.title = 'Your blog groups';
     $scope.button = ['Delete', 'Create', 'Close'];
     $scope.groups = [];
     $scope.sites = [];
@@ -93,7 +94,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         if ($scope.button[0] !== 'Confirm') {
             return;
         }
-        var group = $scope.groups[group_index];
+        var group = $scope.groups[group_index].group;
         group.splice(blog_index, 1);
         if (group.length === 0) {
             $scope.groups.splice(group_index, 1);
@@ -178,7 +179,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
 bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
-    $scope.message = 'Collect Feedback';
+    $scope.title = 'Collect Feedback';
     $scope.posts = [];
     $scope.getReplyContent = function (providerName, blogID, postID) {
        //window.alert("getReplyContent = " + providerName + blogID + postID);
@@ -275,9 +276,9 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
     if ($scope.user._id) {
-        $scope.message = 'Your accounts';
+        $scope.title = 'Your accounts';
     }
     else {
-        $scope.message = 'Please sign in';
+        $scope.title = 'Please sign in';
     }
 });
