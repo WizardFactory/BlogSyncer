@@ -823,20 +823,41 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
     });
 };
 
+BlogBot.getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
+    var parsePostDb = {};
+    parsePostDb.posts = [];
+    var rangeStartNum = Number(reqStartNum);
+    var rangeTotalNum = Number(reqTotalCnt);
+    var rangeLastNum = rangeStartNum + rangeTotalNum;
+
+    for (var j=reqStartNum; j < rangeLastNum; j++ ) {
+        if(postDb.posts[j] === undefined)
+            break;
+
+        parsePostDb.posts.push(postDb.posts[j]);
+    }
+
+    return parsePostDb;
+};
+
 /**
  *
- * @param user
+ * @param user, startNum, totalNum
  * @returns {*}
  */
-BlogBot.getPosts = function (user) {
+BlogBot.getPosts = function (user, startNum, totalNum) {
     "use strict";
     var postDb;
+    var parsedPostDb;
 
     postDb = BlogBot.findDbByUser(user, "post");
-    log.debug('BlogBot.getPosts : userid='+ user._id);
-    if (postDb) {
-        log.debug('posts length='+postDb.posts.length);
-        return postDb.posts;
+    parsedPostDb = BlogBot.getParsedPostDb(postDb, startNum, totalNum)
+
+    log.debug('BlogBot.getPosts : userid='+ user._id + ', startNum=' + startNum + ', totalNum=' + totalNum);
+
+    if (parsedPostDb) {
+        log.debug('posts length='+parsedPostDb.posts.length);
+        return parsedPostDb.posts;
     }
 
     log.error('Fail to find PostDb of user='+user._id);

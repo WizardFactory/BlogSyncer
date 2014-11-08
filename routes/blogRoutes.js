@@ -42,17 +42,22 @@ router.get('/sites', function (req, res) {
     res.send(sites);
 });
 
-router.get('/posts', function (req, res) {
+router.get('/posts/:reqStartNum/:reqTotalNum', function (req, res) {
     "use strict";
     var user;
     var posts;
+    var startNum;
+    var totalNum;
 
     user = _getUser(req,res);
     if (user === undefined) {
         return;
     }
 
-    posts = blogBot.getPosts(user);
+    startNum = req.params.reqStartNum;
+    totalNum = req.params.reqTotalNum;
+
+    posts = blogBot.getPosts(user, startNum, totalNum);
 
     res.send({"posts":posts});
 });
