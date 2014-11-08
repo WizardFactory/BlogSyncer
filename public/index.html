@@ -31,23 +31,23 @@
 
 <body ng-controller="mainCtrl">
 <!-- Fixed navbar -->
-<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+<div class="navbar navbar-inverse navbar-fixed-top" ng-init="menu = 'home'" role="navigation">
     <div class="container">
         <div class="navbar-header">
-            <button type="button" class="navbar-toggle" ng-click="isCollapsed = !isCollapsed">
+            <button type="button" class="navbar-toggle" ng-init="isCollapsed = true" ng-click="isCollapsed = !isCollapsed">
                 <span class="sr-only">Toggle navigation</span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">BlogSync</a>
+            <a class="navbar-brand" href="#" ng-click="menu = 'home'; isCollapsed = true">BlogSync</a>
         </div>
-        <div collapse="isCollapsed" class="collapse dis">
+        <div class="collapse navbar-collapse" ng-class="!isCollapsed && 'in'" ng-click="isCollapsed = true">
             <ul class="nav navbar-nav navbar-right">
-                <li><a href="#blog/blogRegister">블로그 등록</a></li>
-                <li><a href="#blog/blogCollectFeedback">모아보기</a></li>
-                <li><a href="#blog/blogHistorySync">히스토리</a></li>
-                <li><a href="#signin">{{ signstat }}</a></li>
+                <li ng-class="{active: menu == 'blogRegister'}"><a href="#blog/blogRegister" ng-click="menu = 'blogRegister'">블로그 등록</a></li>
+                <li ng-class="{active: menu == 'blogCollectFeedback'}"><a href="#blog/blogCollectFeedback" ng-click="menu = 'blogCollectFeedback'">모아보기</a></li>
+                <li ng-class="{active: menu == 'blogHistorySync'}"><a href="#blog/blogHistorySync" ng-click="menu = 'blogHistorySync'">히스토리</a></li>
+                <li ng-class="{active: menu == 'signin'}"><a href="#signin" ng-click="menu = 'signin'">{{ signstat }}</a></li>
             </ul>
         </div><!--/.nav-collapse -->
     </div>

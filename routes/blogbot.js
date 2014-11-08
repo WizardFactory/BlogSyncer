@@ -842,7 +842,7 @@ BlogBot.getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
 
 /**
  *
- * @param user
+ * @param user, startNum, totalNum
  * @returns {*}
  */
 BlogBot.getPosts = function (user, startNum, totalNum) {
