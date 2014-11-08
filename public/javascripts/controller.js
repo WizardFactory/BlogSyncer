@@ -4,15 +4,14 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = '로그인';
-    $scope.isCollapsed = true;
 
     // add DropDown Blog
     $scope.options = [
-                    {"Route":"/#/blog/blogRegister","Display":"블로그 등록"},
-                    {"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
-                    {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},
-                    {"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}
-                    ];
+        {"Route":"/#/blog/blogRegister","Display":"블로그 등록"},
+        {"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
+        {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},
+        {"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}
+    ];
 
     console.log('Start mainCtrl');
 
@@ -63,9 +62,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
         .error(function (data) {
             window.alert('Error: ' + data);
         });
-
 });
-
 
 bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     $scope.user = User.getUser();
