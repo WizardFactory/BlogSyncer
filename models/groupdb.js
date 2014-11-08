@@ -45,8 +45,8 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     var newGroups = [];
 
     for (i=0; i<this.groups.length; i++) {
-        group = this.groups[i];
-        for (j=0; j<group.length; i++) {
+        group = this.groups[i].group;
+        for (j=0; j<group.length; j++) {
             blog = group[j].blog;
             provider = group[j].provider;
             if ( provider.providerName === providerName &&
@@ -56,7 +56,7 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
             }
         }
         if (foundIt) {
-            newGroups.push(group);
+            newGroups.push({"group":group});
             foundIt = false;
         }
     }

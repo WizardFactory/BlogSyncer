@@ -4,13 +4,13 @@
  */
 
 var request = require('request');
-
-var SiteDb = require('../models/blogdb');
-var PostDb = require('../models/postdb');
-var HistoryDb = require('../models/historydb');
-var GroupDb = require('../models/groupdb');
-var User = require('../models/userdb');
 var log = require('winston');
+
+var User = require('../models/userdb');
+var SiteDb = require('../models/blogdb');
+var GroupDb = require('../models/groupdb');
+var HistoryDb = require('../models/historydb');
+var PostDb = require('../models/postdb');
 
 /**
  *
@@ -74,7 +74,7 @@ BlogBot.send_post_to_blogs = function (user, recv_posts) {
     var groups = groupDb.findGroupByBlogInfo(provider_name, blog_id);
 
     for (var i = 0; i < groups.length; i++) {
-        var group = groups[i];
+        var group = groups[i].group;
         for (var j = 0; j < group.length; j++) {
             var targetBlog = group[j].blog;
             var provider = group[j].provider;
@@ -190,7 +190,6 @@ BlogBot.load = function () {
 BlogBot.start = function (user) {
     "use strict";
     var userInfo = {};
-    var histories = [];
     var posts = [];
 
     log.debug("start BlogBot of user._id="+user._id);
@@ -238,10 +237,29 @@ BlogBot.start = function (user) {
             log.info("make new groupDb for user._id="+user._id);
         }
     });
+    HistoryDb.findOne({userId:user._id}, function (err, historyDb) {
+        if (err) {
+            log.error("Fail to findOne of user._id="+user._id);
+            return;
+        }
+        if (historyDb) {
+            userInfo.historyDb = historyDb;
+        }
+        else {
+            var newHistoryDb = new HistoryDb();
+            newHistoryDb.userId = user._id;
+            userInfo.historyDb = newHistoryDb;
+            newHistoryDb.save(function (err) {
+                if (err) {
+                    log.error("Fail to save new group");
+                }
+            });
+            log.info("make new historyDb for user._id="+user._id);
+        }
+    });
 
     userInfo.postDb = new PostDb(posts);
     userInfo.postDb.lastUpdateTime = new Date();
-    userInfo.historyDb = new HistoryDb(histories);
     this.users.push(userInfo);
 };
 
@@ -714,9 +732,35 @@ BlogBot.getHistories = function (user) {
  */
 BlogBot.addHistory = function(user, srcPost, postStatus, dstPost) {
     "use strict";
-    var historyDb = BlogBot.findDbByUser(user, "history");
+    var history;
+    var historyDb;
+    var src;
+    var dst;
+
+    historyDb = BlogBot.findDbByUser(user, "history");
     log.debug('BlogBot.addHistory : userId='+ user._id);
-    historyDb.addHistory(srcPost, postStatus, dstPost);
+
+    src = {};
+    src.title = srcPost.title;
+    src.id = srcPost.id;
+    src.url = srcPost.url;
+    dst = {};
+    dst.id = dstPost;
+    dst.url = dstPost.url;
+
+    history = {};
+    history.tryTime = new Date();
+    history.status = postStatus;
+    history.src = src;
+    history.dst = dst;
+
+    historyDb.histories.push(history);
+    historyDb.save(function (err) {
+       if (err)  {
+           log.error("Fail to save history in addHistory");
+           log.error(err);
+       }
+    });
 };
 
 /**
@@ -819,7 +863,6 @@ BlogBot.request_post_content = function (user, post, provider_name, blog_id, cal
         else {
             BlogBot.addHistory(user, post, response.statusCode);
         }
-        //add success to history
     });
 };
 
