@@ -27,7 +27,7 @@ module.exports = mongoose.model('History', historySchema);
 //    this.histories.push({"tryTime":time, "src":src, "status":status, "dst":dst});
 //};
 //
-//HistoryDb.prototype.getHistorys = function(startIndex, counts) {
+//HistoryDb.prototype.getHistories = function(startIndex, counts) {
 //    return this.histories.slice(startIndex, startIndex+counts);
 //};
 
