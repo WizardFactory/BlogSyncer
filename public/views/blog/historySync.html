@@ -1,18 +1,21 @@
+<div class="content-title">
+    <h1 class="page-header">{{title}}</h1>
+</div>
 <div>
-    <h1 class="cover-heading">{{ title }}</h1>
-    <p class="lead">histories : {{ histories.length }}</p>
+    <p class="lead">histories : {{histories.length}}</p>
 
     <div  class="container marketing" ng-repeat="history in histories">
         <hr class="featurette-divider">
         <div class="row featurette">
             <h2 class="featurette-heading" style="font-size: 22px">
-                [{{ history.tryTime.toString() }}]&nbsp;
-                <span class="text-muted" style="font-size: 25px"> {{ history.src.title }}</span></h2>
-            <p class="lead"  style="font-size: 16px;">{{ history.status }}  :
-                <span>{{ history.src.url }}</span> →
-                <span>{{ history.dst.url }}</span>
+                [{{history.tryTime.toString()}}]&nbsp;
+                <span class="text-muted" style="font-size: 25px">{{history.src.title}}</span>
+            </h2>
+            <p class="lead" style="font-size: 16px;">
+                {{history.status}}  :
+                <span>{{history.src.url}}</span> →
+                <span>{{history.dst.url}}</span>
             </p>
-
         </div>
     </div>
 </div>
