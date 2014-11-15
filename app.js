@@ -38,11 +38,24 @@ var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
 
 var log = require('./routes/log');
+var svcConfig = require('./models/svcConfig.json');
 
 var app = express();
 var blogBot = require('./routes/blogbot');
 
-mongoose.connect("mongodb://localhost/user"); // connect to our database
+var connectInfo;
+
+if (svcConfig.mongodb) {
+    //You have NOT use database of service!!
+    connectInfo = 'mongodb://' + svcConfig.mongodb.dbUser + ':' + svcConfig.mongodb.dbPassword + '@' +
+                            svcConfig.mongodb.dbAddress + '/' + svcConfig.mongodb.dbName;
+}
+else {
+    connectInfo = 'mongodb://localhost/blogsync';
+}
+
+log.debug(connectInfo);
+mongoose.connect(connectInfo);
 
 blogBot.load();
 
