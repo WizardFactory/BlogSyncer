@@ -22,13 +22,5 @@ historySchema = mongoose.Schema({
 
 module.exports = mongoose.model('History', historySchema);
 
-//HistoryDb.prototype.addHistory = function(src, status, dst) {
-//    var time = new Date();
-//    this.histories.push({"tryTime":time, "src":src, "status":status, "dst":dst});
-//};
-//
-//HistoryDb.prototype.getHistories = function(startIndex, counts) {
-//    return this.histories.slice(startIndex, startIndex+counts);
-//};
 
 

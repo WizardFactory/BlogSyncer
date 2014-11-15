@@ -31,13 +31,17 @@ var postSchema = mongoose.Schema({
     posts : [postinfoSechema]
 });
 
-
+/**
+ *
+ * @param postId
+ * @returns {*}
+ */
 postSchema.methods.findPostById = function(postId) {
     "use strict";
     var i;
 
     for (i=0; i<this.posts.length; i++) {
-        if (this.posts[i].id === postId) {
+        if (this.posts[i]._id === postId) {
             log.debug('find post('+postId+')');
             return this.posts[i];
         }
@@ -173,7 +177,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     }
     else {
         log.debug("type is undefined");
-        post.type = 'post';
+        post.type = 'text';
     }
 
     if (newPost.categories) {
