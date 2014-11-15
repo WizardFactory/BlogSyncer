@@ -1,6 +1,7 @@
 bs.controller('mainCtrl', function ($q, $scope, $http, User) {
-    $scope.user = User.getUser();
+    "use strict";
 
+    $scope.user = User.getUser();
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = '로그인';
@@ -16,49 +17,55 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
     console.log('Start mainCtrl');
 
     if (!$scope.user._id) {
-            $http.get('/user')
-                .success(function (data) {
-                    if (data == 'NAU') {
-                        console.log('NAU');
-                    }
-                    else {
-                        var user = data;
-                        User.setUser(user);
-                        $scope.signstat = "내계정";
-                        $scope.username = user.providers[0].displayName;
-                        console.log('Change username, signstat');
-                    }
-                })
-                .error(function (data) {
-                    window.alert('Error: ' + data);
-                });
+        $http.get('/user')
+            .success(function (data) {
+                if (data === 'NAU') {
+                    console.log('NAU');
+                }
+                else {
+                    var user = data;
+                    User.setUser(user);
+                    $scope.signstat = "내계정";
+                    $scope.username = user.providers[0].displayName;
+                    console.log('Change username, signstat');
+                }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
     }
 });
 
-bs.controller('homeCtrl', function ($q, $scope, $http, User) {
+bs.controller('homeCtrl', function ($q, $scope) {
+    "use strict";
+
     console.log('Start homeCtrl');
     $scope.title = 'Home';
 });
 
 bs.controller('blogCtrl', function ($scope, $http, User) {
+    "use strict";
+
     $scope.user = User.getUser();
     $scope.title = 'Your blog ctrl';
 });
 
 bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
+    "use strict";
+
     $scope.user = User.getUser();
     $scope.title = "Blog Sync Histories";
     $scope.histories = [];
 
     var user = $scope.user;
 
-    if (user._id == undefined) {
+    if (user._id === undefined) {
         console.log('you have to signin~');
     }
 
     $http.get('/blogs/histories')
         .success(function (data) {
-           $scope.histories = data.histories;
+            $scope.histories = data.histories;
         })
         .error(function (data) {
             window.alert('Error: ' + data);
@@ -66,6 +73,8 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
 });
 
 bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
+    "use strict";
+
     $scope.user = User.getUser();
     $scope.title = 'Your blog groups';
     $scope.button = ['Delete', 'Create', 'Close'];
@@ -140,7 +149,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     }
 
     function init() {
-    	var user = $scope.user;
+        var user = $scope.user;
         if (!user._id) {
             console.log('you have to signin~');
             return;
@@ -178,16 +187,17 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 });
 
 bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout) {
+    "use strict";
+
     var reqStartNum;
     var reqTotalNum;
 
-    function _getPost(providerName, blogID, postID) {
-        for (var i = 0; i<$scope.posts.length; i++) {
-            for (var j=0; j<$scope.posts[i].infos.length; j++) {
+    function getPost(providerName, blogID, postID) {
+        for (var i = 0; i<$scope.posts.length; i += 1) {
+            for (var j=0; j<$scope.posts[i].infos.length; j += 1) {
                 var info = $scope.posts[i].infos[j];
                 //console.log(info);
-                if (info.provider_name === providerName && info.blog_id === blogID
-                    && info.post_id == postID.toString()) {
+                if (info.provider_name === providerName && info.blog_id === blogID && info.post_id === postID.toString()) {
                     return {"postIndex":i, "infoIndex":j};
                 }
             }
@@ -195,13 +205,13 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
         console.log("Fail to find post of provider="+providerName+",blog="+blogID+",postID"+postID);
     }
 
-    function _getReplies(data) {
-        for (i = 0; i < data.posts.length; i++) {
+    function getReplies(data) {
+        for (var i = 0; i < data.posts.length; i += 1) {
             var post = data.posts[i];
 
             console.log('push post_id=' + data.posts[i].id);
 
-            for (j = 0; j < post.infos.length; j++) {
+            for (var j = 0; j < post.infos.length; j += 1) {
                 var url;
 
                 url = "/blogs/replies";
@@ -213,12 +223,12 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                     .success(function (data) {
                         var indexes;
 
-                        if (data == undefined) {
+                        if (data === undefined) {
                             console.log("Fail to get data");
                             return;
                         }
 
-                        indexes = _getPost(data.providerName, data.blogID, data.postID);
+                        indexes = getPost(data.providerName, data.blogID, data.postID);
                         console.log(indexes);
                         $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
                     })
@@ -233,19 +243,19 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     $scope.title = 'Collect Feedback';
     $scope.posts = [];
     $scope.getReplyContent = function (providerName, blogID, postID) {
-       //window.alert("getReplyContent = " + providerName + blogID + postID);
-       var url = providerName + "/bot_comments/" + blogID + "/" + postID;
-       $http.get(url)
-                .success(function (data) {
-                    console.log(data);
-                    var indexes = _getPost(data.providerName, data.blogID, data.postID);
-                    console.log("postIndex="+indexes.postIndex+" infoIndex="+indexes.postIndex);
-                    console.log(data.comments);
-                    $scope.posts[indexes.postIndex].infos[indexes.infoIndex].comments = data.comments;
-                })
-                .error(function (data) {
-                    window.alert('Error: ' + data);
-                });
+        //window.alert("getReplyContent = " + providerName + blogID + postID);
+        var url = providerName + "/bot_comments/" + blogID + "/" + postID;
+        $http.get(url)
+            .success(function (data) {
+                console.log(data);
+                var indexes = getPost(data.providerName, data.blogID, data.postID);
+                console.log("postIndex="+indexes.postIndex+" infoIndex="+indexes.postIndex);
+                console.log(data.comments);
+                $scope.posts[indexes.postIndex].infos[indexes.infoIndex].comments = data.comments;
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
     };
 
     $scope.requestMorePosts = function () {
@@ -255,34 +265,28 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
         console.log(url);
         $http.get(url)
             .success(function (data) {
-                var i;
-                var j;
-
-                if (data.posts.length == 0) {
+                if (data.posts.length === 0) {
                     console.log("posts is zero");
                     return;
                 }
 
                 reqStartNum += data.posts.length;
-
                 $timeout(function () {
                     $scope.posts = $scope.posts.concat(data.posts);
-
-                    _getReplies(data);
-
+                    getReplies(data);
                 }, 0);
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
             });
-    }
+    };
 
     function init() {
         reqStartNum = 0;
         reqTotalNum = 20;
 
-    	var user = $scope.user;
-        if (user._id == undefined) {
+        var user = $scope.user;
+        if (user._id === undefined) {
             console.log('you have to signin~');
             return;
         }
@@ -291,20 +295,16 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
 
         $http.get(url)
             .success(function (data) {
-                var i;
-                var j;
                 console.log(data);
 
-                if (data.posts.length == 0) {
+                if (data.posts.length === 0) {
                     console.log("posts is zero");
                     return;
                 }
 
                 reqStartNum += data.posts.length;
-
                 $scope.posts = data.posts;
-
-                _getReplies(data);
+                getReplies(data);
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
@@ -312,11 +312,11 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     }
 
     init();
-
-
 });
 
 bs.controller('signinCtrl', function ($scope, $http, User) {
+    "use strict";
+
     $scope.user = User.getUser();
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
@@ -327,5 +327,3 @@ bs.controller('signinCtrl', function ($scope, $http, User) {
         $scope.title = 'Please sign in';
     }
 });
-
-
