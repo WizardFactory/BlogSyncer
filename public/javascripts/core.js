@@ -5,15 +5,17 @@ var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap'])
 
 // define service
 bs.factory('User', function () {
+    "use strict";
+
     var user= {};
 //    var port = -1;
 
     return {
         getUser: function () {
-           return user;
+            return user;
         },
         setUser: function (usr) {
-           user = usr;
+            user = usr;
         }
 //        getChildPort: function() {
 //           console.log('getChildPort port='+port);
@@ -29,6 +31,8 @@ bs.factory('User', function () {
 
 // setting module
 bs.config(function ($routeProvider) {
+    "use strict";
+
     $routeProvider
         // route for cover page
         .when('/', {
