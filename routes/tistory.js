@@ -152,16 +152,18 @@ router.get('/authorized',
     }
 );
 
-function _getUserID(req) {
-    var userid = 0;
+function _getUserID(req, res) {
+    "use strict";
+
+    var userId;
 
     if (req.user) {
-        userid = req.user.id;
+        userId = req.user.id;
     }
-    else if (req.query.userid)
-    {
+    else if (req.query.userid) {
+
        //this request form child process;
-       userid = req.query.userid;
+       userId = req.query.userid;
     }
     else {
         var errorMsg = 'You have to login first!';
@@ -170,7 +172,7 @@ function _getUserID(req) {
         res.redirect("/#/signin");
     }
 
-    return userid;
+    return userId;
 }
 
 function _checkError(err, response, body) {
@@ -187,12 +189,14 @@ function _checkError(err, response, body) {
 }
 
 router.get('/info', function (req, res) {
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
+    "use strict";
+    var userId = _getUserID(req, res);
+
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
 
@@ -215,13 +219,14 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/post/list/:simpleName', function (req, res) {
-    var user_id = _getUserID(req);
+    "use strict";
+    var userId = _getUserID(req, res);
 
-    if (user_id == 0) {
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
         var blog_name = req.params.simpleName;
@@ -246,13 +251,14 @@ router.get('/post/list/:simpleName', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var user_id = _getUserID(req);
+    "use strict";
+    var userId = _getUserID(req, res);
 
-    if (user_id == 0) {
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
 
@@ -298,19 +304,14 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
+    "use strict";
+    var userId = _getUserID(req, res);
 
-    log.debug(req.url);
-
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url = req.params.blog_id;
@@ -360,19 +361,15 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
+    "use strict";
+    log.debug("tistory: "+ req.url);
 
-    //log.debug("tistory: "+ req.url);
-
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    var userId = _getUserID(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url = req.params.blog_id;
@@ -467,18 +464,15 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
+    "use strict";
     log.debug(req.url);
+    var userId = _getUserID(req, res);
 
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url = req.params.blog_id;
@@ -530,18 +524,15 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
+    "use strict";
     //log.debug(req.url);
+    var userId = _getUserID(req, res);
 
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url = req.params.blog_id;
@@ -617,13 +608,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
+    "use strict";
     log.debug(req.url);
-    var userID = _getUserID(req);
-    if (userID == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+
+    var userId = _getUserID(req, res);
+    if (!userId) {
         return;
     }
 
@@ -634,7 +623,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         var targetURL = req.params.blogID;
         var postID = req.params.postID;
 
-        p = userdb.findProvider(userID, "tistory");
+        p = userdb.findProvider(userId, "tistory");
 
         api_url = TISTORY_API_URL + "/comment/list?";
         api_url = api_url + "access_token=" + p.accessToken;
