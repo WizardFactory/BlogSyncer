@@ -19,7 +19,7 @@ var blogBot = require('./blogbot');
 function _getUser(req, res) {
     "use strict";
 
-    if (req.user === undefined) {
+    if (!req.user) {
         var errorMsg = 'You have to login first!';
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -35,7 +35,7 @@ router.get('/sites', function (req, res) {
     var sites;
 
     user = _getUser(req,res);
-    if (user === undefined) {
+    if (!user) {
         return;
     }
 
@@ -51,7 +51,7 @@ router.get('/posts/:reqStartNum/:reqTotalNum', function (req, res) {
     var totalNum;
 
     user = _getUser(req,res);
-    if (user === undefined) {
+    if (!user) {
         return;
     }
 
@@ -60,7 +60,7 @@ router.get('/posts/:reqStartNum/:reqTotalNum', function (req, res) {
 
     posts = blogBot.getPosts(user, startNum, totalNum);
 
-    log.info(posts);
+    //log.info(posts);
     res.send({"posts":posts});
 });
 
@@ -73,7 +73,7 @@ router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
     var i;
 
     user = _getUser(req,res);
-    if (user === undefined) {
+    if (!user) {
         log.error("Fail to get user");
         res.send();
         return;
@@ -87,8 +87,6 @@ router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
         log.debug(sendData);
         res.send(sendData);
     });
-
-    return;
 });
 
 router.get('/histories', function (req, res) {
@@ -97,7 +95,7 @@ router.get('/histories', function (req, res) {
     var histories;
 
     user = _getUser(req,res);
-    if (user == undefined) {
+    if (!user) {
         return;
     }
 
