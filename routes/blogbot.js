@@ -1044,6 +1044,7 @@ BlogBot.getPosts = function (user, startNum, totalNum) {
     var parsedPostDb;
 
     postDb = BlogBot._findDbByUser(user, "post");
+    log.debug("total posts.length="+postDb.posts.length);
     parsedPostDb = BlogBot._getParsedPostDb(postDb, startNum, totalNum);
 
     log.debug('blogbot get posts : userid='+ user._id + ', startNum=' + startNum + ', totalNum=' + totalNum);

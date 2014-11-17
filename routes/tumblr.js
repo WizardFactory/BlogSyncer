@@ -153,7 +153,7 @@ function _getUserId(req) {
     var userid = 0;
 
     if (req.user) {
-        userid = req.user.id;
+        userid = req.user._id;
     }
     else if (req.query.userid)
     {

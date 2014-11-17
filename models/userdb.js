@@ -28,7 +28,7 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     for ( i=0; i<this.providers.length; i++) {
         tmp = this.providers[i];
         if (tmp.providerName === providerName) {
-            if (providerId === undefined) {
+            if (!providerId) {
                 p = tmp;
                 break;
             }
