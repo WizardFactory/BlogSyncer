@@ -19,19 +19,30 @@ var clientConfig = svcConfig.tumblr;
 var log = require('winston');
 
 passport.serializeUser(function(user, done) {
+    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
+    "use strict";
     done(null, obj);
 });
 
+/**
+ *
+ * @param req
+ * @param provider
+ * @param callback
+ * @private
+ */
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
-            , 'providers.providerId': provider.providerId},
+    "use strict";
+    User.findOne({'providers.providerName':provider.providerName,
+            'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
+            var errMsg;
 
             if (err) {
                 return callback(err);
@@ -41,12 +52,19 @@ function _updateOrCreateUser(req, provider, callback) {
             if (user) {
                 log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
                 p = user.findProvider("tumblr");
+                if (!p) {
+                    errMsg = "Fail to get tumblr user id=" + user._id;
+                    log.error(errMsg);
+                    return;
+                }
+
                 if (p.accessToken !== provider.accessToken) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -72,25 +90,24 @@ function _updateOrCreateUser(req, provider, callback) {
                         // if there is no provider, add to User
                         user.providers.push(provider);
                         user.save(function(err) {
-
                             if (err) {
                                 return callback(err);
                             }
-
                             return callback(null, user, isNewProvider);
                         });
                     });
                 }
                 else {
+
                     // if there is no provider, create new user
                     var newUser = new User();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
-
+                        }
                         return callback(null, newUser, isNewProvider);
                     });
                 }
@@ -105,10 +122,14 @@ passport.use(new TumblrStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
+        "use strict";
+        var provider;
+
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
-        var provider = {
+
+        provider= {
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
@@ -143,42 +164,77 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('tumblr', { failureRedirect: '/#signin' }),
     function(req, res) {
+        "use strict";
+
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
     }
 );
 
-function _getUserId(req) {
-    var userid = 0;
+/**
+ *
+ * @param req
+ * @param res
+ * @returns {*}
+ * @private
+ */
+function _getUserId(req, res) {
+    "use strict";
+    var userId;
+    var errorMsg;
 
     if (req.user) {
-        userid = req.user._id;
+        userId = req.user._id;
     }
-    else if (req.query.userid)
-    {
+    else if (req.query.userid) {
+
        //this request form child process;
-       userid = req.query.userid;
+       userId = req.query.userid;
     }
-
-    return userid;
-}
-
-router.get('/info', function (req, res) {
-    var user_id = _getUserId(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
+    else {
+        errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
+    }
+
+    return userId;
+}
+
+router.get('/info', function (req, res) {
+    "use strict";
+    var userId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
+        var errMsg;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr  user id="+userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -189,6 +245,7 @@ router.get('/info', function (req, res) {
 
         client.userInfo(function(error, data) {
             if (error) {
+
                 //throw new Error(error);
                 res.send(error);
                 return;
@@ -200,21 +257,41 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/posts/:blogName', function (req, res) {
-    var user_id = _getUserId(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    "use strict";
+    var userId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
         var blogName;
+        var errMsg;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        blogName = req.params.blogName;
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr blog="+blogName+" user id="+userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -223,10 +300,9 @@ router.get('/posts/:blogName', function (req, res) {
             token_secret: p.tokenSecret
         });
 
-        blogName = req.params.blogName;
-
         client.posts(blogName, function (error, response) {
             if (error) {
+
                 //throw new Error(error);
                 res.send(error);
                 return;
@@ -238,23 +314,43 @@ router.get('/posts/:blogName', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
+    "use strict";
+    var userId;
+    var providerId;
 
     log.debug(req.url + ' : this is called by bot');
 
-    var user_id = _getUserId(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    providerId = req.query.providerid;
+
+    User.findById(userId, function (err, user) {
         var p;
         var client;
+        var errMsg;
 
-        p = user.findProvider("tumblr");
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("tumblr", providerId);
+        if (!p) {
+            errMsg = "Fail to get tumblr providerId="+providerId+" user id="+userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -282,7 +378,7 @@ router.get('/bot_bloglist', function (req, res) {
             blogs = response.user.blogs;
             log.debug('blogs length=' + blogs.length);
 
-            for (i = 0; i < blogs.length; i++) {
+            for (i = 0; i < blogs.length; i+=1) {
                 send_data.blogs.push({"blog_id": blogs[i].name, "blog_title": blogs[i].title, "blog_url": blogs[i].url});
             }
 
@@ -292,24 +388,41 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
+    "use strict";
+    var userId;
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    var user_id = _getUserId(req);
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
         var blog_id;
+        var errMsg;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr user id=" + userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         blog_id = req.params.blog_id;
 
@@ -323,6 +436,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         client.blogInfo(blog_id, function(error, response) {
             if (error) {
                 //throw new Error(error);
+                log.error(error);
                 res.send(error);
                 return;
             }
@@ -337,7 +451,16 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     });
  });
 
-push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
+/**
+ *
+ * @param posts
+ * @param raw_posts
+ * @param is_body
+ * @param after
+ * @private
+ */
+function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
+    "use strict";
     var i;
     var raw_post;
     var post_date;
@@ -345,7 +468,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
     var send_post;
     var j;
 
-    for (i = 0; i<raw_posts.length; i++) {
+    for (i = 0; i<raw_posts.length; i+=1) {
         raw_post = raw_posts[i];
 
         post_date = new Date(raw_post.date);
@@ -366,7 +489,7 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
 //                send_post.categories.push(raw_post.categories[j]);
 //            }
         send_post.tags = [];
-        for (j=0; j<raw_post.tags.length; j++) {
+        for (j=0; j<raw_post.tags.length; j+=1) {
             send_post.tags.push(raw_post.tags[j]);
         }
 //            log.debug('tags-send');
@@ -375,14 +498,15 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
         switch (raw_post.type) {
             case "text":
                 send_post.title = raw_post.title;
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.body;
+                }
                 break;
             case "photo":
                 send_post.title = raw_post.caption;
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.photos; //it's no complete
-                break;
+                }
                 break;
             case "quote":
                 if (raw_post.text) {
@@ -391,18 +515,21 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
                 else if (raw_post.source_title) {
                     send_post.title = raw_post.source_title;
                 }
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.source;
+                }
                 break;
             case "link":
                 send_post.title = raw_post.title;
-                if (is_body)
+                if (is_body) {
                     send_post.content = "url : raw_post.url"+" description : " + raw_post.description;
+                }
                 break;
             case "chat":
                 send_post.title = raw_post.title;
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.body;
+                }
                 break;
             case "audio":
                 if (raw_post.caption) {
@@ -411,8 +538,9 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
                 else if (raw_post.source_title) {
                     send_post.title = raw_post.source_title;
                 }
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.player;
+                }
                 break;
             case "video":
                 if (raw_post.caption) {
@@ -421,13 +549,15 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
                 else if (raw_post.source_title) {
                     send_post.title = raw_post.source_title;
                 }
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.player[0].embed_code;
+                }
                 break;
             case "answer":
                 send_post.title = raw_post.question;
-                if (is_body)
+                if (is_body) {
                     send_post.content = raw_post.answer;
+                }
                 break;
             default:
                 log.debug('Fail to get type ' + raw_post.type);
@@ -436,24 +566,20 @@ push_posts_from_tumblr = function(posts, raw_posts, is_body, after) {
         send_post.replies = [];
         posts.push(send_post);
     }
-};
+}
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var user_id;
-    var errorMsg;
+    "use strict";
+    var userId;
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    user_id = _getUserId(req);
-    if (user_id == 0) {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
         var options;
@@ -462,8 +588,27 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var offset = req.query.offset;
         var after = req.query.after;
         var start_index;
+        var errMsg;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr user id=" + userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -472,7 +617,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             token_secret: p.tokenSecret
         });
 
-        if (offset != undefined) {
+        if (offset) {
             start_index = offset.split("-")[0];
             log.debug('offset=' + start_index);
             options = {offset: start_index};
@@ -492,7 +637,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             send_data.blog_id = response.posts[0].blog_name;
             send_data.post_count = 0;
             send_data.posts = [];
-            push_posts_from_tumblr(send_data.posts, response.posts, false, after);
+            _pushPostsFromTumblr(send_data.posts, response.posts, false, after);
             send_data.post_count = send_data.posts.length;
 
             res.send(send_data);
@@ -501,29 +646,44 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var user_id;
-    var errorMsg;
+    "use strict";
+    var userId;
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    user_id = _getUserId(req);
-    if (user_id == 0) {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
 
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
         var options;
+        var errMsg;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr user id=" + userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -549,7 +709,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             send_data.post_count = 0;
             send_data.posts = [];
 
-            push_posts_from_tumblr(send_data.posts, response.posts, true, 0);
+            _pushPostsFromTumblr(send_data.posts, response.posts, true, 0);
             send_data.post_count = send_data.posts.length;
 
             res.send(send_data);
@@ -558,28 +718,45 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var user_id;
-    var errorMsg;
+    "use strict";
+    var userId;
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    user_id = _getUserId(req);
-    if (user_id == 0) {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = _getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    User.findById(userId, function (err, user) {
         var p;
         var client;
+        var blog_id;
+        var options;
+        var errMsg;
 
-        var blog_id = req.params.blog_id;
-        var options = {};
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        blog_id = req.params.blog_id;
+        options = {};
 
         p = user.findProvider("tumblr");
+        if (!p) {
+            errMsg = "Fail to get tumblr user id=" + userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
@@ -632,7 +809,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 send_data.post_count = 0;
                 send_data.posts = [];
 
-                push_posts_from_tumblr(send_data.posts, response.posts, false, 0);
+                _pushPostsFromTumblr(send_data.posts, response.posts, false, 0);
                 send_data.post_count = send_data.posts.length;
 
                 res.send(send_data);
