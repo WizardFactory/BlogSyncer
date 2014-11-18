@@ -6,9 +6,47 @@ body {
     min-height: 2000px;
     padding-top: 70px;
 }
-
 @media (min-width: 768px) {
     .collapse.dis {
         display: block;
     }
+}
+.content-title {
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+.content-body {
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+.content-box {
+    padding: 10px;
+}
+.content-inner-box {
+    margin: 10px;
+    padding: 10px;
+    background-color: #eeeeee;
+}
+.btn-blog {
+    margin-bottom: 5px;
+    display: block;
+    text-align: left;
+}
+.btn-blog:last-child {
+    margin-bottom: 0px;
+}
+.btn-right {
+    float: right;
+}
+.icon-blog {
+    width: 30px;
+    height: 30px;
+}
+.icon-delete {
+    width: 16px;
+    height: 16px;
 }

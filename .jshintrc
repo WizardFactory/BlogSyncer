@@ -1,0 +1,95 @@
+{
+    // http://www.jshint.com/docs/options/
+
+    // Enforcing Options 
+
+    "bitwise":    true,         // Warn about using bitwise operators
+    "camelcase":  false,        // Warn about variable naming - 모든 변수의 이름은 camelcase나 대문자 _의 조합으로 씀. 
+    "curly":      true,         // Warn when blocks omit {} - 중괄호는 꼭 씀 (while, if ...의 블록)
+    "eqeqeq":     true,         // Warn about unsafe comparisons - 비교연산자  !=, == 대신 !==, === 로 
+    "es3":        false,        // Warn about incompatibilities with the ES3 specification es3 - 예전 버전 JS 로 쓴다.  
+    "forin":      true,         // Warn about unsafe for..in forin , - for-in 문 안에서 hasOwnProperty쓰게 함. 
+    "freeze":     true,         // Warn about overwriting prototypes of native objects, - JS가 정의한 객체의 프로퍼티를 재정의하지 못함. 
+    "immed":      true,         // Warn about the use of immediate function invocations without wrapping them in parentheses  
+                                // 즉시실행함수가 wrapping되지 않고 호출되는 것,  
+    "newcap":     false,        // Warn about the use of a uncapitalized constructor , new로 생성하는 객체의 첫글자가 대문자인것을 확인하나? 
+    "noarg":      true,         // Warn about arguments.caller and .callee  // .caller, .callee 사용하지 않음. 
+    "noempty":    true,         // Warn about empty blocks 
+    //"nonbsp" :    false,          //  warns about "non-breaking whitespace" characters.
+    "nonew":      true,         // Warn about new usage for side effects  - new를 사용할때 assign 하지 않는 것을 찾아줌. 
+    "plusplus":   true,         // Warn about the use of unary increment and decrement operators ++, --  쓰지 않음. 코드의 질을 낮춘다고 생각함. 
+    "undef":      true,         // Warn when variable is undefined , 선언되지 않은 변수 사용을 체크해줌. 
+    "strict":     true,         // Warn when code is not in strict mode , strict mode 사용 여부 체크
+    "trailing":   true,         // Warn about trailing whitespace  "/"로 여러 줄에 코드를 쓸때 공백을 체크해줌. 
+    "latedef":    false,        // Warn about the use of a variable before it was defined: [false, true, nofunc] 변수 사용전 선언 체크 nofunc는 함수만 무시
+
+    "unused":     false,        // Warn about unused variables: [false, true, vars, strict]  // 사용하지 않은 변수 체크. 
+                                // 코드가 너무 제한적이 될까봐 일단 false로 함.  
+    "indent":     4,            // Indentation: number - 들여쓰기 
+    "quotmark":   false,        // Quotation marks: [false, true, single, double] 
+    "maxparams":  8,            // Max number of formal parameter in function: any
+    //"maxdepth":   3,          // Max number of statements in function: any
+    //"maxstatements": 10,      // Max number of statemnets in function: any
+    //"maxcomplexity": 10,      //Max cyclomatic complexity throughout your code :any 
+    //"maxlen": 80,             //Max length of a line: any
+
+    // Relaxing option
+    "asi" : false,              // Suppress warnings about missing semicolons 
+    "boss" : false,             // Suppress warnings about assignments inside if/for/... 
+    "debug": false,             // Suppress warnings about debugging code 
+    "eqnull": false,            // Suppress warnings about == null 
+    "esnext": false,            // EcmaScript.next 
+    "evil": false,              // Suppress warnings about eval 
+    "expr": false,              // Suppress warnings about the use of expressions as statements 
+    "funcscope": false,         // Suppress warnings about variable usage outside of its declared block
+    "globalstrict": false,      // Suppress warnings about the use of global strict mode 
+    "iterator": false,          // Suppresses warnings about the __iterator__ property
+    "lastsemic": false,         // Suppress warnings about missing semicolons, but only when the semicolon is omitted for the last statements in a one-line block
+    "laxbreak": false,          // Suppress warnings about comma-first coding style
+    "laxcomma": false,           // Suppresses warnings about comma-first coding style:
+    "loopfunc": true,           // Suppress warnings about functions inside loops  - 루프안에서 함수 선언을 배제함.
+    "moz": false,               // Check if your code uses Mozilla JavaScript extensions
+    "multistr": true,            // Suppress warnings about multi-line strings
+                                // 일단 true로 해두고 향후 사용성 문제가 있으면 바꾸도록 하는 것이 바람직할듯.
+    "notypeof": true,           // Suppress warnings about invalid typeof operator values
+    "proto": false,             // Suppress warnings about the __proto__property
+    "scripturl": false,         // Suppress warnings about the use of script-targeted URLs
+    "smarttabs": false,         // Suppress warnings about mixed tabs and spaces when the latter are use for alignments only
+    "shadow": false,            // Suppress warnings about variable shadowing
+    "sub": false,               // Suppress warnings about using [] notation when it can be expressed in dot notation
+    "supernew": false,           // Suppresses warnings about "weired" constructions, 익명함수로 객체 생성자를 사용하는 걸 체크.
+    "validthis": true,          // Suppress warnings about about possible strict violations 객체가 아닌 함수내에서 this 사용 금지
+
+    // Environments -  전역변수 선언들...
+    "browser": true,          // Browser
+    "couch": false,           // CouchDB
+    "devel": false,           // Development, alert, console 같은 것에 대한.
+    "dojo": false,            // Dojo Toolkit
+    "jquery": true,           // jQuery
+    "mootools": false,        // MooTools
+    "node": true,             // Node.js
+    "nonstandard": false,     // escape and unescape
+    "phantom": false,         // PhantomJS
+    "prototypejs": false,     // Prototype
+    "rhino": false,           // Rhino
+    "worker": false,          // Web Worker
+    "wsh": false,             // Windows Script Host
+    "yui": false,             // YUI
+
+    //Legacy
+    "nomen": false,           // Disallow the use of _ in variables
+    "onevar": false,          // One var statement per function
+    "passfail": false,        // Stop on first error - JSHint 체크를 첫번째 stop 이나 error에서 멈춘다는.. .
+    "white": false,            // Disallow messy white space
+    //"maxerr": 50 ,          // options allows you to set the maximum amount of warnings. Default is 50.
+
+    // Custom Globals
+    "globals"        : [
+        //angular.js
+        "angular",
+        "inject",
+        //require.js
+        "define",
+        "bs"
+    ]
+}

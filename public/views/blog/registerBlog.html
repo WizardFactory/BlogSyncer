@@ -1,39 +1,27 @@
-<div style="max-width: 360px; margin-left: auto; margin-right:auto">
-    <h2 class="form-signin-heading">{{message}}</h2><br>
-    <div align="left">
-        <div style="padding:10px;">
-            <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
-        </div>
-        <div style="margin:10px; padding:10px;" ng-repeat="group in groups track by $index">
-            <a class="btn btn-lg btn-default" ng-repeat="site in group
-
-            .group" ng-click="onClickGroup($parent.$index, $index);"
-               style="font-size: 16px;
-                margin-bottom: 5px;
-                border-radius: 3px;
-                display: block;
-                text-align: left">
-                <img src="https://cdn2.iconfinder.com/data/icons/freecns-cumulus/16/519692-200_CircledMinus-128.png" width="16px" height="16px" ng-show="button[0]==='Confirm'"/>
-                <img ng-src="views/imgs/{{site.provider.providerName}}.png" width="38" height="38">&nbsp;&nbsp;
-                {{site.provider.providerName}} : {{site.blog.blog_id}}&nbsp;&nbsp;
-            </a>
-        </div>
-        <div style="padding:10px;">
-            <a href="" ng-click="onClickButton(button[1]);">{{button[1]}}</a>
-            <a href="" style="float:right;" ng-click="onClickButton(button[2]);" ng-if="button[1]==='Register'">
-                {{button[2]}}
-            </a>
-        </div>
-        <div style="padding:10px;" ng-if="button[1]==='Register'">
-            <a class="btn btn-lg btn-default" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index"
-               style="font-size: 16px;
-                margin-bottom: 5px;
-                border-radius: 3px;
-                display: block;
-                text-align: left">
-                <img ng-src="views/imgs/{{site.provider.providerName}}.png" width="38" height="38">&nbsp;&nbsp;
-                {{site.provider.providerName}} : {{site.blog.blog_id}}
-            </a>
-        </div>
+<div class="content-title">
+    <h1 class="page-header">{{title}}</h1>
+</div>
+<div class="content-body">
+    <div class="content-box">
+        <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
+    </div>
+    <div class="content-inner-box hero-unit" ng-repeat="group in groups track by $index">
+        <p class="btn btn-default btn-blog" ng-repeat="site in group.group" ng-click="onClickGroup($parent.$index, $index);">
+            <img class="icon-delete" src="https://cdn2.iconfinder.com/data/icons/freecns-cumulus/16/519692-200_CircledMinus-128.png" ng-show="button[0]==='Confirm'"/>
+            <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
+            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_id}}
+        </p>
+    </div>
+    <div class="content-box">
+        <a href="" ng-click="onClickButton(button[1]);">{{button[1]}}</a>
+        <a href="" class="btn-right" ng-click="onClickButton(button[2]);" ng-if="button[1]==='Register'">{{button[2]}}</a>
+    </div>
+    <div class="content-box" ng-if="button[1]==='Register'">
+        <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === 'selected'}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
+            <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
+            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_id}}
+        </a>
     </div>
 </div>
+
+<hr class="featurette-divider">

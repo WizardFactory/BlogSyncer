@@ -1,40 +1,22 @@
-<!--<div class="inner cover">-->
-<!--<form class="form-signin" role="form">-->
-<!--<h2 class="form-signin-heading">{{ message }}</h2>-->
-<!--<input type="email" class="form-control" placeholder="Email address" required autofocus>-->
-<!--<input type="password" class="form-control" placeholder="Password" required>-->
-<!--<label class="checkbox">-->
-<!--<input type="checkbox" value="remember-me"><p align="left">Remember me</p>-->
-<!--</label>-->
-<!--<button class="btn btn-sm btn-default" type="submit">Sign in</button>-->
-<!--</form>-->
-<!--</div>-->
-
-<div style="max-width: 360px; margin-left: auto; margin-right:auto">
-    <h2 class="form-signin-heading">{{ message }}</h2>
-    <div align="left">
-        <div style="padding:10px;">
-            <p class="btn btn-lg btn-default" ng-repeat="provider in user.providers"
-               style="font-size: 16px;
-                margin-bottom: 5px;
-                border-radius: 3px;
-                display: block;
-                text-align: left">
-                <img ng-src="views/imgs/{{ provider.providerName }}.png" width="38" height="38">&nbsp;&nbsp;
-                {{ provider.providerName }} : {{provider.displayName}}</p>
-        </div>
-        <div ng-if="user._id" style="padding:10px;">
-            <a href="/logout">Logout</a>
-        </div>
-        <div style="padding:10px;">
-            <a class="btn btn-lg btn-default" ng-href="/{{ provider }}/authorize" ng-repeat="provider in providers"
-                style="font-size: 16px;
-                margin-bottom: 5px;
-                border-radius: 3px;
-                display: block;
-                text-align: left">
-                <img ng-src="views/imgs/{{ provider }}.png" width="38" height="38">&nbsp;&nbsp;
-                {{ provider }}</a>
-        </div>
+<div class="content-title">
+    <h1 class="page-header">{{title}}</h1>
+</div>
+<div class="content-body">
+    <div class="content-box">
+        <a class="btn btn-default btn-blog" ng-repeat="provider in user.providers">
+            <img class="icon-blog" ng-src="views/imgs/{{provider.providerName}}.png"/>
+            &nbsp;&nbsp;{{provider.providerName}} : {{provider.displayName}}
+        </a>
+    </div>
+    <div class="content-box" ng-if="user._id">
+        <a href="/logout">Logout</a>
+    </div>
+    <div class="content-box">
+        <a class="btn btn-default btn-blog" ng-href="/{{provider}}/authorize" ng-repeat="provider in providers">
+            <img class="icon-blog" ng-src="views/imgs/{{provider}}.png"/>
+            &nbsp;&nbsp;{{provider}}
+        </a>
     </div>
 </div>
+
+<hr class="featurette-divider">

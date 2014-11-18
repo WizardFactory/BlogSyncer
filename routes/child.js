@@ -22,21 +22,17 @@ open_child_socket = function (port) {
     .on('connection', function (socket) {
         log.debug('blog: connection');
         socket.on('blog', function (data) {
-            if (data.msg == 'getSites') {
+            if (data.msg === 'getSites') {
                 log.debug('recv msg =' + data.msg);
                 var sites = blogBot.getSites(data.user);
                 socket.emit('sites', sites);
             }
-            else if(data.msg == 'getPosts') {
+            else if(data.msg === 'getPosts') {
                 log.debug('recv msg =' + data.msg);
                 var posts = blogBot.getPosts(data.user);
                 socket.emit('posts', {"post_db":posts});
             }
-            else if(data.msg == 'getComments') {
-                log.debug('recv msg =' + data.msg + " postIDs = "+data.post_ids.length);
-                blogBot.getComments(socket, data.user, data.post_ids);
-            }
-            else if(data.msg == 'getReplies') {
+            else if(data.msg === 'getReplies') {
                 log.debug('recv msg =' + data.msg + " post_ids = " + data.post_ids.length);
                 for (var i=0;i<data.post_ids.length;i++) {
                    log.debug('get reply count post_ids='+data.post_ids[i]);
@@ -45,20 +41,20 @@ open_child_socket = function (port) {
                    });
                 }
             }
-            else if (data.msg == 'getHistories') {
+            else if (data.msg === 'getHistories') {
                 log.debug('recv msg =' + data.msg);
                 var histories = blogBot.getHistories(data.user);
                 socket.emit('histories', {"histories":histories});
             }
-            else if (data.msg == 'addGroup') {
+            else if (data.msg === 'addGroup') {
                 log.debug('recv msg =' + data.msg);
                 blogBot.addGroup(data.user, data.group);
             }
-            else if (data.msg == 'setGroups') {
+            else if (data.msg === 'setGroups') {
                 log.debug('recv msg =' + data.msg);
                 blogBot.setGroups(data.user, data.groups);
             }
-            else if (data.msg == 'getGroups') {
+            else if (data.msg === 'getGroups') {
                 log.debug('recv msg =' + data.msg);
                 var groups = blogBot.getGroups(data.user);
                 socket.emit('groups', {"groups":groups});

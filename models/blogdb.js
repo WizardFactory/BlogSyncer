@@ -73,6 +73,6 @@ siteSchema.methods.findBlogFromSite = function(site, blogId) {
 };
 
 // create the model for users and expose it to our app
-module.exports = mongoose.model('SiteDb', siteSchema);
+module.exports = mongoose.model('Site', siteSchema);
 
 
