@@ -7,8 +7,10 @@
         <hr class="featurette-divider">
         <div class="row featurette">
             <div class="col-md-10">
+                <h2 class="featurette-heading">{{ post.rawTime }}</h2>
                 <h2 class="featurette-heading">{{post.title}}</h2>
                 <div class="btn-group" ng-repeat="info in post.infos track by $index">
+                    <h6 class="featurette-heading">{{ info.modified }}</h6>
                     <button type="button" class="btn btn-default">
                         <img ng-src="views/imgs/{{info.provider_name}}.png" width="18" height="18">
                         {{info.blog_id}}
