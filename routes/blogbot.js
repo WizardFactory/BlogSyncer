@@ -34,7 +34,7 @@ BlogBot.users = [];
  */
 BlogBot._findDbByUser = function (user, dbName) {
     "use strict";
-    for (var i=0; i<this.users.length; i++) {
+    for (var i=0; i<this.users.length; i+=1) {
         if (this.users[i].user._id === user._id ||
             this.users[i].user._id.toString() === user._id) {
             switch(dbName) {
@@ -86,9 +86,9 @@ BlogBot._sendPostToBlogs = function (user, recvPosts) {
     post = recvPosts.posts[0];
     groups = groupDb.findGroupByBlogInfo(providerName, blogId);
 
-    for (i = 0; i<groups.length; i++) {
+    for (i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
-        for (j=0; j<group.length; j++) {
+        for (j=0; j<group.length; j+=1) {
             targetBlog = group[j].blog;
             provider = group[j].provider;
             if (targetBlog.blog_id === blogId && provider.providerName === providerName) {
@@ -126,7 +126,7 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
     postDb = BlogBot._findDbByUser(user, "post");
 
 //TODO: if post count over max it need to extra update - aleckim
-    for(i=0; i<recvPosts.posts.length;i++) {
+    for(i=0; i<recvPosts.posts.length;i+=1) {
         newPost = recvPosts.posts[i];
         if (postDb.findPostByPostIdOfBlog(recvPosts.provider_name, recvPosts.blog_id, newPost.id)) {
             log.debug('this post was already saved - provider ' + recvPosts.provider_name + ' blog ' +
@@ -180,8 +180,8 @@ BlogBot._getAndPush = function(user) {
     after = postDb.lastUpdateTime.toISOString();
     //log.debug(after);
 
-    for (i=0; i<sites.length; i++) {
-        for (j=0; j<sites[i].blogs.length; j++) {
+    for (i=0; i<sites.length; i+=1) {
+        for (j=0; j<sites[i].blogs.length; j+=1) {
 
             //if this blog was not grouped pass
             groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
@@ -207,7 +207,7 @@ BlogBot.task = function() {
     var user;
 
     log.info('Run BlogBot Task users=' + this.users.length);
-    for (i=0; i<this.users.length; i++)  {
+    for (i=0; i<this.users.length; i+=1)  {
         user = this.users[i].user;
         BlogBot._getAndPush(user);
     }
@@ -227,7 +227,7 @@ BlogBot.load = function () {
             return;
         }
 
-        for (i=0; i<users.length; i++) {
+        for (i=0; i<users.length; i+=1) {
             BlogBot.start(users[i]);
         }
     });
@@ -349,7 +349,7 @@ BlogBot.isStarted = function (user) {
     "use strict";
     var i;
 
-    for(i=0; i<this.users.length; i++) {
+    for(i=0; i<this.users.length; i+=1) {
         if (this.users[i]._id === user._id) {
             return true;
         }
@@ -407,7 +407,7 @@ BlogBot._addBlogsToDb = function (user, recvBlogs) {
 
     site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
     if (site) {
-        for (i=0; i<blogs.length; i++) {
+        for (i=0; i<blogs.length; i+=1) {
             blog = blogDb.findBlogFromSite(site, blogs[i].blog_id);
             if (!blog) {
                 site.blogs.push(blogs[i]);
@@ -418,7 +418,7 @@ BlogBot._addBlogsToDb = function (user, recvBlogs) {
     }
     else {
         blogDb.sites.push({"provider": provider, "blogs": blogs});
-        for (i=0; i<blogs.length; i++) {
+        for (i=0; i<blogs.length; i+=1) {
             BlogBot._requestGetPostCount(user, provider.providerName, blogs[i].blog_id,
                 BlogBot._addPostsFromNewBlog);
         }
@@ -442,7 +442,7 @@ BlogBot.findOrCreate = function (user) {
 
     log.debug("find or create blog db of user " + user._id);
 
-    for (i = 0; i<user.providers.length; i++)
+    for (i=0; i<user.providers.length; i+=1)
     {
         p = user.providers[i];
         BlogBot._requestGetBloglist(user, p.providerName, p.providerId, BlogBot._addBlogsToDb);
@@ -578,7 +578,7 @@ BlogBot._addPostsToDb = function(user, recvPosts) {
     postDb = BlogBot._findDbByUser(user, "post");
 
     //TODO: change from title to id
-    for (i=0; i<recvPosts.posts.length; i++) {
+    for (i=0; i<recvPosts.posts.length; i+=1) {
 
         BlogBot._makeTitle(recvPosts.posts[i]);
 
@@ -1020,7 +1020,7 @@ BlogBot._getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
     parsePostDb.posts = [];
     rangeLastNum = rangeStartNum + rangeTotalNum;
 
-    for (j=reqStartNum; j<rangeLastNum; j++ ) {
+    for (j=reqStartNum; j<rangeLastNum; j+=1 ) {
         if(!postDb.posts[j]) {
             break;
         }
@@ -1072,7 +1072,7 @@ BlogBot.getReplies = function (user, postID, callback) {
     postDb = BlogBot._findDbByUser(user, "post");
     post = postDb.findPostById(postID);
 
-    for (i=0; i<post.infos.length; i++) {
+    for (i=0; i<post.infos.length; i+=1) {
         BlogBot._requestGetPosts(user, post.infos[i].provider_name, post.infos[i].blog_id,
             {"post_id":post.infos[i].post_id},
             function (user, recvPosts) {

@@ -8,9 +8,11 @@ var mongoose = require('mongoose');
 var userSchema = mongoose.Schema({
     providers : [{providerName: String,
                 providerId : String,
+                displayName : String,
                 accessToken : String,
                 refreshToken : String,
-                displayName : String }]
+                token : String,
+                tokenSecret : String}]
 });
 
 /**
@@ -25,7 +27,7 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     var p;
     var tmp;
 
-    for ( i=0; i<this.providers.length; i++) {
+    for ( i=0; i<this.providers.length; i+=1) {
         tmp = this.providers[i];
         if (tmp.providerName === providerName) {
             if (!providerId) {
