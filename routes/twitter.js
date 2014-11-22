@@ -2,7 +2,7 @@
  * Created by aleckim on 2014. 7. 19..
  */
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
@@ -25,7 +25,7 @@ passport.deserializeUser(function(obj, done) {
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
+    UserDb.findOne({'providers.providerName':provider.providerName
             , 'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
@@ -57,7 +57,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -81,7 +81,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    var newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -110,7 +110,7 @@ passport.use(new TwitterStrategy({
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
-            "providerId":profile.username,
+            "providerId":profile.username.toString(),
             "displayName":profile.username
         };
 
