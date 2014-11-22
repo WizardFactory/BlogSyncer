@@ -2,35 +2,46 @@
  * Created by aleckim on 2014. 7. 19..
  */
 
-var User = require('../models/userdb');
-
 var express = require('express');
 var passport = require('passport');
+var request = require('request');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-var blogBot = require('./blogbot');
-var router = express.Router();
+var log = require('winston');
 
+var User = require('../models/userdb');
+var blogBot = require('./blogbot');
+
+var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.google;
 
-var log = require('winston');
+var GOOGLE_API_URL = "https://www.googleapis.com";
 
 passport.serializeUser(function(user, done) {
+    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
+    "use strict";
     done(null, obj);
 });
 
-
-
+/***
+ *
+ * @param req
+ * @param provider
+ * @param callback
+ * @private
+ */
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
-            , 'providers.providerId': provider.providerId},
+    "use strict";
+    User.findOne({'providers.providerName':provider.providerName,
+                    'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
+            var newUser;
 
             if (err) {
                 return callback(err);
@@ -44,8 +55,9 @@ function _updateOrCreateUser(req, provider, callback) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -82,13 +94,14 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    newUser = new User();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, newUser, isNewProvider);
                     });
@@ -104,15 +117,22 @@ passport.use(new GoogleStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
+        "use strict";
+        var providerId;
+        var provider;
+
 //        log.debug("accessToken:" + accessToken);
 //        log.debug("refreshToken:" + refreshToken);
 //        log.debug("profile:" + JSON.stringify(profile));
 
-        var provider = {
+        //It's not correct information. but I confirmed by /blogger/v3/users/self"
+        providerId = "g"+profile.id;
+
+        provider = {
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
-            "providerId": profile.id,
+            "providerId": providerId,
             "displayName": profile.displayName
         };
 
@@ -137,16 +157,144 @@ passport.use(new GoogleStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('google')
+    passport.authenticate('google', { scope: [
+                                        'https://www.googleapis.com/auth/plus.login',
+                                        'https://www.googleapis.com/auth/blogger'] })
 );
 
 router.get('/authorized',
     passport.authenticate('google', { failureRedirect: '/#signin' }),
     function(req, res) {
+        "use strict";
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
     }
 );
+
+/**
+ *
+ * @param req
+ * @param res
+ * @returns {*}
+ * @private
+ */
+function _getUserId(req, res) {
+    "use strict";
+    var userId;
+    var errorMsg;
+
+    if (req.user) {
+        userId = req.user._id;
+    }
+    else if (req.query.userid) {
+
+       //this request form child process;
+       userId = req.query.userid;
+    }
+    else {
+        errorMsg = 'You have to login first!';
+        log.debug(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+    }
+    return userId;
+}
+
+/**
+ *
+ * @param url
+ * @param accessToken
+ * @param callback
+ * @private
+ */
+function _requestGet(url, accessToken, callback) {
+    "use strict";
+
+    request.get(url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + accessToken
+        }
+    }, function (err, response, body) {
+        callback(err, response, body);
+    });
+}
+
+/**
+ *
+ * @param err
+ * @param response
+ * @param body
+ * @returns {*}
+ * @private
+ */
+function _checkError(err, response, body) {
+    "use strict";
+    var bodyErr;
+    var errStr;
+
+    if (err) {
+        log.debug(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        errStr = 'google API error: ' + response.statusCode + ' ' + body.message;
+        log.error(body);
+        log.error(errStr);
+        return new Error(errStr);
+    }
+}
+
+router.get('/info', function (req, res) {
+    "use strict";
+    var userId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+
+    User.findById(userId, function (err, user) {
+        var p;
+        var errMsg;
+        var apiUrl;
+
+        if (err) {
+            log.error("Fail to find user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id="+userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("google");
+        if (!p) {
+            errMsg = "Fail to get google  user id="+userId;
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
+
+        apiUrl = GOOGLE_API_URL + "/blogger/v3/users";
+        apiUrl += "/self";
+
+        log.info("apiUrl="+apiUrl);
+        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+            var hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.send(hasError);
+                return;
+            }
+            log.debug(body);
+            res.send(body);
+        });
+    });
+});
 
 module.exports = router;
