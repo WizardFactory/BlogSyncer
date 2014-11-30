@@ -1005,9 +1005,9 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
 
 /**
  *
- * @param postDb
- * @param reqStartNum
- * @param reqTotalCnt
+ * @param {object} postDb
+ * @param {number} reqStartNum
+ * @param {number} reqTotalCnt
  * @returns {{}}
  * @private
  */
@@ -1015,8 +1015,8 @@ BlogBot._getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
     "use strict";
 
     var parsePostDb;
-    var rangeStartNum = Number(reqStartNum);
-    var rangeTotalNum = Number(reqTotalCnt);
+    var rangeStartNum = reqStartNum;
+    var rangeTotalNum = reqTotalCnt;
     var rangeLastNum;
     var j;
 
@@ -1049,7 +1049,7 @@ BlogBot.getPosts = function (user, startNum, totalNum) {
 
     postDb = BlogBot._findDbByUser(user, "post");
     log.debug("total posts.length="+postDb.posts.length);
-    parsedPostDb = BlogBot._getParsedPostDb(postDb, startNum, totalNum);
+    parsedPostDb = BlogBot._getParsedPostDb(postDb, Number(startNum), Number(totalNum));
 
     log.debug('blogbot get posts : userid='+ user._id + ', startNum=' + startNum + ', totalNum=' + totalNum);
 
