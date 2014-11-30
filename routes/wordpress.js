@@ -595,7 +595,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
+    UserDb.findById(userID, function (err, user) {
         var blogID = req.params.blogID;
         var postID = req.params.postID;
         var p = user.findProvider("Wordpress", blogID);
