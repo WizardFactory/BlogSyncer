@@ -36,7 +36,7 @@ BlogBot._findDbByUser = function (user, dbName) {
     "use strict";
     for (var i=0; i<this.users.length; i+=1) {
         if (this.users[i].user._id === user._id ||
-            this.users[i].user._id.toString() === user._id) {
+            this.users[i].user._id.toString() === user._id.toString()) {
             switch(dbName) {
                 case "blog":
                     return this.users[i].blogDb;
@@ -354,7 +354,8 @@ BlogBot.isStarted = function (user) {
     var i;
 
     for(i=0; i<this.users.length; i+=1) {
-        if (this.users[i]._id === user._id) {
+        if (this.users[i].user._id === user._id ||
+            this.users[i].user._id.toString() === user._id.toString()) {
             return true;
         }
     }
@@ -572,7 +573,7 @@ BlogBot._addPostsToDb = function(user, recvPosts) {
     var i;
     var post;
 
-    if (!recvPosts) {
+    if (!recvPosts || !recvPosts.posts) {
         log.error("Fail to get recv posts");
         return;
     }
