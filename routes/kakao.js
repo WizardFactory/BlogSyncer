@@ -3,7 +3,7 @@
  */
 
 // load up the user model
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
@@ -29,7 +29,7 @@ passport.deserializeUser(function(obj, done) {
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
+    UserDb.findOne({'providers.providerName':provider.providerName
             , 'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
@@ -61,7 +61,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -85,7 +85,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    var newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -114,7 +114,7 @@ passport.use(new KakaoStrategy({
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
-            "providerId": profile.id,
+            "providerId": profile.id.toString(),
             "displayName": profile.username
         };
 
@@ -213,7 +213,7 @@ router.get('/me', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
 
@@ -235,7 +235,7 @@ router.get('/mystories', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
 
@@ -261,7 +261,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
 
@@ -287,8 +287,8 @@ router.get('/bot_bloglist', function (req, res) {
             send_data.blogs.push({"blog_id": nickname, "blog_title": nickname, "blog_url": blog_url});
             /*
              { "provider":object, "blogs":
-             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-             {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
+             [ {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
+             {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
              */
             res.send(send_data);
         });
@@ -326,7 +326,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var blog_id = req.params.blog_id;
         var last_id = req.query.offset;
@@ -395,7 +395,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
         var blog_id = req.params.blog_id;
@@ -484,7 +484,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var newPost = _makeNewPost(req.body);
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var p = user.findProvider("kakao");
         var api_url = KAKAO_API_URL + "/v1/api/story/post/note";
@@ -545,7 +545,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
 
         var blog_id = req.params.blogID;
         var post_id = req.params.postID;

@@ -6,7 +6,7 @@
 var request = require('request');
 var log = require('winston');
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 var SiteDb = require('../models/blogdb');
 var GroupDb = require('../models/groupdb');
 var HistoryDb = require('../models/historydb');
@@ -36,7 +36,7 @@ BlogBot._findDbByUser = function (user, dbName) {
     "use strict";
     for (var i=0; i<this.users.length; i+=1) {
         if (this.users[i].user._id === user._id ||
-            this.users[i].user._id.toString() === user._id) {
+            this.users[i].user._id.toString() === user._id.toString()) {
             switch(dbName) {
                 case "blog":
                     return this.users[i].blogDb;
@@ -143,7 +143,7 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
         //push post to others blog and addPostInfo
     }
 
-    log.info(postDb.posts);
+    //log.info(postDb.posts);
     if (postDbIsUpdated) {
         postDb.save(function (err) {
             if (err) {
@@ -176,6 +176,10 @@ BlogBot._getAndPush = function(user) {
     blogDb = BlogBot._findDbByUser(user, "blog");
     postDb = BlogBot._findDbByUser(user, "post");
     groupDb = BlogBot._findDbByUser(user, "group");
+
+    if (blogDb === undefined || postDb === undefined || groupDb === undefined) {
+        return;
+    }
     sites = blogDb.sites;
     after = postDb.lastUpdateTime.toISOString();
     //log.debug(after);
@@ -192,7 +196,7 @@ BlogBot._getAndPush = function(user) {
             }
 
             BlogBot._requestGetPosts(user, sites[i].provider.providerName, sites[i].blogs[j].blog_id,
-                    {"after": after}, BlogBot._pushPostsToBlogs);
+                {"after": after}, BlogBot._pushPostsToBlogs);
         }
     }
     postDb.lastUpdateTime = new Date();
@@ -219,7 +223,7 @@ BlogBot.task = function() {
 BlogBot.load = function () {
     "use strict";
 
-    User.find({}, function(err, users) {
+    UserDb.find({}, function(err, users) {
         var i;
 
         if (err) {
@@ -229,6 +233,7 @@ BlogBot.load = function () {
 
         for (i=0; i<users.length; i+=1) {
             BlogBot.start(users[i]);
+            BlogBot.findOrCreate(users[i]);
         }
     });
 };
@@ -268,7 +273,6 @@ BlogBot.start = function (user) {
                 }
             });
             log.info("make new siteDb for user._id="+user._id);
-            BlogBot.findOrCreate(user);
         }
     });
 
@@ -350,7 +354,8 @@ BlogBot.isStarted = function (user) {
     var i;
 
     for(i=0; i<this.users.length; i+=1) {
-        if (this.users[i]._id === user._id) {
+        if (this.users[i].user._id === user._id ||
+            this.users[i].user._id.toString() === user._id.toString()) {
             return true;
         }
     }
@@ -568,7 +573,7 @@ BlogBot._addPostsToDb = function(user, recvPosts) {
     var i;
     var post;
 
-    if (!recvPosts) {
+    if (!recvPosts || !recvPosts.posts) {
         log.error("Fail to get recv posts");
         return;
     }
