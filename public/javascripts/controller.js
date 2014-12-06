@@ -88,6 +88,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
                 $scope.button[0] = 'Confirm';
             }
         } else if (button === 'Confirm') {
+            updateBlogGroup();
             $scope.button[0] = 'Delete';
         } else if (button === 'Create') {
             disselectAllBlog();
@@ -125,6 +126,16 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         for (var i = 0; i < $scope.sites.length; i += 1) {
             $scope.selected[i] = 'normal';
         }
+    }
+
+    function updateBlogGroup() {
+        $http.put("/blogs/groups",{"groups":$scope.groups})
+            .success(function (data) {
+                console.log(data);
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
     }
 
     function registerBlogGroup() {
