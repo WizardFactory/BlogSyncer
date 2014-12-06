@@ -1,49 +1,41 @@
-<div class="content-title">
-    <h1 class="page-header">{{title}}</h1>
-</div>
-<div>
-    <p class="lead">posts : {{posts.length}}</p>
-    <div  class="container marketing" ng-repeat="post in posts">
-        <hr class="featurette-divider">
-        <div class="row featurette">
-            <div class="col-md-10">
-                <h2 class="featurette-heading">{{post.title}}</h2>
-                <div class="btn-group" ng-repeat="info in post.infos track by $index">
-                    <h4 class="featurette-heading">{{info.formattedDate}}</h4>
-                    <button type="button" class="btn btn-default">
-                        <img ng-src="views/imgs/{{info.provider_name}}.png" width="18" height="18">
-                        {{info.blog_id}}
-                     </button>
-                    <button type="button" class="btn btn-default" ng-repeat="reply in info.replies track by $index">
-                            <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
-                                <span ng-repeat="(key, value) in reply track by $index">
-                                    {{key}} <span class="badge">{{value}}</span>
+<div when-scrolled="requestMorePosts()">
+    <div class="content-title">
+        <h1 class="page-header">{{title}}</h1>
+    </div>
+    <div>
+        <p class="lead">posts : {{posts.length}}</p>
+        <div  class="container marketing" ng-repeat="post in posts">
+            <hr class="featurette-divider">
+            <div class="row featurette">
+                <div class="col-md-10">
+                    <h2 class="featurette-heading">{{post.title}}</h2>
+                    <div class="btn-group" ng-repeat="info in post.infos track by $index">
+                        <h4 class="featurette-heading">{{info.formattedDate}}</h4>
+                        <button type="button" class="btn btn-default">
+                            <img ng-src="views/imgs/{{info.provider_name}}.png" width="18" height="18">
+                            {{info.blog_id}}
+                         </button>
+                        <button type="button" class="btn btn-default" ng-repeat="reply in info.replies track by $index">
+                                <span ng-click="getReplyContent(info.provider_name, info.blog_id, info.post_id)">
+                                    <span ng-repeat="(key, value) in reply track by $index">
+                                        {{key}} <span class="badge">{{value}}</span>
+                                    </span>
                                 </span>
-                            </span>
-                    </button>
-                </div>
+                        </button>
+                    </div>
 
-                <p class="lead" ng-repeat="info in post.infos track by $index">
-                    <span ng-repeat="comment in info.comments track by $index">
-                        {{comment.date}}
-                        <strong ng-bind-html="comment.content">
-                        {{comment.content}}
-                        </strong>
-                        <br>
-                    </span>
-                </p>
+                    <p class="lead" ng-repeat="info in post.infos track by $index">
+                        <span ng-repeat="comment in info.comments track by $index">
+                            {{comment.date}}
+                            <strong ng-bind-html="comment.content">
+                            {{comment.content}}
+                            </strong>
+                            <br>
+                        </span>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
-    <div>
-        <hr class="featurette-divider">
-        <div align="center">
-            <button class="more btn btn-primary btn-block" data-ng-click="requestMorePosts()">
-                More <span class="caret"></span>
-            </button>
-        </div>
-    </div>
+    <hr class="featurette-divider">
 </div>
-
-
-<hr class="featurette-divider">
