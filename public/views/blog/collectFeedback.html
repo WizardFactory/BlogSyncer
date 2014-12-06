@@ -7,10 +7,9 @@
         <hr class="featurette-divider">
         <div class="row featurette">
             <div class="col-md-10">
-
                 <h2 class="featurette-heading">{{post.title}}</h2>
                 <div class="btn-group" ng-repeat="info in post.infos track by $index">
-                    <h6 class="featurette-heading">{{info.formattedDate}}</h6>
+                    <h4 class="featurette-heading">{{info.formattedDate}}</h4>
                     <button type="button" class="btn btn-default">
                         <img ng-src="views/imgs/{{info.provider_name}}.png" width="18" height="18">
                         {{info.blog_id}}
@@ -24,15 +23,12 @@
                     </button>
                 </div>
 
-                <p class="lead" ng-repeat="info in post.infos track by $index"
-                    style="font-size: 16px;
-                    text-align: left;
-                    margin-top: 10px">
+                <p class="lead" ng-repeat="info in post.infos track by $index">
                     <span ng-repeat="comment in info.comments track by $index">
                         {{comment.date}}
-                        <span ng-bind-html="comment.content" style="font-weight: bold">
+                        <strong ng-bind-html="comment.content">
                         {{comment.content}}
-                        </span>
+                        </strong>
                         <br>
                     </span>
                 </p>
