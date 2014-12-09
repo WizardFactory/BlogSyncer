@@ -36,6 +36,7 @@ function _updateOrCreateUser(req, provider, callback) {
             'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
+            var newUser;
             var isNewProvider = false;
 
             if (err) {
@@ -86,7 +87,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    newUser = new User();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -131,7 +132,9 @@ passport.use(new TistoryStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -228,6 +231,7 @@ router.get('/info', function (req, res) {
 
             var hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -278,6 +282,7 @@ router.get('/post/list/:simpleName', function (req, res) {
         request.get(api_url, function (err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -322,25 +327,33 @@ router.get('/bot_bloglist', function (req, res) {
 
         log.debug(api_url);
         request.get(api_url, function (err, response, body) {
-            var hasError = _checkError(err, response, body);
+            var hasError;
+            var send_data;
+            var item;
+            var i;
+            var hostname;
+            var target_url;
+
+            hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
             //log.debug(body);
 
-            var send_data = {};
+            send_data = {};
             send_data.provider = p;
             //log.debug(p);
 
             send_data.blogs = [];
 
-            var item = JSON.parse(body).tistory.item;
+            item = JSON.parse(body).tistory.item;
             log.debug('item length=' + item.length);
 
-            for (var i = 0; i < item.length; i++) {
-                var hostname = url.parse(item[i].url).hostname;
-                var target_url;
+            for (i = 0; i < item.length; i+=1) {
+                hostname = url.parse(item[i].url).hostname;
+                target_url;
                 if (hostname.indexOf('tistory.com') > -1) {
                     target_url = hostname.split('.')[0];
                 }
@@ -405,6 +418,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -412,7 +426,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             item = JSON.parse(body).tistory.item;
             log.debug('item length=' + item.length);
 
-            for (i = 0; i < item.length; i++) {
+            for (i = 0; i < item.length; i+=1) {
                 hostname = url.parse(item[i].url).hostname;
                 target_host = hostname.split('.')[0];
                 if (target_host === target_url) {
@@ -499,7 +513,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         }
         api_url += "&output=json";
 
-        //log.debug(api_url);
+        log.debug(api_url);
 
         request.get(api_url, function (err, response, body) {
             var hasError;
@@ -514,6 +528,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -535,7 +550,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
             //log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
 
-            for (i = 0; i < recv_post_count; i++) {
+            for (i = 0; i < recv_post_count; i+=1) {
                 raw_post = {};
                 if (recv_post_count === 1) {
                     raw_post = item.posts.post;
@@ -564,7 +579,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 //send_post.categories.push(change_to_string(raw_post.categoryId));
                 send_post.categories.push(raw_post.categoryId);
                 send_data.posts.push(send_post);
-                send_data.post_count++;
+                send_data.post_count += 1;
             }
             res.send(send_data);
         });
@@ -616,22 +631,29 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
         log.debug(api_url);
         request.get(api_url, function (err, response, body) {
-            var hasError = _checkError(err, response, body);
+            var hasError;
+            var item;
+            var send_data;
+            var raw_post;
+            var send_post;
+
+            hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
             //log.debug(data);
-            var item = JSON.parse(body).tistory.item;
+            item = JSON.parse(body).tistory.item;
 
-            var send_data = {};
+            send_data = {};
             send_data.provider_name = 'tistory';
             send_data.blog_id = target_url;
             send_data.posts = [];
 
-            var raw_post = item;
+            raw_post = item;
 
-            var send_post = {};
+            send_post = {};
             send_post.title = raw_post.title;
             send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
             send_post.id = raw_post.id;
@@ -728,6 +750,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -813,6 +836,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -824,7 +848,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             send.postID = postID;
             send.found = item.totalCount;
             send.comments = [];
-            for (i = 0; i < item.totalCount; i++) {
+            for (i = 0; i < item.totalCount; i+=1) {
                 comment = {};
                 comment.date = item.comments.comment[i].date;
                 comment.URL = item.url;

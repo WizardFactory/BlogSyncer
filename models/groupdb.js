@@ -17,7 +17,9 @@ var groupSchema = mongoose.Schema({
                 providerId: String,
                 accessToken: String,
                 refreshToken: String,
-                displayName: String
+                displayName: String,
+                token : String,
+                tokenSecret : String
             },
             blog: {
                 blog_id: String,

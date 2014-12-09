@@ -128,7 +128,9 @@ passport.use(new KakaoStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -274,7 +276,8 @@ router.get('/bot_bloglist', function (req, res) {
 
             log.debug(body);
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -347,7 +350,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         _requestGet(api_url, p.accessToken, function (err, response, body) {
             //log.debug(data);
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -414,7 +418,8 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             //log.debug(body);
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -492,7 +497,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
         _requestPost(api_url, p.accessToken, newPost, function (err, response, body) {
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -561,7 +567,8 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 
         _requestGet(api_url, p.accessToken, function (err, response, body) {
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
