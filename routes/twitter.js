@@ -124,7 +124,9 @@ passport.use(new TwitterStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {

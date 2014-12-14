@@ -80,7 +80,7 @@ function _updateOrCreateUser(req, provider, callback) {
                             log.error(err);
                             return callback(err);
                         }
-                        // if there is no provider, add to User
+                        // if there is no provider, add to user
                         user.providers.push(provider);
                         user.save(function(err) {
 
@@ -146,7 +146,9 @@ passport.use(new GoogleStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -231,7 +233,6 @@ function _requestGet(url, accessToken, callback) {
  */
 function _checkError(err, response, body) {
     "use strict";
-    var bodyErr;
     var errStr;
 
     if (err) {
@@ -288,6 +289,7 @@ router.get('/info', function (req, res) {
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -311,7 +313,6 @@ router.get('/bot_bloglist', function (req, res) {
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
-        var sendData = {};
 
         if (err) {
             log.error(err);
@@ -340,18 +341,14 @@ router.get('/bot_bloglist', function (req, res) {
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var items;
             var i;
+            var sendData = {};
             var hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
-
-            log.debug(body);
-            res.send(body);
-
             sendData.provider = p;
-            //log.debug(p);
-
             sendData.blogs = [];
 
             items = body.items;
@@ -416,6 +413,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -424,9 +422,407 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             sendData.provider_name = 'google';
             sendData.blog_id = body.id;
             sendData.post_count = body.posts.totalItems;
+            log.info("post_count="+sendData.post_count);
             res.send(sendData);
         });
     });
 });
+
+router.get('/bot_posts/:blog_id', function (req, res) {
+    "use strict";
+    var userId;
+    var blogId;
+    var offset;
+    var after;  //startDate
+    var count;  //maxResults
+    var nextPageToken;
+    var hasOptionalParameters = false;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+
+    blogId = req.params.blog_id;
+    offset = req.query.offset;
+    after = req.query.after;
+    nextPageToken = req.query.nextPageToken;
+
+    if (offset) {
+        count = offset.split("-")[1];
+        hasOptionalParameters = true;
+    }
+    if (after) {
+        hasOptionalParameters = true;
+    }
+    if (nextPageToken) {
+        hasOptionalParameters = true;
+    }
+
+    UserDb.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id=" + userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("google");
+        if (!p) {
+            log.error("Fail to find provider google");
+            res.send("Fail to find provider google");
+            return;
+        }
+
+        apiUrl = GOOGLE_API_URL + "/blogger/v3";
+        apiUrl += "/blogs";
+        apiUrl += "/" + blogId;
+        apiUrl += "/posts";
+
+        if (hasOptionalParameters) {
+            apiUrl += "?";
+        }
+        if (count) {
+            apiUrl += "maxResults="+count;
+            apiUrl += "&";
+        }
+        if (after) {
+            apiUrl += "startDate="+after;
+            apiUrl += "&";
+        }
+        if (nextPageToken) {
+            apiUrl += "pageToken="+nextPageToken;
+            apiUrl += "&";
+        }
+
+        /* &에 대한 예외처리를 안하기 위해서 추가함. */
+        apiUrl += "status=live";
+
+        log.info("apiUrl=" + apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+            var hasError;
+            var sendData;
+            var i;
+            var sendPost;
+            var item;
+            var j;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+
+            sendData = {};
+            sendData.provider_name = 'google';
+            sendData.blog_id = blogId;
+
+            if (body.items) {
+                sendData.post_count = body.items.length;
+            }
+            else {
+                sendData.post_count = 0;
+            }
+
+            sendData.nextPageToken = body.nextPageToken;
+            sendData.posts = [];
+
+            for (i = 0; i<sendData.post_count; i+=1) {
+                item = body.items[i];
+                sendPost = {};
+                sendPost.title = item.title;
+                sendPost.modified = item.updated;
+                sendPost.id = item.id;
+                sendPost.url = item.url;
+                sendPost.categories = [];
+                sendPost.tags = [];
+                if (item.labels) {
+                    for (j = 0; j < item.labels.length; j += 1) {
+                        sendPost.tags.push(item.labels[j]);
+                    }
+                }
+                sendData.posts.push(sendPost);
+            }
+
+            res.send(sendData);
+        });
+    });
+});
+
+router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
+    "use strict";
+    var userId;
+    var blogId;
+    var postId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    blogId = req.params.blog_id;
+    postId = req.params.post_id;
+
+    UserDb.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id=" + userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("google");
+        if (!p) {
+            log.error("Fail to find provider google");
+            res.send("Fail to find provider google");
+            return;
+        }
+
+        apiUrl = GOOGLE_API_URL + "/blogger/v3";
+        apiUrl += "/blogs";
+        apiUrl += "/" + blogId;
+        apiUrl += "/posts";
+        apiUrl += "/" + postId;
+
+        log.info("apiUrl=" + apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+            var hasError;
+            var sendData;
+            var sendPost;
+            var item;
+            var j;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+            sendData = {};
+            sendData.provider_name = 'google';
+            sendData.blog_id = blogId;
+            sendData.post_count = 1;
+            sendData.posts = [];
+
+            item = body;
+            sendPost = {};
+            sendPost.title = item.title;
+            sendPost.modified = item.updated;
+            sendPost.id = item.id;
+            sendPost.url = item.url;
+            sendPost.categories = [];
+            sendPost.tags = [];
+            if (item.labels) {
+                for (j=0; j<item.labels.length; j+=1) {
+                    sendPost.tags.push(item.labels[j]);
+                }
+            }
+            sendPost.content = item.content;
+            sendPost.replies = [];
+            sendPost.replies.push({"comment_count":item.replies.totalItems});
+
+            sendData.posts.push(sendPost);
+
+            res.send(sendData);
+        });
+    });
+});
+
+router.get('/bot_comments/:blogId/:postId', function (req, res) {
+    "use strict";
+    var userId;
+    var blogId;
+    var postId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+
+    blogId = req.params.blogId;
+    postId = req.params.postId;
+
+    UserDb.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id=" + userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("google");
+        if (!p) {
+            log.error("Fail to find provider google");
+            res.send("Fail to find provider google");
+            return;
+        }
+
+        apiUrl = GOOGLE_API_URL + "/blogger/v3";
+        apiUrl += "/blogs";
+        apiUrl += "/" + blogId;
+        apiUrl += "/posts";
+        apiUrl += "/" + postId;
+        apiUrl += "/comments";
+
+        log.info("apiUrl=" + apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+            var hasError;
+            var sendData;
+            var comment;
+            var item;
+            var i;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+
+            sendData = {};
+            sendData.providerName = p.providerName;
+            sendData.blogID = blogId;
+            sendData.postID = postId;
+            sendData.found = body.items.length;
+            sendData.comments = [];
+
+            comment = {};
+
+            for(i=0; i<body.items.length; i+=1) {
+                item = body.items[i];
+                comment.date = item.updated;
+                comment.URL = item.selfLink;
+                comment.content = item.content;
+                sendData.comments.push(comment);
+            }
+
+            res.send(sendData);
+        });
+    });
+});
+
+router.post('/bot_posts/new/:blog_id', function (req, res) {
+    "use strict";
+    var userId;
+    var blogId;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    blogId = req.params.blog_id;
+
+    UserDb.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+        var newPost;
+
+        if (err) {
+            log.error(err);
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user id=" + userId);
+            log.error(err);
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("google");
+        if (!p) {
+            log.error("Fail to find provider google");
+            res.send("Fail to find provider google");
+            return;
+        }
+
+        apiUrl = GOOGLE_API_URL + "/blogger/v3";
+        apiUrl += "/blogs";
+        apiUrl += "/" + blogId;
+        apiUrl += "/posts";
+
+        log.info("apiUrl=" + apiUrl);
+
+        newPost = {};
+        newPost.kind = 'blogger#post';
+        //newPost.blog = {};
+        newPost.title = req.body.title;
+        newPost.content = req.body.content;
+
+        request.post(apiUrl, {
+            json: true,
+            headers: {
+                "authorization": "Bearer " + p.accessToken
+            },
+            body: newPost
+        }, function (err, response, body) {
+            var hasError;
+            var sendData;
+            var sendPost;
+            var item;
+            var j;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+
+            sendData = {};
+            sendData.provider_name = 'google';
+            sendData.blog_id = blogId;
+            sendData.post_count = 1;
+            sendData.posts = [];
+
+            item = body;
+            sendPost = {};
+            sendPost.title = item.title;
+            sendPost.modified = item.updated;
+            sendPost.id = item.id;
+            sendPost.url = item.url;
+            sendPost.categories = [];
+            sendPost.tags = [];
+            if (item.labels) {
+                for (j = 0; j < item.labels.length; j += 1) {
+                    sendPost.tags.push(item.labels[j]);
+                }
+            }
+            sendPost.replies = [];
+            sendPost.replies.push({"comment_count":item.replies.totalItems});
+
+            sendData.posts.push(sendPost);
+
+            res.send(sendData);
+        });
+    });
+ });
 
 module.exports = router;

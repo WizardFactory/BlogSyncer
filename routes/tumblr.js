@@ -147,7 +147,9 @@ passport.use(new TumblrStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -247,6 +249,7 @@ router.get('/info', function (req, res) {
             if (error) {
 
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -304,6 +307,7 @@ router.get('/posts/:blogName', function (req, res) {
             if (error) {
 
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -366,6 +370,7 @@ router.get('/bot_bloglist', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -437,6 +442,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             if (error) {
                 //throw new Error(error);
                 log.error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -628,6 +634,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -699,6 +706,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -787,6 +795,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -798,6 +807,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
                 if (error) {
                     //throw new Error(error);
+                    res.statusCode = 400;
                     res.send(error);
                     return;
                 }

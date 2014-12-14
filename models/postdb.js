@@ -6,6 +6,9 @@
 var log = require('winston');
 var mongoose = require('mongoose');
 
+/*
+ * provider내에 사용자 상관없이 blogId는 유일하기 때문에 providerId는 필요없다.
+ */
 var postinfoSechema = mongoose.Schema({
     title: String,
     type: String,

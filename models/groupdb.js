@@ -17,7 +17,9 @@ var groupSchema = mongoose.Schema({
                 providerId: String,
                 accessToken: String,
                 refreshToken: String,
-                displayName: String
+                displayName: String,
+                token : String,
+                tokenSecret : String
             },
             blog: {
                 blog_id: String,
@@ -62,7 +64,7 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     }
 
     if (newGroups.length === 0) {
-        log.error("Fail to find group providerName="+providerName+" blogId="+blogId);
+        log.warn("Fail to find group providerName="+providerName+" blogId="+blogId);
     }
 
     return newGroups;

@@ -14,7 +14,9 @@ var siteSchema = mongoose.Schema({
             providerId: String,
             accessToken: String,
             refreshToken: String,
-            displayName: String
+            displayName: String,
+            token : String,
+            tokenSecret : String
         },
         blogs: [{
             blog_id: String,

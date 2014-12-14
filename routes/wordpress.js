@@ -139,7 +139,9 @@ passport.use(new wordpressStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -223,6 +225,7 @@ router.get('/me', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -270,6 +273,7 @@ router.get('/bot_bloglist', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -320,6 +324,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -372,6 +377,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -460,6 +466,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -538,6 +545,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }, function (err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }
@@ -609,6 +617,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         _requestGet(api_url, p.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
+                res.statusCode = response.statusCode;
                 res.send(hasError);
                 return;
             }

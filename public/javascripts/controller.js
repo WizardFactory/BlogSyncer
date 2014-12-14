@@ -234,8 +234,8 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                 url += "/" + post.infos[j].post_id;
 
                 date = new Date(post.infos[j].modified);
-                formattedDate = date.getFullYear() + '/' + (date.getMonth() + 1) + '/' + date.getDate() + ' '
-                + date.getHours() + ':' + date.getMinutes();
+                formattedDate = date.getFullYear() + '/' + (date.getMonth() + 1) +
+                            '/' + date.getDate() + ' ' + date.getHours() + ':' + date.getMinutes();
                 //console.log(formattedDate);
 
                 post.infos[j].formattedDate = formattedDate;
@@ -244,7 +244,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                     .success(function (data) {
                         var indexes;
 
-                        if (data === undefined) {
+                        if (!data) {
                             console.log("Fail to get data");
                             return;
                         }
