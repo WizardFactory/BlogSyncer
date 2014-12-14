@@ -70,7 +70,6 @@ router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
     var providerName;
     var postID;
     var blogID;
-    var i;
 
     user = _getUser(req,res);
     if (!user) {

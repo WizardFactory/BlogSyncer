@@ -64,7 +64,7 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     }
 
     if (newGroups.length === 0) {
-        log.error("Fail to find group providerName="+providerName+" blogId="+blogId);
+        log.warn("Fail to find group providerName="+providerName+" blogId="+blogId);
     }
 
     return newGroups;

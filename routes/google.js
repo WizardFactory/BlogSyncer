@@ -80,7 +80,7 @@ function _updateOrCreateUser(req, provider, callback) {
                             log.error(err);
                             return callback(err);
                         }
-                        // if there is no provider, add to User
+                        // if there is no provider, add to user
                         user.providers.push(provider);
                         user.save(function(err) {
 
@@ -459,7 +459,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         hasOptionalParameters = true;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
@@ -572,7 +572,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     blogId = req.params.blog_id;
     postId = req.params.post_id;
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
@@ -660,7 +660,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
     blogId = req.params.blogId;
     postId = req.params.postId;
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
@@ -739,7 +739,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
     blogId = req.params.blog_id;
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
         var newPost;

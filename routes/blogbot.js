@@ -177,9 +177,11 @@ BlogBot._getAndPush = function(user) {
     postDb = BlogBot._findDbByUser(user, "post");
     groupDb = BlogBot._findDbByUser(user, "group");
 
-    if (blogDb === undefined || postDb === undefined || groupDb === undefined) {
+    if (!blogDb || !postDb || !groupDb) {
+        log.error("blogbot _getandpush userId="+user._id+" Fail to find blogDb or postDb or groupDb");
         return;
     }
+
     sites = blogDb.sites;
     after = postDb.lastUpdateTime.toISOString();
     //log.debug(after);
@@ -233,7 +235,6 @@ BlogBot.load = function () {
 
         for (i=0; i<users.length; i+=1) {
             BlogBot.start(users[i]);
-            BlogBot.findOrCreate(users[i]);
         }
     });
 };
@@ -273,6 +274,7 @@ BlogBot.start = function (user) {
                 }
             });
             log.info("make new siteDb for user._id="+user._id);
+            BlogBot.findOrCreate(user);
         }
     });
 
@@ -1111,14 +1113,21 @@ BlogBot.getReplies = function (user, postID, callback) {
             function (user, recvPosts) {
                 var recvPost;
                 var sendData;
+                var errMsg;
 
                 if (!recvPosts)  {
-                    log.error("Fail to get recv_posts");
+                    errMsg = "Fail to get recv_posts";
+                    log.error(errMsg);
+
+                    //user is hasError
+                    callback(user);
                     return;
                 }
 
                 if (!recvPosts.posts)  {
-                    log.error("Fail to get recv_posts.posts");
+                    errMsg = "Fail to get posts of recv_posts";
+                    log.error(errMsg);
+                    callback(errMsg);
                     return;
                 }
 
@@ -1147,17 +1156,23 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
     "use strict";
 
     BlogBot._requestGetPosts(user, providerName, blogID, {"post_id":postID},
-        function (user, recvPosts) {
+        function (userOrError, recvPosts) {
             var recvPost;
             var sendData;
+            var errMsg;
 
+            errMsg = "blogbot get_replies_by_info user=" + user._id + " ";
             if (!recvPosts)  {
-                log.error("Fail to get recv posts");
+                errMsg += "Fail to get recv posts";
+                log.error(errMsg);
+                callback();
                 return;
             }
 
             if (!recvPosts.posts)  {
-                log.error("Fail to get recv posts.posts");
+                errMsg += "Fail to get posts of recvposts";
+                log.error(errMsg);
+                callback();
                 return;
             }
 
