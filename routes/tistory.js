@@ -8,7 +8,7 @@ var url = require('url');
 var passport = require('passport');
 var TistoryStrategy = require('passport-tistory').Strategy;
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 var blogBot = require('./blogbot');
 
 var router = express.Router();
@@ -32,7 +32,7 @@ passport.deserializeUser(function(obj, done) {
 
 function _updateOrCreateUser(req, provider, callback) {
     "use strict";
-    User.findOne({'providers.providerName':provider.providerName,
+    UserDb.findOne({'providers.providerName':provider.providerName,
             'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
@@ -65,7 +65,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -87,7 +87,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    newUser = new User();
+                    newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -118,7 +118,7 @@ passport.use(new TistoryStrategy({
             "providerName": 'tistory',
             "accessToken": accessToken,
             "refreshToken": refreshToken,
-            "providerId": profile.userId,
+            "providerId": profile.userId.toString(),
             "displayName": profile.id
         };
 
@@ -206,7 +206,7 @@ router.get('/info', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
 
@@ -249,7 +249,7 @@ router.get('/post/list/:simpleName', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var blog_name;
@@ -300,7 +300,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
 
@@ -353,7 +353,6 @@ router.get('/bot_bloglist', function (req, res) {
 
             for (i = 0; i < item.length; i+=1) {
                 hostname = url.parse(item[i].url).hostname;
-                target_url;
                 if (hostname.indexOf('tistory.com') > -1) {
                     target_url = hostname.split('.')[0];
                 }
@@ -378,7 +377,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url;
@@ -463,7 +462,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url;
@@ -513,7 +512,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         }
         api_url += "&output=json";
 
-        log.debug(api_url);
+        //log.debug(api_url);
 
         request.get(api_url, function (err, response, body) {
             var hasError;
@@ -596,7 +595,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url;
@@ -682,7 +681,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var target_url;
@@ -792,7 +791,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var api_url;
         var targetURL;

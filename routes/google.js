@@ -8,7 +8,7 @@ var request = require('request');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 var log = require('winston');
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 var blogBot = require('./blogbot');
 
 var router = express.Router();
@@ -36,8 +36,8 @@ passport.deserializeUser(function(obj, done) {
  */
 function _updateOrCreateUser(req, provider, callback) {
     "use strict";
-    User.findOne({'providers.providerName':provider.providerName,
-                    'providers.providerId': provider.providerId},
+    UserDb.findOne({'providers.providerName':provider.providerName,
+            'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
@@ -70,7 +70,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -94,7 +94,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    newUser = new User();
+                    newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -132,7 +132,7 @@ passport.use(new GoogleStrategy({
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
-            "providerId": providerId,
+            "providerId": providerId.toString(),
             "displayName": profile.displayName
         };
 
@@ -160,8 +160,8 @@ passport.use(new GoogleStrategy({
 
 router.get('/authorize',
     passport.authenticate('google', { scope: [
-                                        'https://www.googleapis.com/auth/plus.login',
-                                        'https://www.googleapis.com/auth/blogger'] })
+        'https://www.googleapis.com/auth/plus.login',
+        'https://www.googleapis.com/auth/blogger'] })
 );
 
 router.get('/authorized',
@@ -191,8 +191,8 @@ function _getUserId(req, res) {
     }
     else if (req.query.userid) {
 
-       //this request form child process;
-       userId = req.query.userid;
+        //this request form child process;
+        userId = req.query.userid;
     }
     else {
         errorMsg = 'You have to login first!';
@@ -256,7 +256,7 @@ router.get('/info', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var errMsg;
         var apiUrl;
@@ -310,7 +310,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
@@ -379,7 +379,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     blogId = req.params.blog_id;
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 

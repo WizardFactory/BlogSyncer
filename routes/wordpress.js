@@ -4,7 +4,7 @@
  */
 
 // load up the user model
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 
 //var blogCommon  = require('./blogjs/blogCommon');
 
@@ -31,7 +31,7 @@ passport.deserializeUser(function(obj, done) {
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    User.findOne({'providers.providerName':provider.providerName
+    UserDb.findOne({'providers.providerName':provider.providerName
             , 'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
@@ -63,7 +63,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -87,7 +87,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    var newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -125,7 +125,7 @@ passport.use(new wordpressStrategy({
             "providerName":profile.provider,
             "accessToken":accessToken,
             "refreshToken":refreshToken,
-            "providerId":providerId, //it is not user id(it's blog_id)
+            "providerId":providerId.toString(), //it is not user id(it's blog_id)
             "displayName":profile.displayName
         };
 
@@ -213,7 +213,7 @@ router.get('/me', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
 
@@ -245,7 +245,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var user_id = _getUserID(req);
 
-    if (user_id == 0) {
+    if (user_id === 0) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -253,7 +253,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    if (req.query.providerid == false) {
+    if (req.query.providerid === false) {
         var errorMsg = 'User:'+user_id+' didnot have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -261,7 +261,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
 
@@ -279,7 +279,7 @@ router.get('/bot_bloglist', function (req, res) {
             }
 
 //            log.debug(body);
-            var blog_id = body.ID;
+            var blog_id = body.ID.toString();
             var blog_title = body.name;
             var blog_url = body.URL;
             var send_data = {};
@@ -290,8 +290,8 @@ router.get('/bot_bloglist', function (req, res) {
 
             /*
              { "provider":object, "blogs":
-             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-             {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
+             [ {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
+             {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
              */
             res.send(send_data);
         });
@@ -311,7 +311,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var p;
         var api_url;
         var blog_id = req.params.blog_id;
@@ -331,7 +331,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             var send_data = {};
             log.debug(body.post_count);
             send_data.provider_name = 'Wordpress';
-            send_data.blog_id = body.ID;
+            send_data.blog_id = body.ID.toString();
             send_data.post_count = body.post_count;
             res.send(send_data);
         });
@@ -350,7 +350,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var offset = req.query.offset;
         var after = req.query.after;
@@ -408,7 +408,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 var send_post = {};
                 send_post.title = raw_post.title;
                 send_post.modified = raw_post.modified;
-                send_post.id = raw_post.ID;
+                send_post.id = raw_post.ID.toString();
                 send_post.url = raw_post.URL;
                 send_post.categories = [];
                 send_post.tags = [];
@@ -452,7 +452,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
         var p = user.findProvider("Wordpress", blog_id);
@@ -530,7 +530,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var p = user.findProvider("Wordpress", blog_id);
         var api_url = WORDPRESS_API_URL+"/sites/"+blog_id +"/posts/new";
@@ -603,7 +603,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(userID, function (err, user) {
         var blogID = req.params.blogID;
         var postID = req.params.postID;
         var p = user.findProvider("Wordpress", blogID);
