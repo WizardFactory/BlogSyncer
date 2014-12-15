@@ -263,6 +263,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     $scope.user = User.getUser();
     $scope.title = 'Collect Feedback';
     $scope.posts = [];
+    $scope.waiting = false;
     $scope.getReplyContent = function (providerName, blogID, postID) {
         //window.alert("getReplyContent = " + providerName + blogID + postID);
         var url = providerName + "/bot_comments/" + blogID + "/" + postID;
@@ -284,21 +285,25 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
 
         var url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
         console.log(url);
+        $scope.waiting = true;
         $http.get(url)
             .success(function (data) {
                 if (data.posts.length === 0) {
                     console.log("posts is zero");
+                    $scope.waiting = false;
                     return;
                 }
 
                 reqStartNum += data.posts.length;
                 $timeout(function () {
                     $scope.posts = $scope.posts.concat(data.posts);
+                    $scope.waiting = false;
                     getReplies(data);
                 }, 0);
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
+                $scope.waiting = false;
             });
     };
 
