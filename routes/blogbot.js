@@ -125,6 +125,13 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
 
     postDb = BlogBot._findDbByUser(user, "post");
 
+    log.debug(recvPosts.posts);
+
+    if(recvPosts.posts === undefined ) {
+        log.error("length is undefined !!!");
+        return;
+    }
+
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<recvPosts.posts.length;i+=1) {
         newPost = recvPosts.posts[i];
@@ -639,32 +646,52 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
 
         callback(user, recvPosts);
 
-        if (recvPosts.posts.length) {
-            index = recvPosts.posts.length-1;
-            newOpts = {};
-            if (options.offset) {
-                newOpts.offset = options.offset;
+        index = recvPosts.posts.length-1;
+        newOpts = {};
+
+        if(providerName === "twitter") {
+            if (recvPosts.stopReculsive === false) {
+                newOpts.offset = recvPosts.posts[index].id;
+                log.debug("[Twitter] _recursiveGetPosts: get posts");
+                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
             }
             else {
-                //for kakao
-                newOpts.offset = recvPosts.posts[index].id;
+                log.info("[Twitter] Stop recursive call functions");
             }
-            //for google
-            if (recvPosts.nextPageToken) {
-                newOpts.nextPageToken = recvPosts.nextPageToken;
-            }
-            if (options.nextPageToken) {
-                if (!recvPosts.nextPageToken) {
-                    //it's last page.
-                    return;
-                }
-            }
-
-            log.debug("_recursiveGetPosts: get posts");
-            BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
         }
         else {
-            log.info("Stop recursive call functions");
+            if (recvPosts.posts.length) {
+                if (options.offset) {
+                    newOpts.offset = options.offset;
+                }
+                else {
+                    //for kakao
+                    newOpts.offset = recvPosts.posts[index].id;
+                }
+                //for google
+                if (recvPosts.nextPageToken) {
+                    newOpts.nextPageToken = recvPosts.nextPageToken;
+                }
+                if (options.nextPageToken) {
+                    if (!recvPosts.nextPageToken) {
+                        //it's last page.
+                        return;
+                    }
+                }
+
+                log.debug("_recursiveGetPosts: get posts");
+                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+            }
+            else {
+                if (recvPosts.posts.length !== 0) {
+                    newOpts.offset = recvPosts.posts[index].id;
+                    log.debug("_recursiveGetPosts: get posts");
+                    BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+                }
+                else {
+                    log.info("Stop recursive call functions");
+                }
+            }
         }
     });
 };
@@ -700,6 +727,11 @@ BlogBot._addPostsFromNewBlog = function(user, recvPostCount) {
     if (providerName === 'google') {
         options = {};
         options.offset = '0-20'; //page count isn't used
+        BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
+    }
+    else if(providerName === "twitter") {
+        // twitter use max_id, so recursiveGetPosts must be called.
+        options = {};
         BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
     }
     else if (postCount < 0) {
@@ -784,42 +816,6 @@ BlogBot._requestGetBloglist = function(user, providerName, providerId, callback)
  * @param user
  * @param {string} providerName
  * @param {string} blogId
- * @param {function} callback
- * @private
- */
-BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
-    "use strict";
-    var url;
-
-    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
-    url += blogId;
-    url += "?";
-    url += "userid=" + user._id;
-
-    log.debug("url="+url);
-    request.get(url, function (err, response, body) {
-        var hasError;
-        var recvPostCount;
-
-        hasError= _checkError(err, response, body);
-        if (hasError) {
-            callback(hasError);
-            return;
-        }
-
-        //log.debug(body);
-
-        recvPostCount = JSON.parse(body);
-
-        callback(user, recvPostCount);
-    });
-};
-
-/**
- *
- * @param user
- * @param {string} providerName
- * @param {string} blogId
  * @param {Object} options
  * @param {function} callback
  * @private
@@ -840,14 +836,12 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
         url += "after=" + options.after;
         url += "&";
     }
+
     if (options.offset) {
         url += "offset="+options.offset;
         url += "&";
     }
-    if (options.nextPageToken) {
-        url += "nextPageToken="+options.nextPageToken;
-        url += "&";
-    }
+
     url += "userid=" + user._id;
 
     log.debug(url);
@@ -864,6 +858,59 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
         //log.debug(body);
         recvPosts = JSON.parse(body);
         callback(user, recvPosts);
+    });
+};
+
+/**
+ *
+ * @param user
+ * @param {string} providerName
+ * @param {string} blogId
+ * @param {function} callback
+ * @private
+ */
+BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
+    "use strict";
+    var url;
+
+    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
+    url += blogId;
+    url += "?";
+
+    //?? options는 arg에 없는데 추가 되어서 에러가 나서 일단 주석 처리함
+    /*
+    if (options.after) {
+        url += "after=" + options.after;
+        url += "&";
+    }
+    if (options.offset) {
+        url += "offset="+options.offset;
+        url += "&";
+    }
+    if (options.nextPageToken) {
+        url += "nextPageToken="+options.nextPageToken;
+        url += "&";
+    }
+    */
+
+    url += "userid=" + user._id;
+
+    log.debug("url="+url);
+    request.get(url, function (err, response, body) {
+        var hasError;
+        var recvPostCount;
+
+        hasError= _checkError(err, response, body);
+        if (hasError) {
+            callback(hasError);
+            return;
+        }
+
+        //log.debug(body);
+
+        recvPostCount = JSON.parse(body);
+
+        callback(user, recvPostCount);
     });
 };
 
