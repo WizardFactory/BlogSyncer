@@ -6,7 +6,7 @@
 var request = require('request');
 var log = require('winston');
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 var SiteDb = require('../models/blogdb');
 var GroupDb = require('../models/groupdb');
 var HistoryDb = require('../models/historydb');
@@ -36,7 +36,7 @@ BlogBot._findDbByUser = function (user, dbName) {
     "use strict";
     for (var i=0; i<this.users.length; i+=1) {
         if (this.users[i].user._id === user._id ||
-            this.users[i].user._id.toString() === user._id) {
+            this.users[i].user._id.toString() === user._id.toString()) {
             switch(dbName) {
                 case "blog":
                     return this.users[i].blogDb;
@@ -150,7 +150,7 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
         //push post to others blog and addPostInfo
     }
 
-    log.info(postDb.posts);
+    //log.info(postDb.posts);
     if (postDbIsUpdated) {
         postDb.save(function (err) {
             if (err) {
@@ -183,6 +183,12 @@ BlogBot._getAndPush = function(user) {
     blogDb = BlogBot._findDbByUser(user, "blog");
     postDb = BlogBot._findDbByUser(user, "post");
     groupDb = BlogBot._findDbByUser(user, "group");
+
+    if (!blogDb || !postDb || !groupDb) {
+        log.error("blogbot _getandpush userId="+user._id+" Fail to find blogDb or postDb or groupDb");
+        return;
+    }
+
     sites = blogDb.sites;
     after = postDb.lastUpdateTime.toISOString();
     //log.debug(after);
@@ -199,7 +205,7 @@ BlogBot._getAndPush = function(user) {
             }
 
             BlogBot._requestGetPosts(user, sites[i].provider.providerName, sites[i].blogs[j].blog_id,
-                    {"after": after}, BlogBot._pushPostsToBlogs);
+                {"after": after}, BlogBot._pushPostsToBlogs);
         }
     }
     postDb.lastUpdateTime = new Date();
@@ -226,7 +232,7 @@ BlogBot.task = function() {
 BlogBot.load = function () {
     "use strict";
 
-    User.find({}, function(err, users) {
+    UserDb.find({}, function(err, users) {
         var i;
 
         if (err) {
@@ -357,7 +363,8 @@ BlogBot.isStarted = function (user) {
     var i;
 
     for(i=0; i<this.users.length; i+=1) {
-        if (this.users[i]._id === user._id) {
+        if (this.users[i].user._id === user._id ||
+            this.users[i].user._id.toString() === user._id.toString()) {
             return true;
         }
     }
@@ -575,7 +582,7 @@ BlogBot._addPostsToDb = function(user, recvPosts) {
     var i;
     var post;
 
-    if (!recvPosts) {
+    if (!recvPosts || !recvPosts.posts) {
         log.error("Fail to get recv posts");
         return;
     }
@@ -616,7 +623,7 @@ BlogBot._addPostsToDb = function(user, recvPosts) {
  * @param providerName
  * @param blogId
  * @param options
- * @param {function} callback
+ * @param {function} callback - _addPostsToDb
  * @private
  */
 BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callback) {
@@ -628,8 +635,6 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
 
         log.debug("recursive get posts: recv posts");
 
-        callback(user, recvPosts);
-
         if (!recvPosts) {
             log.error("Fail to get recv_posts");
             return;
@@ -639,12 +644,13 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
             return;
         }
 
+        callback(user, recvPosts);
+
         index = recvPosts.posts.length-1;
         newOpts = {};
 
         if(providerName === "twitter") {
-            if(recvPosts.stopReculsive === false)
-            {
+            if (recvPosts.stopReculsive === false) {
                 newOpts.offset = recvPosts.posts[index].id;
                 log.debug("[Twitter] _recursiveGetPosts: get posts");
                 BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
@@ -654,14 +660,37 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
             }
         }
         else {
-            if (recvPosts.posts.length !== 0) {
+            if (recvPosts.posts.length) {
+                if (options.offset) {
+                    newOpts.offset = options.offset;
+                }
+                else {
+                    //for kakao
+                    newOpts.offset = recvPosts.posts[index].id;
+                }
+                //for google
+                if (recvPosts.nextPageToken) {
+                    newOpts.nextPageToken = recvPosts.nextPageToken;
+                }
+                if (options.nextPageToken) {
+                    if (!recvPosts.nextPageToken) {
+                        //it's last page.
+                        return;
+                    }
+                }
 
-                newOpts.offset = recvPosts.posts[index].id;
                 log.debug("_recursiveGetPosts: get posts");
                 BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
             }
             else {
-                log.info("Stop recursive call functions");
+                if (recvPosts.posts.length !== 0) {
+                    newOpts.offset = recvPosts.posts[index].id;
+                    log.debug("_recursiveGetPosts: get posts");
+                    BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+                }
+                else {
+                    log.info("Stop recursive call functions");
+                }
             }
         }
     });
@@ -694,25 +723,28 @@ BlogBot._addPostsFromNewBlog = function(user, recvPostCount) {
     postCount = recvPostCount.post_count;
 
     //how many posts get per 1 time.
-    if (postCount > 0) {
-        if(providerName === "twitter") {
-            // twitter use max_id, so recursiveGetPosts must be called.
-            options = {};
-            BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
-        }
-        else {
-            for (i=0; i<postCount; i+=20) {
-                offset = i + '-20';
-                BlogBot._requestGetPosts(user, providerName, blogId, {"offset": offset}, BlogBot._addPostsToDb);
-            }
-        }
+    /* Todo : 모두 하나로 통일 필요. */
+    if (providerName === 'google') {
+        options = {};
+        options.offset = '0-20'; //page count isn't used
+        BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
+    }
+    else if(providerName === "twitter") {
+        // twitter use max_id, so recursiveGetPosts must be called.
+        options = {};
+        BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
     }
     else if (postCount < 0) {
         log.debug("post_count didn't supported");
         options = {};
         BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
     }
-
+    else if (postCount > 0) {
+        for (i=0; i<postCount; i+=20) {
+            offset = i + '-20';
+            BlogBot._requestGetPosts(user, providerName, blogId, {"offset": offset}, BlogBot._addPostsToDb);
+        }
+    }
     //else for nothing
 };
 
@@ -844,6 +876,23 @@ BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
     url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
     url += blogId;
     url += "?";
+
+    //?? options는 arg에 없는데 추가 되어서 에러가 나서 일단 주석 처리함
+    /*
+    if (options.after) {
+        url += "after=" + options.after;
+        url += "&";
+    }
+    if (options.offset) {
+        url += "offset="+options.offset;
+        url += "&";
+    }
+    if (options.nextPageToken) {
+        url += "nextPageToken="+options.nextPageToken;
+        url += "&";
+    }
+    */
+
     url += "userid=" + user._id;
 
     log.debug("url="+url);
@@ -902,13 +951,17 @@ BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
     log.debug('blogbot add history : userId='+ user._id);
     historyDb = BlogBot._findDbByUser(user, "history");
 
-    src = {};
-    src.title = srcPost.title;
-    src.id = srcPost.id;
-    src.url = srcPost.url;
-    dst = {};
-    dst.id = dstPost;
-    dst.url = dstPost.url;
+    if (srcPost) {
+        src = {};
+        src.title = srcPost.title;
+        src.id = srcPost.id;
+        src.url = srcPost.url;
+    }
+    if (dstPost) {
+        dst = {};
+        dst.id = dstPost.id;
+        dst.url = dstPost.url;
+    }
 
     history = {};
     history.tryTime = new Date();
@@ -1107,14 +1160,21 @@ BlogBot.getReplies = function (user, postID, callback) {
             function (user, recvPosts) {
                 var recvPost;
                 var sendData;
+                var errMsg;
 
                 if (!recvPosts)  {
-                    log.error("Fail to get recv_posts");
+                    errMsg = "Fail to get recv_posts";
+                    log.error(errMsg);
+
+                    //user is hasError
+                    callback(user);
                     return;
                 }
 
                 if (!recvPosts.posts)  {
-                    log.error("Fail to get recv_posts.posts");
+                    errMsg = "Fail to get posts of recv_posts";
+                    log.error(errMsg);
+                    callback(errMsg);
                     return;
                 }
 
@@ -1143,17 +1203,23 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
     "use strict";
 
     BlogBot._requestGetPosts(user, providerName, blogID, {"post_id":postID},
-        function (user, recvPosts) {
+        function (userOrError, recvPosts) {
             var recvPost;
             var sendData;
+            var errMsg;
 
+            errMsg = "blogbot get_replies_by_info user=" + user._id + " ";
             if (!recvPosts)  {
-                log.error("Fail to get recv posts");
+                errMsg += "Fail to get recv posts";
+                log.error(errMsg);
+                callback();
                 return;
             }
 
             if (!recvPosts.posts)  {
-                log.error("Fail to get recv posts.posts");
+                errMsg += "Fail to get posts of recvposts";
+                log.error(errMsg);
+                callback();
                 return;
             }
 

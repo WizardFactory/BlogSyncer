@@ -1,41 +1,19 @@
-bs.directive('multiselect',['$document', function($document) {
+bs.directive('whenScrolled', function () {
+    "use strict";
+
     return {
-        restrict: 'E',              // Element name
-        require: '?ngModel',
-        scope: {
-            choices: '=',
-            selected: '='
-        },
-        templateUrl: 'views/multiselect.html',
-        replace: true,
-        link: function(scope, element, attr){
-            scope.isVisible = false;
-            scope.isChecked = function(item){
-                if(scope.selected.indexOf(item) !== -1){
-                    return true;
+        restrict: 'A',
+        link: function (scope, element, attrs) {
+            var rawElement = element[0];
+            angular.element(window).bind('scroll', function () {
+                if (scope.waiting === true) {
+                    return;
                 }
-                return false;
-            };
-            scope.toggleCheck = function(item){
-                if(!scope.isChecked(item)){
-                    scope.selected.push(item);
-                }else{
-                    scope.selected.splice(scope.selected.indexOf(item), 1);
+                var rectObject = rawElement.getBoundingClientRect();
+                if (rectObject.top !== 0 && rectObject.bottom !== 0 && rectObject.bottom <= window.innerHeight + 100) {
+                    scope.$apply(attrs.whenScrolled);
                 }
-            };
-            scope.toggleSelect = function(){
-                scope.isVisible = !scope.isVisible;
-            };
-
-            element.bind('click', function(event) {
-                event.stopPropagation();
-            });
-
-            $document.bind('click', function(){
-                scope.$apply(function () {
-                    scope.isVisible = false;
-                });
             });
         }
     };
-}]);
+});

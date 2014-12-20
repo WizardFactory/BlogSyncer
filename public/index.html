@@ -47,7 +47,7 @@
                 <li ng-class="{active: menu == 'blogRegister'}"><a href="#blog/blogRegister" ng-click="menu = 'blogRegister'">블로그 등록</a></li>
                 <li ng-class="{active: menu == 'blogCollectFeedback'}"><a href="#blog/blogCollectFeedback" ng-click="menu = 'blogCollectFeedback'">모아보기</a></li>
                 <li ng-class="{active: menu == 'blogHistorySync'}"><a href="#blog/blogHistorySync" ng-click="menu = 'blogHistorySync'">히스토리</a></li>
-                <li ng-class="{active: menu == 'signin'}"><a href="#signin" ng-click="menu = 'signin'">{{ signstat }}</a></li>
+                <li ng-class="{active: menu == 'signin'}"><a href="#signin" ng-click="menu = 'signin'">{{signstat}}</a></li>
             </ul>
         </div><!--/.nav-collapse -->
     </div>
@@ -56,7 +56,7 @@
 <div class="container">
     <!-- angular templating -->
     <!-- this is where content will be injected -->
-    <div ng-view></div>
+    <div ng-view autoscroll="true"></div>
 </div>
 
 <div class="container" align="center">

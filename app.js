@@ -59,17 +59,18 @@ mongoose.connect(connectInfo);
 
 blogBot.load();
 
+/* server마다 시간 오차가 있을 수 있음. 원래는 그래도 상관없을 수 있으나, 정확한 분석이 필요. */
 setInterval(function() {
     "use strict";
 
     blogBot.task();
-}, 1000*60); //1 min
+}, 1000*60*2); //2 min
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(favicon(__dirname + '/public/views/imgs/favicon.ico'));
-app.use(logger('dev'));
+//app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded());
 app.use(cookieParser());

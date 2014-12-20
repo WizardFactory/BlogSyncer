@@ -2,7 +2,7 @@
  * Created by aleckim on 2014. 7. 5..
  */
 
-var User = require('../models/userdb');
+var UserDb = require('../models/userdb');
 
 var express = require('express');
 var passport = require('passport');
@@ -37,7 +37,7 @@ passport.deserializeUser(function(obj, done) {
  */
 function _updateOrCreateUser(req, provider, callback) {
     "use strict";
-    User.findOne({'providers.providerName':provider.providerName,
+    UserDb.findOne({'providers.providerName':provider.providerName,
             'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
@@ -77,7 +77,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 isNewProvider = true;
 
                 if (req.user) {
-                    User.findById(req.user._id, function (err, user) {
+                    UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
                             log.error(err);
                             return callback(err);
@@ -100,7 +100,7 @@ function _updateOrCreateUser(req, provider, callback) {
                 else {
 
                     // if there is no provider, create new user
-                    var newUser = new User();
+                    var newUser = new UserDb();
                     newUser.providers = [];
 
                     newUser.providers.push(provider);
@@ -133,7 +133,7 @@ passport.use(new TumblrStrategy({
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
-            "providerId":profile.username,
+            "providerId":profile.username.toString(),
             "displayName":profile.username
         };
 
@@ -147,7 +147,9 @@ passport.use(new TumblrStrategy({
                 if (!blogBot.isStarted(user)) {
                     blogBot.start(user);
                 }
-                blogBot.findOrCreate(user);
+                else {
+                    blogBot.findOrCreate(user);
+                }
             }
 
             process.nextTick(function () {
@@ -211,7 +213,7 @@ router.get('/info', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var errMsg;
@@ -247,6 +249,7 @@ router.get('/info', function (req, res) {
             if (error) {
 
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -265,7 +268,7 @@ router.get('/posts/:blogName', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var blogName;
@@ -304,6 +307,7 @@ router.get('/posts/:blogName', function (req, res) {
             if (error) {
 
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -327,7 +331,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     providerId = req.query.providerid;
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var errMsg;
@@ -366,6 +370,7 @@ router.get('/bot_bloglist', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -398,7 +403,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var blog_id;
@@ -437,6 +442,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             if (error) {
                 //throw new Error(error);
                 log.error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -579,7 +585,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var options;
@@ -628,6 +634,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -656,7 +663,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
 
@@ -699,6 +706,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -728,7 +736,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(userId, function (err, user) {
+    UserDb.findById(userId, function (err, user) {
         var p;
         var client;
         var blog_id;
@@ -787,6 +795,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             if (error) {
                 //throw new Error(error);
+                res.statusCode = 400;
                 res.send(error);
                 return;
             }
@@ -798,6 +807,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
                 if (error) {
                     //throw new Error(error);
+                    res.statusCode = 400;
                     res.send(error);
                     return;
                 }
