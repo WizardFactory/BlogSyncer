@@ -333,6 +333,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var after = req.query.after;
         var api_url;
 
+        if (user.providers === null) {
+            log.error("user.providers is null !!!");
+            return;
+        }
+
         console.log(user.providers);
 
         p = user.findProvider("kakao");

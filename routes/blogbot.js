@@ -125,6 +125,13 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
 
     postDb = BlogBot._findDbByUser(user, "post");
 
+    log.debug(recvPosts.posts);
+
+    if(recvPosts.posts === undefined ) {
+        log.error("length is undefined !!!");
+        return;
+    }
+
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<recvPosts.posts.length;i+=1) {
         newPost = recvPosts.posts[i];
@@ -632,15 +639,30 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
             return;
         }
 
-        if (recvPosts.posts.length !== 0) {
-            index = recvPosts.posts.length-1;
-            newOpts = {};
-            newOpts.offset = recvPosts.posts[index].id;
-            log.debug("_recursiveGetPosts: get posts");
-            BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+        index = recvPosts.posts.length-1;
+        newOpts = {};
+
+        if(providerName === "twitter") {
+            if(recvPosts.stopReculsive === false)
+            {
+                newOpts.offset = recvPosts.posts[index].id;
+                log.debug("[Twitter] _recursiveGetPosts: get posts");
+                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+            }
+            else {
+                log.info("[Twitter] Stop recursive call functions");
+            }
         }
         else {
-            log.info("Stop recursive call functions");
+            if (recvPosts.posts.length !== 0) {
+
+                newOpts.offset = recvPosts.posts[index].id;
+                log.debug("_recursiveGetPosts: get posts");
+                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+            }
+            else {
+                log.info("Stop recursive call functions");
+            }
         }
     });
 };
@@ -673,9 +695,16 @@ BlogBot._addPostsFromNewBlog = function(user, recvPostCount) {
 
     //how many posts get per 1 time.
     if (postCount > 0) {
-        for (i=0; i<postCount; i+=20) {
-            offset = i + '-20';
-            BlogBot._requestGetPosts(user, providerName, blogId, {"offset": offset}, BlogBot._addPostsToDb);
+        if(providerName === "twitter") {
+            // twitter use max_id, so recursiveGetPosts must be called.
+            options = {};
+            BlogBot._recursiveGetPosts(user, providerName, blogId, options, BlogBot._addPostsToDb);
+        }
+        else {
+            for (i=0; i<postCount; i+=20) {
+                offset = i + '-20';
+                BlogBot._requestGetPosts(user, providerName, blogId, {"offset": offset}, BlogBot._addPostsToDb);
+            }
         }
     }
     else if (postCount < 0) {
@@ -755,42 +784,6 @@ BlogBot._requestGetBloglist = function(user, providerName, providerId, callback)
  * @param user
  * @param {string} providerName
  * @param {string} blogId
- * @param {function} callback
- * @private
- */
-BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
-    "use strict";
-    var url;
-
-    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
-    url += blogId;
-    url += "?";
-    url += "userid=" + user._id;
-
-    log.debug("url="+url);
-    request.get(url, function (err, response, body) {
-        var hasError;
-        var recvPostCount;
-
-        hasError= _checkError(err, response, body);
-        if (hasError) {
-            callback(hasError);
-            return;
-        }
-
-        //log.debug(body);
-
-        recvPostCount = JSON.parse(body);
-
-        callback(user, recvPostCount);
-    });
-};
-
-/**
- *
- * @param user
- * @param {string} providerName
- * @param {string} blogId
  * @param {Object} options
  * @param {function} callback
  * @private
@@ -833,6 +826,42 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
         //log.debug(body);
         recvPosts = JSON.parse(body);
         callback(user, recvPosts);
+    });
+};
+
+/**
+ *
+ * @param user
+ * @param {string} providerName
+ * @param {string} blogId
+ * @param {function} callback
+ * @private
+ */
+BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
+    "use strict";
+    var url;
+
+    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
+    url += blogId;
+    url += "?";
+    url += "userid=" + user._id;
+
+    log.debug("url="+url);
+    request.get(url, function (err, response, body) {
+        var hasError;
+        var recvPostCount;
+
+        hasError= _checkError(err, response, body);
+        if (hasError) {
+            callback(hasError);
+            return;
+        }
+
+        //log.debug(body);
+
+        recvPostCount = JSON.parse(body);
+
+        callback(user, recvPostCount);
     });
 };
 
