@@ -153,6 +153,11 @@ router.get('/authorized',
     }
 );
 
+/**
+ *
+ * @param req
+ * @returns {number}
+ */
 getUserId = function (req) {
     var userid = 0;
 
@@ -168,30 +173,147 @@ getUserId = function (req) {
     return userid;
 };
 
+function _getUserID(req) {
+    var userid = 0;
+
+    if (req.user) {
+        userid = req.user._id;
+    }
+    else if (req.query.userid)
+    {
+        //this request form child process;
+        userid = req.query.userid;
+    }
+
+    return userid;
+}
+
+function _checkError(err, response, body) {
+    if (err) {
+        log.debug(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var err = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        log.debug(errStr);
+        return new Error(errStr);
+    }
+}
+
+function _requestGet(url, accessToken, callback) {
+    request.get(url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + accessToken
+        }
+    }, function (err, response, body) {
+        callback(err, response, body);
+    });
+}
+
 router.get('/me', function (req, res) {
-    if (!req.user) {
+    var user_id = _getUserID(req);
+    if (user_id == 0) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
+        return;
     }
-    else {
-        var p = userdb.findProvider(req.user._id, "facebook");
 
-        var api_url = FACEBOOK_API_URL+"/me";
+    User.findById(user_id, function (err, user) {
+        var p;
+        var api_url;
 
+        p = user.findProvider("facebook");
+
+        api_url = FACEBOOK_API_URL+"/me";
         log.debug(api_url);
 
-        request.get(api_url, {
-                json: true,
-                headers: {
-                    "authorization": "Bearer " + p.accessToken
-                }
-            }, function (err, response, data) {
-                log.debug(data);
-                res.send(data);
+        _requestGet(api_url, p.accessToken, function(err, response, body) {
+            var hasError = _checkError(err, response, body);
+            if (hasError !== undefined) {
+                res.send(hasError);
+                return;
+            }
+            log.debug(body);
+            res.send(body);
         });
+    });
+});
+
+
+router.get('/bot_bloglist', function (req, res) {
+
+    log.debug("facebook: "+ req.url + ' : this is called by bot');
+
+    var userId = _getUserID(req);
+
+    if (userId == 0) {
+        var errorMsg = 'You have to login first!';
+        log.debug(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
     }
+
+    if (req.query.providerid == false) {
+        var errorMsg = 'User:'+userId+' didnot have blog!';
+        log.debug(errorMsg);
+        res.send(errorMsg);
+        res.redirect("/#/signin");
+        return;
+    }
+
+    User.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+
+        p = user.findProvider("facebook", req.query.providerid);
+
+        apiUrl = FACEBOOK_API_URL+"/"+p.providerId+"/accounts";
+        log.debug(apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function(err, response, body) {
+            var hasError = _checkError(err, response, body);
+            if (hasError !== undefined) {
+                res.send(hasError);
+                return;
+            }
+
+            //log.debug(body);
+
+            var sendData = {};
+            sendData.provider = p;
+            sendData.blogs = [];
+
+            for (var i = 0; i  < body.data.length; i+=1) {
+                var item = body.data[i];
+
+                var pageId = item.id;
+                var pageName = item.name;
+                var pageLink;
+
+                apiUrl = FACEBOOK_API_URL+"/"+pageId;
+                log.debug(apiUrl);
+
+                _requestGet(apiUrl, p.accessToken, function(err, response, pageBody) {
+                    var hasError = _checkError(err, response, pageBody);
+                    if (hasError !== undefined) {
+                        res.send(hasError);
+                        return;
+                    }
+                    pageLink = pageBody.link;
+                    log.debug(pageLink);
+                });
+                sendData.blogs.push({"blog_id":pageId, "blog_title":pageName, "blog_url":pageLink});
+            }
+
+            log.debug(sendData);
+            res.send(sendData);
+        });
+    });
 });
 
 module.exports = router;
