@@ -38,7 +38,7 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
     var sites = this.sites;
     var provider;
 
-    for (i=0; i<sites.length; i++) {
+    for (i=0; i<sites.length; i+=1) {
         provider = sites[i].provider;
         if (provider.providerName === providerName) {
             if (providerId === undefined) {
@@ -65,7 +65,7 @@ siteSchema.methods.findBlogFromSite = function(site, blogId) {
     "use strict";
     var i;
 
-    for (i=0; i<site.blogs.length; i++) {
+    for (i=0; i<site.blogs.length; i+=1) {
         if (site.blogs[i].blog_id === blogId) {
             return site.blogs[i];
         }
