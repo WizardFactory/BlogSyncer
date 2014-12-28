@@ -830,7 +830,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
 //router.get('/bot_comments/:blogID/:postID', function (req, res) {
 //    log.debug(req.url);
-//    var userID = _getUserID(req);
+//    var userID = _getUserId(req);
 //    if (userID == 0) {
 //        var errorMsg = 'You have to login first!';
 //        log.debug(errorMsg);

@@ -355,6 +355,7 @@ BlogBot.start = function (user) {
 
 /**
  *
+ * @todo _id 비교문을 하나로 합치자.
  * @param {User} user
  * @returns {boolean}
  */

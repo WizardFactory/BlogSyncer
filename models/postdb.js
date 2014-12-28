@@ -43,7 +43,7 @@ postSchema.methods.findPostById = function(postId) {
     "use strict";
     var i;
 
-    for (i=0; i<this.posts.length; i++) {
+    for (i=0; i<this.posts.length; i+=1) {
         if (this.posts[i]._id === postId) {
             log.debug('find post('+postId+')');
             return this.posts[i];
@@ -77,7 +77,7 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
         if (!post.categories) {
             post.categories = [];
         }
-        for (i=0; i<newPost.categories.length; i++) {
+        for (i=0; i<newPost.categories.length; i+=1) {
             post.categories.push(newPost.categories[i]);
         }
     }
@@ -85,7 +85,7 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
         if (!post.tags) {
             post.tags = [];
         }
-        for (i=0; i<newPost.tags.length; i++) {
+        for (i=0; i<newPost.tags.length; i+=1) {
             post.tags.push(newPost.tags[i]);
         }
     }
@@ -105,7 +105,7 @@ postSchema.methods.findPostByTitle = function(title) {
     var i;
     var post;
 
-    for (i=0; i<this.posts.length; i++) {
+    for (i=0; i<this.posts.length; i+=1) {
         if (!this.posts[i].title) {
             continue;
         }
@@ -134,9 +134,9 @@ postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postI
     var infos;
     var j;
 
-    for (i = 0; i<this.posts.length; i++) {
+    for (i = 0; i<this.posts.length; i+=1) {
         infos = this.posts[i].infos;
-        for (j = 0; j<infos.length; j++) {
+        for (j = 0; j<infos.length; j+=1) {
            if (infos[j].provider_name === providerName &&
                     infos[j].blog_id === blogId &&
                     infos[j].post_id === postId) {
