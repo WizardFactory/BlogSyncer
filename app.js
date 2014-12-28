@@ -46,11 +46,14 @@ var blogBot = require('./routes/blogbot');
 var connectInfo;
 
 if (svcConfig.mongodb) {
-    //You have NOT use database of service!!
+    //You have NOT to use this database!
+    //It is only used by service system.
     connectInfo = 'mongodb://' + svcConfig.mongodb.dbUser + ':' + svcConfig.mongodb.dbPassword + '@' +
                             svcConfig.mongodb.dbAddress + '/' + svcConfig.mongodb.dbName;
+    log.info ('This database is for service, if you can see this message please stop node.js!!!');
 }
 else {
+    //for development.
     connectInfo = 'mongodb://localhost/blogsync';
 }
 
