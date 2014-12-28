@@ -158,7 +158,7 @@ router.get('/authorized',
     }
 );
 
-function _getUserID(req, res) {
+function _getUserId(req, res) {
     "use strict";
     var userId;
     var errorMsg;
@@ -200,7 +200,7 @@ function _checkError(err, response, body) {
 
 router.get('/info', function (req, res) {
     "use strict";
-    var userId = _getUserID(req, res);
+    var userId = _getUserId(req, res);
 
     if (!userId) {
         return;
@@ -243,7 +243,7 @@ router.get('/info', function (req, res) {
 
 router.get('/post/list/:simpleName', function (req, res) {
     "use strict";
-    var userId = _getUserID(req, res);
+    var userId = _getUserId(req, res);
 
     if (!userId) {
         return;
@@ -294,7 +294,7 @@ router.get('/post/list/:simpleName', function (req, res) {
 
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
-    var userId = _getUserID(req, res);
+    var userId = _getUserId(req, res);
 
     if (!userId) {
         return;
@@ -371,7 +371,7 @@ router.get('/bot_bloglist', function (req, res) {
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
     "use strict";
-    var userId = _getUserID(req, res);
+    var userId = _getUserId(req, res);
 
     if (!userId) {
         return;
@@ -457,7 +457,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
     log.debug("tistory: "+ req.url);
 
-    userId = _getUserID(req, res);
+    userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -590,7 +590,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var userId;
 
     log.debug(req.url);
-    userId = _getUserID(req, res);
+    userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -675,7 +675,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     "use strict";
     //log.debug(req.url);
-    var userId = _getUserID(req, res);
+    var userId = _getUserId(req, res);
 
     if (!userId) {
         return;
@@ -786,7 +786,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 
     log.debug(req.url);
 
-    userId = _getUserID(req, res);
+    userId = _getUserId(req, res);
     if (!userId) {
         return;
     }

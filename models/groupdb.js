@@ -46,9 +46,9 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     var foundIt;
     var newGroups = [];
 
-    for (i=0; i<this.groups.length; i++) {
+    for (i=0; i<this.groups.length; i+=1) {
         group = this.groups[i].group;
-        for (j=0; j<group.length; j++) {
+        for (j=0; j<group.length; j+=1) {
             blog = group[j].blog;
             provider = group[j].provider;
             if ( provider.providerName === providerName &&
