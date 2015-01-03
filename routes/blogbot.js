@@ -127,7 +127,7 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
 
     log.debug(recvPosts.posts);
 
-    if(recvPosts.posts === undefined ) {
+    if(!recvPosts.posts) {
         log.error("length is undefined !!!");
         return;
     }
@@ -355,6 +355,7 @@ BlogBot.start = function (user) {
 
 /**
  *
+ * @todo _id 비교문을 하나로 합치자.
  * @param {User} user
  * @returns {boolean}
  */
@@ -816,6 +817,43 @@ BlogBot._requestGetBloglist = function(user, providerName, providerId, callback)
  * @param user
  * @param {string} providerName
  * @param {string} blogId
+ * @param {function} callback
+ * @private
+ */
+BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
+    "use strict";
+    var url;
+
+    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
+    url += blogId;
+    url += "?";
+    url += "userid=" + user._id;
+
+    log.debug("url="+url);
+
+    request.get(url, function (err, response, body) {
+        var hasError;
+        var recvPostCount;
+
+        hasError= _checkError(err, response, body);
+        if (hasError) {
+            callback(hasError);
+            return;
+        }
+
+        //log.debug(body);
+
+        recvPostCount = JSON.parse(body);
+
+        callback(user, recvPostCount);
+    });
+};
+
+/**
+ *
+ * @param user
+ * @param {string} providerName
+ * @param {string} blogId
  * @param {Object} options
  * @param {function} callback
  * @private
@@ -836,15 +874,18 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
         url += "after=" + options.after;
         url += "&";
     }
-
     if (options.offset) {
         url += "offset="+options.offset;
+        url += "&";
+    }
+    if (options.nextPageToken) {
+        url += "nextPageToken="+options.nextPageToken;
         url += "&";
     }
 
     url += "userid=" + user._id;
 
-    log.debug("_requestGetPosts : " + url);
+    log.debug(url);
     request.get(url, function (err, response, body) {
         var hasError;
         var recvPosts;
@@ -858,59 +899,6 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
         //log.debug(body);
         recvPosts = JSON.parse(body);
         callback(user, recvPosts);
-    });
-};
-
-/**
- *
- * @param user
- * @param {string} providerName
- * @param {string} blogId
- * @param {function} callback
- * @private
- */
-BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
-    "use strict";
-    var url;
-
-    url = "http://www.justwapps.com/"+providerName + "/bot_post_count/";
-    url += blogId;
-    url += "?";
-
-    //?? options는 arg에 없는데 추가 되어서 에러가 나서 일단 주석 처리함
-    /*
-    if (options.after) {
-        url += "after=" + options.after;
-        url += "&";
-    }
-    if (options.offset) {
-        url += "offset="+options.offset;
-        url += "&";
-    }
-    if (options.nextPageToken) {
-        url += "nextPageToken="+options.nextPageToken;
-        url += "&";
-    }
-    */
-
-    url += "userid=" + user._id;
-
-    log.debug("url="+url);
-    request.get(url, function (err, response, body) {
-        var hasError;
-        var recvPostCount;
-
-        hasError= _checkError(err, response, body);
-        if (hasError) {
-            callback(hasError);
-            return;
-        }
-
-        //log.debug(body);
-
-        recvPostCount = JSON.parse(body);
-
-        callback(user, recvPostCount);
     });
 };
 
