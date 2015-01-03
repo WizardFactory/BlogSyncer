@@ -3,6 +3,7 @@
  */
 
 var UserDb = require('../models/userdb');
+//var PostDb = require('../models/postdb');
 
 var express = require('express');
 var passport = require('passport');
@@ -322,7 +323,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
 
     UserDb.findById(user_id, function (err, user) {
-        var blog_id = req.query.providerid;
+        var provider_id = req.query.providerid;
+        var blog_id = req.params.blog_id;
         var last_id = req.query.offset;
         var after = req.query.after;
         // https://dev.twitter.com/rest/public/timelines
@@ -338,7 +340,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
         count = 20;
 
-        var p = user.findProvider("twitter", blog_id);
+        var p = user.findProvider("twitter", provider_id);
         api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId
             + "&count=" + count;
 
@@ -359,7 +361,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return;
             }
 
-            result = JSON.parse(response);//data;
+            result = JSON.parse(response);
+            //log.debug(result);
 
             if(result.length === undefined) {
                 log.debug("result is empty !!!")
@@ -393,8 +396,14 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 send_post.categories = [];
                 send_post.tags = [];
                 send_post.content = raw_post.content;
+                send_post.replies = [];
+                send_post.replies.push({"retweet_count":raw_post.retweet_count});
+                send_post.replies.push({"like_count":raw_post.favorite_count});
+
+                log.debug(send_post);
 
                 send_data.posts.push(send_post);
+
                 send_data.stopReculsive = false;
             }
 
@@ -411,8 +420,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     });
 });
 
-// 추가 구현 예정
-/*
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
@@ -425,73 +432,68 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
-        var p = user.findProvider("Wordpress", blog_id);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blog_id;
+        log.debug(post_id);
+        var postDb = blogBot._findDbByUser(user, "post");
 
-        api_url += "/posts";
-        api_url += "/" + post_id;
+        var post = postDb.getPostByPostIdOfBlog("twitter", blog_id, post_id);
 
-        log.debug(api_url);
 
-        _requestGet(api_url, p.accessToken, function(err, response, body) {
-            var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
-                res.send(hasError);
-                return;
+        var send_data = {};
+
+        send_data.provider_name = 'twitter';
+        send_data.blog_id = blog_id;
+        send_data.posts = [];
+
+        var send_post = {};
+        var raw_post = post;
+
+        send_data.post_id = raw_post.infos[0].post_id;
+
+        send_post.title = raw_post.title;
+        send_post.modified = raw_post.modified;
+        //send_post.id = raw_post.ID;
+        send_post.id = raw_post.infos[0].post_id;
+        send_post.url = raw_post.URL;
+        send_post.categories = [];
+        send_post.tags = [];
+        var j=0;
+        if (raw_post.categories) {
+            var category_arr = Object.keys(raw_post.categories);
+            for (j=0; j<category_arr.length; j++) {
+                send_post.categories.push(category_arr[j]);
             }
-
-            //log.debug(data);
-            var send_data = {};
-
-            send_data.provider_name = 'Wordpress';
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
-
-            var send_post = {};
-            var raw_post = body;
-
-            send_post.title = raw_post.title;
-            send_post.modified = raw_post.modified;
-            send_post.id = raw_post.ID;
-            send_post.url = raw_post.URL;
-            send_post.categories = [];
-            send_post.tags = [];
-            var j=0;
-            if (raw_post.categories) {
-                var category_arr = Object.keys(raw_post.categories);
-                for (j=0; j<category_arr.length; j++) {
-                    send_post.categories.push(category_arr[j]);
-                }
 //                log.debug('category-raw');
 //                log.debug(category_arr);
 //                log.debug('category-send');
 //                log.debug(send_post.categories);
+        }
+        if (raw_post.tags) {
+            var tag_arr = Object.keys(raw_post.tags);
+            for (j=0; j<tag_arr.length; j++) {
+                send_post.tags.push(tag_arr[j]);
             }
-            if (raw_post.tags) {
-                var tag_arr = Object.keys(raw_post.tags);
-                for (j=0; j<tag_arr.length; j++) {
-                    send_post.tags.push(tag_arr[j]);
-                }
 //                log.debug('tag-raw');
 //                log.debug(tag_arr);
 //                log.debug('tags-send');
 //                log.debug(send_post.tags);
-            }
-            send_post.content = raw_post.content;
-            send_post.replies = [];
-            send_post.replies.push({"comment_count":raw_post.comment_count});
-            send_post.replies.push({"like_count":raw_post.like_count});
-            send_data.posts.push(send_post);
-            res.send(send_data);
-        });
+        }
+        send_post.content = raw_post.content;
+        send_post.replies = [];
+        send_post.replies.push({"retweet_count":raw_post.replies[0].retweet_count});
+        send_post.replies.push({"like_count":raw_post.replies[1].like_count});
+
+        send_data.posts.push(send_post);
+        log.debug("/bot_posts/:blog_id/:post_id send_data=> ");
+        log.debug(send_data);
+        res.send(send_data);
     });
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    log.debug('Wordpress ' + req.url);
+    log.debug('Twitter ' + req.url);
 
     var user_id = _getUserID(req);
     if (user_id == 0) {
@@ -504,8 +506,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     User.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
-        var p = user.findProvider("Wordpress", blog_id);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blog_id +"/posts/new";
+        var p = user.findProvider("twitter", blog_id);
+        var api_url = TWITTER_API_URL+"/sites/"+blog_id +"/posts/new";
 
         log.debug(api_url);
         request.post(api_url, {
@@ -522,7 +524,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //add post info
             var send_data = {};
-            send_data.provider_name = 'Wordpress';
+            send_data.provider_name = 'twitter';
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
@@ -564,7 +566,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    log.debug(req.url);
+    log.debug("[bot_comments]" + req.url);
     var userID = _getUserID(req);
     if (userID == 0) {
         var errorMsg = 'You have to login first!';
@@ -577,8 +579,8 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     User.findById(user_id, function (err, user) {
         var blogID = req.params.blogID;
         var postID = req.params.postID;
-        var p = user.findProvider("Wordpress", blogID);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blogID;
+        var p = user.findProvider("twitter", blogID);
+        var api_url = TWITTER_API_URL+"/sites/"+blogID;
         api_url += "/posts";
         api_url += "/" + postID;
         api_url += "/replies";
@@ -613,7 +615,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         });
     });
 });
-*/
+
 
 module.exports = router;
 

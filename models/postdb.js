@@ -22,7 +22,8 @@ var postinfoSechema = mongoose.Schema({
             url: String,
             modified: Date
         }
-    ]
+    ],
+    replies: []
 });
 
 /**
@@ -51,6 +52,33 @@ postSchema.methods.findPostById = function(postId) {
     }
 
     log.debug('Fail to find post id=' + postId);
+};
+
+/**
+ *
+ * @param {string} providerName
+ * @param {string} blogId
+ * @param {string} postId
+ * @returns {{*}}
+ */
+postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId) {
+    "use strict";
+    var i;
+    var j;
+    var infos;
+
+    for (i = 0; i<this.posts.length; i++) {
+        infos = this.posts[i].infos;
+        for (j = 0; j<infos.length; j++) {
+            if (infos[j].provider_name === providerName &&
+                infos[j].blog_id === blogId &&
+                infos[j].post_id === postId) {
+                return this.posts[i];
+            }
+        }
+    }
+
+    log.debug('[getPostByPostIdOfBlog] Fail to find post id=' + postId);
 };
 
 /**
@@ -206,6 +234,10 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     postInfo.post_id = newPost.id;
     postInfo.url = newPost.url;
     postInfo.modified = newPost.modified;
+
+    if(providerName === "twitter") {
+        post.replies = newPost.replies;
+    }
 
     post.infos.push(postInfo);
     this.posts.push(post);

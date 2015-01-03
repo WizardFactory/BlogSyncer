@@ -830,6 +830,7 @@ BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
     url += "userid=" + user._id;
 
     log.debug("url="+url);
+
     request.get(url, function (err, response, body) {
         var hasError;
         var recvPostCount;
@@ -1217,7 +1218,7 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
             sendData.postID = recvPost.id;
             sendData.replies = recvPost.replies;
 
-            //log.debug(send_data);
+            //log.debug(sendData);
             callback(sendData);
         });
 };
