@@ -844,7 +844,7 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
 
     url += "userid=" + user._id;
 
-    log.debug(url);
+    log.debug("_requestGetPosts : " + url);
     request.get(url, function (err, response, body) {
         var hasError;
         var recvPosts;
@@ -1230,7 +1230,7 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
             sendData.postID = recvPost.id;
             sendData.replies = recvPost.replies;
 
-            //log.debug(send_data);
+            //log.debug(sendData);
             callback(sendData);
         });
 };

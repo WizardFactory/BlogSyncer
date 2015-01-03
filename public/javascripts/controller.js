@@ -223,10 +223,9 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
             var formattedDate;
             var date;
 
-            console.log('push post_id=' + data.posts[i].id);
-
             for (var j = 0; j < post.infos.length; j += 1) {
                 var url;
+                console.log('push post_id=' + post.infos[j].post_id);
 
                 url = "/blogs/replies";
                 url += "/" + post.infos[j].provider_name;
