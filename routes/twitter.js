@@ -3,22 +3,19 @@
  */
 
 var UserDb = require('../models/userdb');
-//var PostDb = require('../models/postdb');
-
 var express = require('express');
 var passport = require('passport');
 var TwitterStrategy = require('passport-twitter').Strategy;
 var blogBot = require('./blogbot');
 var request = require('request');
+var svcConfig = require('../models/svcConfig.json');
+var log = require('winston');
+var OAuth = require('oauth').OAuth;
 
 var router = express.Router();
 
-var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.twitter;
 
-var log = require('winston');
-
-var OAuth = require('oauth').OAuth;
 // global variable for object of OAuth
 var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
     "https://api.twitter.com/oauth/access_token",
@@ -31,16 +28,19 @@ var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
 var TWITTER_API_URL = "https://api.twitter.com/1.1";
 
 passport.serializeUser(function(user, done) {
+    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
+    "use strict";
     done(null, obj);
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    UserDb.findOne({'providers.providerName':provider.providerName
-            , 'providers.providerId': provider.providerId},
+    "use strict";
+    UserDb.findOne({'providers.providerName':provider.providerName,
+            'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
@@ -57,8 +57,9 @@ function _updateOrCreateUser(req, provider, callback) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -100,8 +101,9 @@ function _updateOrCreateUser(req, provider, callback) {
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, newUser, isNewProvider);
                     });
@@ -117,10 +119,12 @@ passport.use(new TwitterStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
+        "use strict";
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
-        var provider = {
+        var provider;
+        provider = {
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
@@ -157,6 +161,7 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('twitter', { failureRedirect: '/#signin' }),
     function(req, res) {
+        "use strict";
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
@@ -164,6 +169,8 @@ router.get('/authorized',
 );
 
 function _getUserID(req) {
+    "use strict";
+
     var userid = 0;
 
     if (req.user) {
@@ -179,19 +186,21 @@ function _getUserID(req) {
 }
 
 function _checkError(err, response, body) {
+    "use strict";
     if (err) {
         log.debug(err);
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        var errData = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + errData;
         log.debug(errStr);
         return new Error(errStr);
     }
 }
 
 function _requestGet(url, accessToken, callback) {
+    "use strict";
     request.get(url, {
         json: true,
         headers: {
@@ -203,21 +212,22 @@ function _requestGet(url, accessToken, callback) {
 }
 
 router.get('/bot_bloglist', function (req, res) {
-
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
+    var errorMsg;
+    var user_id;
+    user_id = _getUserID(req);
 
-    var user_id = _getUserID(req);
-
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
+    if (!user_id) {
+        errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
     }
 
-    if (req.query.providerid == false) {
-        var errorMsg = 'User:'+user_id+' did not have blog!';
+    if (req.query.providerid === false) {
+        errorMsg = 'User:'+user_id+' did not have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -263,11 +273,12 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-
+    "use strict";
     log.debug("Twitter: "+ req.url + ' : this is called by bot');
 
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
+    var user_id;
+    user_id = _getUserID(req);
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -311,10 +322,11 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -341,8 +353,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         count = 20;
 
         var p = user.findProvider("twitter", provider_id);
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId
-            + "&count=" + count;
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
+            "&count=" + count;
 
         if (last_id) {
             api_url += "&";
@@ -365,7 +377,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             //log.debug(result);
 
             if(result.length === undefined) {
-                log.debug("result is empty !!!")
+                log.debug("result is empty !!!");
                 return;
             }
 
@@ -409,9 +421,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             send_data.post_count = send_data.posts.length;
 
-            if( (last_id == send_data.posts[i-1].id)
-                && (result.length == 1) ) {
-                log.debug("stop Reculsive!!!!");
+            if( (last_id == send_data.posts[i-1].id) &&
+                 (result.length == 1) ) {
+                log.debug("stop Reculsive!!!!!");
                 send_data.stopReculsive = true;
             }
 
@@ -421,10 +433,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -493,10 +506,11 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
+    "use strict";
     log.debug('Twitter ' + req.url);
 
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -504,7 +518,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
         var p = user.findProvider("twitter", blog_id);
         var api_url = TWITTER_API_URL+"/sites/"+blog_id +"/posts/new";
@@ -559,6 +573,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //send_post.content = raw_post.content;
             send_data.posts.push(send_post);
+
             log.debug(send_data);
             res.send(send_data);
         });
@@ -566,54 +581,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    log.debug("[bot_comments]" + req.url);
-    var userID = _getUserID(req);
-    if (userID == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-        return;
-    }
+    "use strict";
+    log.debug("[bot_comments]" + req.url );
+    log.debug("twitter is not comments feature !!!!");
 
-    User.findById(user_id, function (err, user) {
-        var blogID = req.params.blogID;
-        var postID = req.params.postID;
-        var p = user.findProvider("twitter", blogID);
-        var api_url = TWITTER_API_URL+"/sites/"+blogID;
-        api_url += "/posts";
-        api_url += "/" + postID;
-        api_url += "/replies";
-
-        log.debug(api_url);
-
-        _requestGet(api_url, p.accessToken, function(err, response, body) {
-            var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
-                res.send(hasError);
-                return;
-            }
-
-            log.debug(body);
-
-            var send = {};
-
-            send.providerName = p.providerName;
-            send.blogID = blogID;
-            send.postID = postID;
-            send.found = body.found;
-            send.comments = [];
-            for(var i=0; i<body.found; i++) {
-                var comment = {};
-                comment.date = body.comments[i].date;
-                comment.URL = body.comments[i].short_URL;
-                comment.content = body.comments[i].content;
-                send.comments.push(comment);
-            }
-
-            res.send(send);
-        });
-    });
+    return;
 });
 
 
