@@ -345,8 +345,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var count = 0;
         var api_url;
 
-        if (user.providers === null) {
-            log.error("user.providers is null !!!");
+        if (!user) {
+            log.error("user is null !!!");
             return;
         }
 
@@ -408,9 +408,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 send_post.categories = [];
                 send_post.tags = [];
                 send_post.content = raw_post.content;
-                send_post.replies = [];
-                send_post.replies.push({"retweet_count":raw_post.retweet_count});
-                send_post.replies.push({"like_count":raw_post.favorite_count});
 
                 log.debug(send_post);
 
@@ -420,6 +417,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
 
             send_data.post_count = send_data.posts.length;
+
+            if(!(send_data.posts[i-1])) {
+                log.debug("posts is undefined !!!");
+                return;
+            }
 
             if( (last_id == send_data.posts[i-1].id) &&
                  (result.length == 1) ) {
@@ -436,6 +438,9 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
+    var logStr;
+    logStr = "/bot_posts/:blog_id/:post_id";
+
     var user_id = _getUserID(req);
     if (!user_id) {
         var errorMsg = 'You have to login first!';
@@ -446,62 +451,102 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     }
 
     UserDb.findById(user_id, function (err, user) {
+        var provider_id = req.query.providerid;
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
-        log.debug(post_id);
-        var postDb = blogBot._findDbByUser(user, "post");
+        var last_id = req.query.offset;
+        var after = req.query.after;
+        // https://dev.twitter.com/rest/public/timelines
+        // use max_id for twit offset in twitter
+        var lastCnt = 0;
+        var count = 0;
+        var api_url;
 
-        var post = postDb.getPostByPostIdOfBlog("twitter", blog_id, post_id);
-
-
-        var send_data = {};
-
-        send_data.provider_name = 'twitter';
-        send_data.blog_id = blog_id;
-        send_data.posts = [];
-
-        var send_post = {};
-        var raw_post = post;
-
-        send_data.post_id = raw_post.infos[0].post_id;
-
-        send_post.title = raw_post.title;
-        send_post.modified = raw_post.modified;
-        //send_post.id = raw_post.ID;
-        send_post.id = raw_post.infos[0].post_id;
-        send_post.url = raw_post.URL;
-        send_post.categories = [];
-        send_post.tags = [];
-        var j=0;
-        if (raw_post.categories) {
-            var category_arr = Object.keys(raw_post.categories);
-            for (j=0; j<category_arr.length; j++) {
-                send_post.categories.push(category_arr[j]);
-            }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
+        if (!user) {
+            log.error("user is null !!!");
+            return;
         }
-        if (raw_post.tags) {
-            var tag_arr = Object.keys(raw_post.tags);
-            for (j=0; j<tag_arr.length; j++) {
-                send_post.tags.push(tag_arr[j]);
-            }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
-        }
-        send_post.content = raw_post.content;
-        send_post.replies = [];
-        send_post.replies.push({"retweet_count":raw_post.replies[0].retweet_count});
-        send_post.replies.push({"like_count":raw_post.replies[1].like_count});
 
-        send_data.posts.push(send_post);
-        log.debug("/bot_posts/:blog_id/:post_id send_data=> ");
-        log.debug(send_data);
-        res.send(send_data);
+        // use count(1) with user_timeline for retweet and like counting
+        count = 1;
+
+        var p = user.findProvider("twitter", provider_id);
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
+            "&count=" + count + "&max_id=" + post_id;
+
+        //log.debug(api_url);
+
+        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, response, body) {
+            var result = [];
+            var resultVal;
+
+            var hasError = _checkError(err, response, body);
+            if (hasError !== undefined) {
+                res.send(hasError);
+                return;
+            }
+
+            result = JSON.parse(response);
+            //log.debug(result);
+
+            if(result.length === undefined) {
+                log.debug("result is empty !!!");
+                return;
+            }
+
+            var send_data = {};
+            var i = 0;
+
+            send_data.provider_name = 'twitter';
+            send_data.blog_id = blog_id;
+            send_data.posts = [];
+
+            for (i = 0; i < result.length; i++) {
+                var raw_post = result[i];
+                if (after !== undefined) {
+                    var post_date = new Date(raw_post.created_at);
+                    var after_date = new Date(after);
+
+                    if (post_date < after_date) {
+                        //log.debug('post is before');
+                        continue;
+                    }
+                }
+
+                var send_post = {};
+                send_post.title = raw_post.text;
+                send_post.modified = raw_post.created_at;
+                send_post.id = raw_post.id;
+                send_post.url = raw_post.url;
+                send_post.categories = [];
+                send_post.tags = [];
+                send_post.content = raw_post.content;
+                send_post.replies = [];
+                send_post.replies.push({"retweet_count":raw_post.retweet_count});
+                send_post.replies.push({"like_count":raw_post.favorite_count});
+
+                log.debug(send_post);
+
+                send_data.posts.push(send_post);
+
+                send_data.stopReculsive = false;
+            }
+
+            send_data.post_count = send_data.posts.length;
+
+            if(!(send_data.posts[i-1])) {
+                log.debug("posts is undefined !!!");
+                return;
+            }
+
+            if( (last_id == send_data.posts[i-1].id) &&
+                (result.length == 1) ) {
+                log.debug("stop Reculsive!!!!!");
+                send_data.stopReculsive = true;
+            }
+
+            res.send(send_data);
+        });
     });
 });
 
