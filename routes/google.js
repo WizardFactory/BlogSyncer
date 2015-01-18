@@ -6,7 +6,6 @@ var express = require('express');
 var passport = require('passport');
 var request = require('request');
 var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-var log = require('winston');
 
 var UserDb = require('../models/userdb');
 var blogBot = require('./blogbot');
@@ -36,9 +35,13 @@ passport.deserializeUser(function(obj, done) {
  */
 function _updateOrCreateUser(req, provider, callback) {
     "use strict";
-    var logStr;
+    var meta = {};
 
-    logStr = "google._updateOrCreateUser providerName="+provider.providerName+" providerId="+provider.providerId;
+    meta.cName = "google";
+    meta.fName = "_updateOrCreateUser";
+    meta.providerName = provider.providerName;
+    meta.providerId = provider.providerId;
+
     UserDb.findOne({'providers.providerName':provider.providerName,
             'providers.providerId': provider.providerId},
         function (err, user) {
@@ -52,7 +55,7 @@ function _updateOrCreateUser(req, provider, callback) {
 
             // if there is a user id already but no token (user was linked at one point and then removed)
             if (user) {
-                log.debug(logStr+" Found user="+user._id);
+                log.debug("Found user="+user._id, meta);
                 p = user.findProvider("google");
                 if (p.accessToken !== provider.accessToken) {
                     p.accessToken = provider.accessToken;
@@ -75,12 +78,12 @@ function _updateOrCreateUser(req, provider, callback) {
                 if (req.user) {
                     UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
-                            log.error(logStr+err.toString());
+                            log.error(err.toString(), meta);
                             return callback(err);
                         }
                         if (!user) {
-                            log.error(logStr+" Fail to get user id="+req.user._id);
-                            log.error(logStr+err.toString());
+                            log.error("Fail to get user id="+req.user._id, meta);
+                            log.error(err.toString(), meta);
                             return callback(err);
                         }
                         // if there is no provider, add to user
@@ -123,12 +126,14 @@ passport.use(new GoogleStrategy({
         "use strict";
         var providerId;
         var provider;
-        var logStr;
+        var meta = {};
 
-        logStr = "google.passport.use";
-//        log.debug("accessToken:" + accessToken);
-//        log.debug("refreshToken:" + refreshToken);
-//        log.debug("profile:" + JSON.stringify(profile));
+        meta.cName = "google";
+        meta.fName = "passport.use";
+
+//        log.debug("accessToken:" + accessToken, meta);
+//        log.debug("refreshToken:" + refreshToken, meta);
+//        log.debug("profile:" + JSON.stringify(profile), meta);
 
         //It's not correct information. but I confirmed by /blogger/v3/users/self"
         providerId = "g"+profile.id;
@@ -143,7 +148,7 @@ passport.use(new GoogleStrategy({
 
         _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
-                log.error(logStr+" Fail to get user");
+                log.error("Fail to get user", meta);
                 return done(err);
             }
 
@@ -176,11 +181,13 @@ router.get('/authorized',
     passport.authenticate('google', { failureRedirect: '/#signin' }),
     function(req, res) {
         "use strict";
-        var logStr;
+        var meta = {};
 
-        logStr="google/authorized";
+        meta.cName = "google";
+        meta.fName = "authorized";
+
         // Successful authentication, redirect home.
-        log.debug(logStr+" Successful!");
+        log.debug("Successful!", meta);
         res.redirect('/#');
     }
 );
@@ -196,9 +203,10 @@ function _getUserId(req, res) {
     "use strict";
     var userId;
     var errorMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google._getUserId";
+    meta.cName = "google";
+    meta.fName = "_getUserId";
 
     if (req.user) {
         userId = req.user._id;
@@ -210,7 +218,7 @@ function _getUserId(req, res) {
     }
     else {
         errorMsg = 'You have to login first!';
-        log.debug(logStr+" "+errorMsg);
+        log.debug(errorMsg, meta);
         res.send(errorMsg);
         res.redirect("/#/signin");
     }
@@ -249,9 +257,12 @@ function _updateAccessToken(user, provider) {
     var url;
     var bodyInfo;
     var hasError;
-    var logStr;
+    var meta = {};
 
-    logStr = "google._updateAccessToken user="+user._id;
+    meta.cName = "google";
+    meta.fName = "_updateAccessToken";
+    meta.userId = user._id;
+
     url =  GOOGLE_API_URL + "/oauth2/v3/token";
 
     bodyInfo = {};
@@ -260,7 +271,7 @@ function _updateAccessToken(user, provider) {
     bodyInfo.refresh_token = provider.refreshToken;
     bodyInfo.grant_type = 'refresh_token';
 
-    log.debug(logStr);
+    log.debug(" ", meta);
 
     request.post(url, {
         json: true,
@@ -268,15 +279,15 @@ function _updateAccessToken(user, provider) {
     }, function (err, response, body) {
         hasError = _checkError(err, response, body);
         if (hasError) {
-            log.error(logStr+" Fail to get new access token");
+            log.error("Fail to get new access token", meta);
             return;
         }
 
-        log.info(body);
+        log.info(body, meta);
         provider.accessToken = body.access_token;
         user.save (function(err) {
             if (err) {
-                log.error(logStr+" Fail to save user info");
+                log.error("Fail to save user info", meta);
             }
         });
     });
@@ -292,12 +303,13 @@ function _updateAccessToken(user, provider) {
 function _checkError(err, response, body) {
     "use strict";
     var errStr;
-    var logStr;
+    var meta = {};
 
-    logStr = "google._checkError";
+    meta.cName = "google";
+    meta.fName = "_checkError";
 
     if (err) {
-        log.debug(err);
+        log.debug(err, meta);
         return err;
     }
     if (response.statusCode >= 400) {
@@ -307,8 +319,8 @@ function _checkError(err, response, body) {
                 errStr += " " + body.error.message;
             }
         }
-        log.error(logStr+" "+body);
-        log.error(logStr+" "+errStr);
+        log.error(body, meta);
+        log.error(errStr, meta);
         return new Error(errStr);
     }
 }
@@ -316,14 +328,17 @@ function _checkError(err, response, body) {
 router.get('/info', function (req, res) {
     "use strict";
     var userId;
-    var logStr;
+    var meta = {};
 
-    logStr="google/info";
+    meta.cName = "google";
+    meta.fName = "/info";
+
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+
+    meta.userId = userId;
 
     UserDb.findById(userId, function (err, user) {
         var p;
@@ -331,14 +346,14 @@ router.get('/info', function (req, res) {
         var apiUrl;
 
         if (err) {
-            log.error(logStr+" Fail to find user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to find user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -346,7 +361,7 @@ router.get('/info', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -354,7 +369,7 @@ router.get('/info', function (req, res) {
         apiUrl = GOOGLE_API_URL + "/blogger/v3/users";
         apiUrl += "/self";
 
-        log.info(logStr+" apiUrl="+apiUrl);
+        log.info("apiUrl="+apiUrl, meta);
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError) {
@@ -366,7 +381,7 @@ router.get('/info', function (req, res) {
                 }
                 return;
             }
-            log.debug(body);
+            log.debug(body, meta);
             res.send(body);
         });
     });
@@ -376,36 +391,40 @@ router.get('/bot_bloglist', function (req, res) {
     "use strict";
     var userId;
     var errMsg;
-    var logStr;
+    var providerId;
+    var meta = {};
 
-    logStr = "google/bot_bloglist";
+    meta.cName = "google";
+    meta.fName = "/bog_bloglist";
 
     userId = _getUserId(req);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+    meta.userId = userId;
+
+    providerId = req.query.providerid;
 
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
         if (err) {
-            log.error(err);
+            log.error(err, meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
 
-        p = user.findProvider("google");
+        p = user.findProvider("google", providerId);
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -413,7 +432,7 @@ router.get('/bot_bloglist', function (req, res) {
         apiUrl = GOOGLE_API_URL + "/blogger/v3/users";
         apiUrl += "/self";
         apiUrl += "/blogs";
-        log.info(logStr+" apiUrl="+apiUrl);
+        log.info("apiUrl="+apiUrl, meta);
 
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var items;
@@ -433,7 +452,7 @@ router.get('/bot_bloglist', function (req, res) {
             sendData.blogs = [];
 
             items = body.items;
-            log.debug(logStr+" items length=" + items.length);
+            log.debug("items length=" + items.length, meta);
 
             for (i = 0; i < items.length; i+=1) {
                 sendData.blogs.push({"blog_id": items[i].id, "blog_title": items[i].name, "blog_url": items[i].url});
@@ -453,29 +472,33 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     var userId;
     var blogId;
     var errMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google/bot_post_count";
+    meta.cName = "google";
+    meta.fName = "/bot_post_count";
+
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+
+    meta.userId = userId;
+
     blogId = req.params.blog_id;
-    logStr += " blogId="+blogId;
+    meta.blogId = blogId;
 
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
         if (err) {
-            log.error(logStr+" "+err.toString());
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -483,7 +506,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -491,7 +514,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         apiUrl = GOOGLE_API_URL + "/blogger/v3";
         apiUrl += "/blogs";
         apiUrl += "/"+blogId;
-        log.info("apiUrl="+apiUrl);
+        log.info("apiUrl="+apiUrl, meta);
 
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError;
@@ -512,7 +535,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             sendData.provider_name = 'google';
             sendData.blog_id = body.id;
             sendData.post_count = body.posts.totalItems;
-            log.info(logStr+" post_count="+sendData.post_count);
+            log.info("post_count="+sendData.post_count, meta);
             res.send(sendData);
         });
     });
@@ -528,16 +551,18 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var nextPageToken;
     var hasOptionalParameters = false;
     var errMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google/bot_posts";
+    meta.cName = "google";
+    meta.fName = "/bot_posts";
+
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+    meta.userId = userId;
     blogId = req.params.blog_id;
-    logStr += " blogId="+blogId;
+    meta.blogId = blogId;
 
     offset = req.query.offset;
     after = req.query.after;
@@ -559,13 +584,13 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var apiUrl;
 
         if (err) {
-            log.error(logStr+" "+err.toString());
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -573,7 +598,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -602,7 +627,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         /* &에 대한 예외처리를 안하기 위해서 추가함. */
         apiUrl += "status=live";
 
-        log.info(logStr+" apiUrl=" + apiUrl);
+        log.info("apiUrl=" + apiUrl, meta);
 
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError;
@@ -665,31 +690,33 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var blogId;
     var postId;
     var errMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google/bot_posts";
+    meta.cName = "google";
+    meta.fName = "/bot_posts";
+
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+    meta.userId = userId;
     blogId = req.params.blog_id;
-    logStr += " blogId="+blogId;
+    meta.blogId = blogId;
     postId = req.params.post_id;
-    logStr += " postId="+postId;
+    meta.postId = postId;
 
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
         if (err) {
-            log.error(logStr+" "+err.toString());
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -697,7 +724,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -708,7 +735,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         apiUrl += "/posts";
         apiUrl += "/" + postId;
 
-        log.info(logStr+" apiUrl=" + apiUrl);
+        log.info("apiUrl=" + apiUrl, meta);
 
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError;
@@ -763,31 +790,32 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
     var blogId;
     var postId;
     var errMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google/bot_comments";
+    meta.cName = "google";
+    meta.fName = "/bot_comments";
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+    meta.userId = userId;
     blogId = req.params.blogId;
-    logStr += " blogId="+blogId;
+    meta.blogId = blogId;
     postId = req.params.postId;
-    logStr += " postId="+postId;
+    meta.postId = postId;
 
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
         if (err) {
-            log.error(err);
+            log.error(err, meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+"Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -795,7 +823,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -807,7 +835,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
         apiUrl += "/" + postId;
         apiUrl += "/comments";
 
-        log.info(logStr+" apiUrl=" + apiUrl);
+        log.info("apiUrl=" + apiUrl, meta);
 
         _requestGet(apiUrl, p.accessToken, function (err, response, body) {
             var hasError;
@@ -854,16 +882,18 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var userId;
     var blogId;
     var errMsg;
-    var logStr;
+    var meta = {};
 
-    logStr = "google/bot_posts/new";
+    meta.cName = "google";
+    meta.fName = "/bog_posts/new";
+
     userId = _getUserId(req, res);
     if (!userId) {
         return;
     }
-    logStr += " user="+userId;
+    meta.userId = userId;
     blogId = req.params.blog_id;
-    logStr += " blogId="+blogId;
+    meta.blogId = blogId;
 
     UserDb.findById(userId, function (err, user) {
         var p;
@@ -871,13 +901,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         var newPost;
 
         if (err) {
-            log.error(err);
+            log.error(err, meta);
             res.send(err);
             return;
         }
         if (!user) {
-            log.error(logStr+" Fail to get user");
-            log.error(logStr+" "+err.toString());
+            log.error("Fail to get user", meta);
+            log.error(err.toString(), meta);
             res.send(err);
             return;
         }
@@ -885,7 +915,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         p = user.findProvider("google");
         if (!p) {
             errMsg = "Fail to find provider";
-            log.error(logStr+" "+errMsg);
+            log.error(errMsg, meta);
             res.send(errMsg);
             return;
         }
@@ -895,7 +925,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         apiUrl += "/" + blogId;
         apiUrl += "/posts";
 
-        log.info(logStr+" apiUrl=" + apiUrl);
+        log.info("apiUrl=" + apiUrl, meta);
 
         newPost = {};
         newPost.kind = 'blogger#post';
