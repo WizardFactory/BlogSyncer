@@ -2,7 +2,6 @@
  * Created by aleckim on 2014. 8. 13..
  */
 
-var log = require('winston');
 var mongoose = require('mongoose');
 
 // define Schema =================
@@ -37,6 +36,12 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
     var i;
     var sites = this.sites;
     var provider;
+    var meta = {};
+
+    meta.cName = "siteSchema";
+    meta.fName = "findSiteByProvider";
+    meta.providerName = providerName;
+    meta.providerId = providerId;
 
     for (i=0; i<sites.length; i+=1) {
         provider = sites[i].provider;
@@ -52,7 +57,7 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
         }
     }
 
-    log.error("Fail to find site of providerName="+providerName + " providerId="+providerId);
+    log.error("Fail to find site", meta);
 };
 
 /**
@@ -64,6 +69,12 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
 siteSchema.methods.findBlogFromSite = function(site, blogId) {
     "use strict";
     var i;
+    var meta = {};
+
+    meta.cName = "siteSchema";
+    meta.fName = "findBlogFromSite";
+    meta.siteId = site._id;
+    meta.blogId = blogId;
 
     for (i=0; i<site.blogs.length; i+=1) {
         if (site.blogs[i].blog_id === blogId) {
@@ -71,7 +82,7 @@ siteSchema.methods.findBlogFromSite = function(site, blogId) {
         }
     }
 
-    log.error("Fail to find blog id="+blogId);
+    log.error("Fail to find blog", meta);
 };
 
 // create the model for users and expose it to our app

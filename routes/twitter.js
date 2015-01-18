@@ -15,8 +15,6 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.twitter;
 
-var log = require('winston');
-
 var OAuth = require('oauth').OAuth;
 // global variable for object of OAuth
 var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",

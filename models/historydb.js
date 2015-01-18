@@ -2,7 +2,6 @@
  * Created by aleckim on 2014. 9. 20..
  */
 
-var log = require('winston');
 var mongoose = require('mongoose');
 var historySchema;
 
