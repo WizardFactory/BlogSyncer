@@ -1,5 +1,5 @@
 /**
- * Created by aleckim on 2014. 7. 20..
+ * Created by aleckim on 2014. 7. 20.
  */
 
 var request = require('request');
@@ -15,8 +15,6 @@ var router = express.Router();
 
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.tistory;
-
-var log = require('winston');
 
 var TISTORY_API_URL = "https://www.tistory.com/apis";
 
@@ -187,7 +185,7 @@ function _checkError(err, response, body) {
     var errStr;
 
     if (err) {
-        log.debug(err);
+        log.error(err);
         return err;
     }
     if (response.statusCode >= 400) {
@@ -455,8 +453,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     "use strict";
     var userId;
 
-    log.debug("tistory: "+ req.url);
-
     userId = _getUserId(req, res);
     if (!userId) {
         return;
@@ -472,13 +468,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var page;
 
         if (err) {
-            log.error(err);
+            log.error(this.name+" user="+user._id+" err="+err.toString());
             res.send(err);
             return;
         }
         if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
+            log.error(this.name+" user="+userId+" Fail to get user err="+err.toString());
             res.send(err);
             return;
         }
@@ -527,7 +522,13 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             hasError = _checkError(err, response, body);
             if (hasError) {
-                res.statusCode = response.statusCode;
+                if (response.statusCode) {
+                    res.statusCode = response.statusCode;
+                }
+                else {
+                    log.error(" userId="+userId+" You have to set detail error!!");
+                    res.statusCode = 400;
+                }
                 res.send(hasError);
                 return;
             }
@@ -565,7 +566,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                         continue;
                     }
                     else {
-                        log.debug('add post(' + raw_post.id + ')');
+                        log.debug("add post(" + raw_post.id + ")");
                     }
                 }
 

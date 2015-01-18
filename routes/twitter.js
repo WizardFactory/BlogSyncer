@@ -9,7 +9,6 @@ var TwitterStrategy = require('passport-twitter').Strategy;
 var blogBot = require('./blogbot');
 var request = require('request');
 var svcConfig = require('../models/svcConfig.json');
-var log = require('winston');
 var OAuth = require('oauth').OAuth;
 
 var router = express.Router();
@@ -123,8 +122,7 @@ passport.use(new TwitterStrategy({
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
-        var provider;
-        provider = {
+        var provider = {
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,

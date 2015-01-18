@@ -90,6 +90,7 @@
         "inject",
         //require.js
         "define",
+        "log",
         "bs"
     ]
 }

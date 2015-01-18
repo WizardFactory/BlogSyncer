@@ -2,7 +2,6 @@
  * Created by alecKim on 2014. 9. 22..
  */
 
-var log = require('winston');
 var mongoose = require('mongoose');
 
 /**
@@ -45,6 +44,12 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     var provider;
     var foundIt;
     var newGroups = [];
+    var meta = {};
+
+    meta.cName = "groupSchema";
+    meta.fName = "findGroupByBlogInfo";
+    meta.providerName = providerName;
+    meta.blogId = blogId;
 
     for (i=0; i<this.groups.length; i+=1) {
         group = this.groups[i].group;
@@ -64,7 +69,7 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     }
 
     if (newGroups.length === 0) {
-        log.warn("Fail to find group providerName="+providerName+" blogId="+blogId);
+        log.warning("Fail to find group", meta);
     }
 
     return newGroups;

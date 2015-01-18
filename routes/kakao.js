@@ -16,8 +16,6 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.kakao;
 
-var log = require('winston');
-
 var KAKAO_API_URL = "https://kapi.kakao.com";
 
 passport.serializeUser(function(user, done) {
@@ -32,6 +30,12 @@ passport.deserializeUser(function(obj, done) {
 
 function _updateOrCreateUser(req, provider, callback) {
     "use strict";
+    var meta = {};
+
+    meta.cName = "kakao";
+    meta.fName = "_updateOrCreateUser";
+    meta.providerName = provider.providerName;
+    meta.providerId = provider.providerId;
 
     UserDb.findOne({'providers.providerName':provider.providerName,
                     'providers.providerId': provider.providerId},
@@ -45,7 +49,7 @@ function _updateOrCreateUser(req, provider, callback) {
 
             // if there is a user id already but no token (user was linked at one point and then removed)
             if (user) {
-                log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
+                log.debug("Found user="+user._id, meta);
                 p = user.findProvider("kakao");
                 if (p.accessToken !== provider.accessToken) {
                     p.accessToken = provider.accessToken;
@@ -67,12 +71,12 @@ function _updateOrCreateUser(req, provider, callback) {
                 if (req.user) {
                     UserDb.findById(req.user._id, function (err, user) {
                         if (err) {
-                            log.error(err);
+                            log.error(err.toString(), meta);
                             return callback(err);
                         }
                         if (!user) {
-                            log.error("Fail to get user id="+req.user._id);
-                            log.error(err);
+                            log.error("Fail to get user id="+req.user._id, meta);
+                            log.error(err.toString(), meta);
                             return callback(err);
                         }
                         // if there is no provider, add to User
@@ -109,12 +113,17 @@ passport.use(new KakaoStrategy({
     },
     function(req, accessToken, refreshToken, profile, done) {
         "use strict";
+        var provider;
+        var meta = {};
 
-        //log.debug("accessToken:" + accessToken);
-        //log.debug("refreshToken:" + refreshToken);
-        //log.debug("profile:" + JSON.stringify(profile));
+        meta.cName = "kakao";
+        meta.fName = "passport.use";
 
-        var provider = {
+        //log.debug("accessToken:" + accessToken, meta);
+        //log.debug("refreshToken:" + refreshToken, meta);
+        //log.debug("profile:" + JSON.stringify(profile), meta);
+
+        provider = {
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
@@ -124,7 +133,7 @@ passport.use(new KakaoStrategy({
 
         _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
-                log.error("Fail to get user ");
+                log.error("Fail to get user", meta);
                 return done(err);
             }
 
@@ -152,9 +161,13 @@ router.get('/authorized',
     passport.authenticate('kakao', { failureRedirect: '/#signin' }),
     function(req, res) {
         "use strict";
+        var meta = {};
+
+        meta.cName = "kakao";
+        meta.fName = "/authorized";
 
         // Successful authentication, redirect home.
-        log.debug('Successful!');
+        log.debug("Successful!", meta);
         res.redirect('/#');
     }
 );
@@ -163,6 +176,10 @@ function _getUserId(req, res) {
     "use strict";
     var userId;
     var errorMsg;
+    var meta = {};
+
+    meta.cName = "kakao";
+    meta.fName = "_getUserId";
 
     if (req.user) {
         userId = req.user._id;
@@ -174,7 +191,7 @@ function _getUserId(req, res) {
     }
     else {
         errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
+        log.debug(errorMsg, meta);
         res.send(errorMsg);
         res.redirect("/#/signin");
     }
@@ -185,15 +202,24 @@ function _getUserId(req, res) {
 function _checkError(err, response, body) {
     "use strict";
     var errStr;
+    var meta = {};
+
+    meta.cName = "kakao";
+    meta.fName = "_checkError";
 
     if (err) {
         log.debug(err);
         return err;
     }
     if (response.statusCode >= 400) {
-        errStr = 'kakao API error: ' + response.statusCode + ' ' + body.message;
-        log.error(body);
-        log.debug(errStr);
+        errStr = "API error: " + response.statusCode;
+        if (body.error) {
+            if (body.error.message) {
+                errStr += " " + body.error.message;
+            }
+        }
+        log.error(body, meta);
+        log.error(errStr, meta);
         return new Error(errStr);
     }
 }
@@ -344,9 +370,6 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     sendData.post_count = -1;
 
     res.send(sendData);
-
-    return;
-
  });
 
 router.get('/bot_posts/:blog_id', function (req, res) {

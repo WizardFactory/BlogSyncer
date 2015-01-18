@@ -2,7 +2,6 @@
  * Created by aleckim on 2014. 7. 11..
  */
 
-var log = require('winston');
 var mongoose = require('mongoose');
 
 var userSchema = mongoose.Schema({
@@ -26,6 +25,12 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     var i;
     var p;
     var tmp;
+    var meta = {};
+
+    meta.cName = "userSchema";
+    meta.fName = "findProvider";
+    meta.providerName = providerName;
+    meta.providerId = providerId;
 
     for ( i=0; i<this.providers.length; i+=1) {
         tmp = this.providers[i];
@@ -42,7 +47,7 @@ userSchema.methods.findProvider = function(providerName, providerId) {
     }
 
     if (i === this.providers.length) {
-        log.error("Fail to find providers");
+        log.error("Fail to find providers", meta);
     }
 
     return p;
