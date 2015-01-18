@@ -458,8 +458,8 @@ BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
     }
     blogs = recvBlogs.blogs;
 
-    log.info(" "+provider, meta);
-    log.info(" "+blogs, meta);
+    log.info(provider, meta);
+    log.info(blogs, meta);
 
     blogDb = BlogBot._findDbByUser(user, "blog");
     if (!blogDb) {

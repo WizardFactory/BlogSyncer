@@ -293,10 +293,12 @@ router.get('/post/list/:simpleName', function (req, res) {
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
     var userId = _getUserId(req, res);
-
+    var providerId;
     if (!userId) {
         return;
     }
+
+    providerId = req.query.providerid;
 
     UserDb.findById(userId, function (err, user) {
         var p;
@@ -314,7 +316,7 @@ router.get('/bot_bloglist', function (req, res) {
             return;
         }
 
-        p = user.findProvider("tistory");
+        p = user.findProvider("tistory", providerId);
         if (!p) {
             log.error("Fail to find provider tistory");
             res.send("Fail to find provider tistory");

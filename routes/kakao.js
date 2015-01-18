@@ -303,6 +303,7 @@ router.get('/mystories', function (req, res) {
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
     var userId;
+    var providerId;
 
     log.debug(req.url);
 
@@ -310,12 +311,13 @@ router.get('/bot_bloglist', function (req, res) {
     if (!userId) {
         return;
     }
+    providerId = req.query.providerid;
 
     UserDb.findById(userId, function (err, user) {
         var p;
         var apiUrl;
 
-        p = user.findProvider("kakao");
+        p = user.findProvider("kakao", providerId);
         apiUrl = KAKAO_API_URL + "/v1/user/me";
 
         log.debug(apiUrl);

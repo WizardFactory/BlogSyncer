@@ -391,6 +391,7 @@ router.get('/bot_bloglist', function (req, res) {
     "use strict";
     var userId;
     var errMsg;
+    var providerId;
     var meta = {};
 
     meta.cName = "google";
@@ -400,8 +401,9 @@ router.get('/bot_bloglist', function (req, res) {
     if (!userId) {
         return;
     }
-
     meta.userId = userId;
+
+    providerId = req.query.providerid;
 
     UserDb.findById(userId, function (err, user) {
         var p;
@@ -419,7 +421,7 @@ router.get('/bot_bloglist', function (req, res) {
             return;
         }
 
-        p = user.findProvider("google");
+        p = user.findProvider("google", providerId);
         if (!p) {
             errMsg = "Fail to find provider";
             log.error(errMsg, meta);
