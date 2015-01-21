@@ -262,6 +262,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     $scope.user = User.getUser();
     $scope.title = 'Collect Feedback';
     $scope.posts = [];
+    $scope.sites = [];
     $scope.waiting = false;
     $scope.getReplyContent = function (providerName, blogID, postID) {
         //window.alert("getReplyContent = " + providerName + blogID + postID);
@@ -306,6 +307,23 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
             });
     };
 
+    $scope.getBlogTitle = function(providerName, blogID) {
+        var i;
+        var len;
+
+       if (!$scope.sites)  {
+          console.log("Fail to get sites");
+          return;
+       }
+        len = $scope.sites.length;
+        for (i=0; i<len; i+=1) {
+           if ($scope.sites[i].provider.providerName === providerName &&
+                    $scope.sites[i].blog.blog_id === blogID)  {
+              return $scope.sites[i].blog.blog_title;
+           }
+        }
+    };
+
     function init() {
         reqStartNum = 0;
         reqTotalNum = 20;
@@ -330,6 +348,21 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                 reqStartNum += data.posts.length;
                 $scope.posts = data.posts;
                 getReplies(data);
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
+
+        url = "/blogs/sites";
+        $http.get(url)
+            .success(function (data) {
+                console.log(data);
+                for (var i = 0; i < data.sites.length; i += 1) {
+                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                        $scope.sites.push(site);
+                    }
+                }
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
