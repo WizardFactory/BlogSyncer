@@ -202,6 +202,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
 
     var reqStartNum;
     var reqTotalNum;
+    var sites;
 
     function getPost(providerName, blogID, postID) {
         for (var i = 0; i<$scope.posts.length; i += 1) {
@@ -249,7 +250,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                         }
 
                         indexes = getPost(data.providerName, data.blogID, data.postID);
-                        console.log(indexes);
+                        //console.log(indexes);
                         $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
                     })
                     .error(function (data) {
@@ -262,7 +263,6 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
     $scope.user = User.getUser();
     $scope.title = 'Collect Feedback';
     $scope.posts = [];
-    $scope.sites = [];
     $scope.waiting = false;
     $scope.getReplyContent = function (providerName, blogID, postID) {
         //window.alert("getReplyContent = " + providerName + blogID + postID);
@@ -311,30 +311,50 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
         var i;
         var len;
 
-       if (!$scope.sites)  {
+       if (!sites)  {
           console.log("Fail to get sites");
           return;
        }
-        len = $scope.sites.length;
+        len = sites.length;
         for (i=0; i<len; i+=1) {
-           if ($scope.sites[i].provider.providerName === providerName &&
-                    $scope.sites[i].blog.blog_id === blogID)  {
-              return $scope.sites[i].blog.blog_title;
+           if (sites[i].provider.providerName === providerName &&
+                    sites[i].blog.blog_id === blogID)  {
+              return sites[i].blog.blog_title;
            }
         }
     };
 
     function init() {
-        reqStartNum = 0;
-        reqTotalNum = 20;
-
+        var url;
         var user = $scope.user;
+
         if (user._id === undefined) {
             console.log('you have to signin~');
             return;
         }
 
-        var url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
+        url = "/blogs/sites";
+        $http.get(url)
+            .success(function (data) {
+                //console.log(data);
+                if (sites) {
+                    console.log("Sites already was made");
+                }
+                sites = [];
+                for (var i = 0; i < data.sites.length; i += 1) {
+                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                        sites.push(site);
+                    }
+                }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
+
+        reqStartNum = 0;
+        reqTotalNum = 20;
+        url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
 
         $http.get(url)
             .success(function (data) {
@@ -348,21 +368,6 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                 reqStartNum += data.posts.length;
                 $scope.posts = data.posts;
                 getReplies(data);
-            })
-            .error(function (data) {
-                window.alert('Error: ' + data);
-            });
-
-        url = "/blogs/sites";
-        $http.get(url)
-            .success(function (data) {
-                console.log(data);
-                for (var i = 0; i < data.sites.length; i += 1) {
-                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
-                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
-                        $scope.sites.push(site);
-                    }
-                }
             })
             .error(function (data) {
                 window.alert('Error: ' + data);
