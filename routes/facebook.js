@@ -49,8 +49,9 @@ function _updateOrCreateUser(req, provider, callback) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -92,8 +93,9 @@ function _updateOrCreateUser(req, provider, callback) {
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, newUser, isNewProvider);
                     });
@@ -158,27 +160,6 @@ router.get('/authorized',
     }
 );
 
-/**
- *
- * @param req
- * @returns {number}
- */
-getUserId = function (req) {
-    "use strict";
-    var userid = 0;
-
-    if (req.user) {
-        userid = req.user._id;
-    }
-    else if (req.query.userid)
-    {
-        //this request form child process;
-        userid = req.query.userid;
-    }
-
-    return userid;
-};
-
 function _getUserID(req) {
     "use strict";
     var userid = 0;
@@ -202,8 +183,8 @@ function _checkError(err, response, body) {
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        var error = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + error;
         log.debug(errStr);
         return new Error(errStr);
     }
@@ -224,7 +205,7 @@ function _requestGet(url, accessToken, callback) {
 router.get('/me', function (req, res) {
     "use strict";
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (user_id === 0) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -258,9 +239,10 @@ router.get('/bot_bloglist', function (req, res) {
 
     log.debug("facebook: "+ req.url + ' : this is called by bot');
 
+    var errorMsg = "";
     var userId = _getUserID(req);
     if (userId === 0) {
-        var errorMsg = 'You have to login first!';
+        errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -268,7 +250,7 @@ router.get('/bot_bloglist', function (req, res) {
     }
 
     if (req.query.providerid === false) {
-        var errorMsg = 'User:'+userId+' didnot have blog!';
+        errorMsg = 'User:'+userId+' didnot have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -325,6 +307,28 @@ router.get('/bot_bloglist', function (req, res) {
             res.send(sendData);
         });
     });
+});
+
+router.get('/bot_post_count/:blog_id', function (req, res) {
+    "use strict";
+
+    log.debug(req.url);
+
+    var user_id = _getUserID(req);
+    if (user_id === 0) {
+        return;
+    }
+
+    //facebook did not support post_count.
+    var blog_id = req.params.blog_id;
+    var send_data = {};
+    send_data.provider_name = 'facebook';
+    send_data.blog_id = blog_id;
+    send_data.post_count = -1;
+
+    res.send(send_data);
+
+    return;
 });
 
 module.exports = router;
