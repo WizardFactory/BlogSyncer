@@ -47,8 +47,9 @@ function _updateOrCreateUser(req, provider, callback) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -90,8 +91,9 @@ function _updateOrCreateUser(req, provider, callback) {
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, newUser, isNewProvider);
                     });
@@ -156,28 +158,7 @@ router.get('/authorized',
     }
 );
 
-/**
- *
- * @param req
- * @returns {number}
- */
-getUserId = function (req) {
-    "use strict";
-    var userid = 0;
-
-    if (req.user) {
-        userid = req.user._id;
-    }
-    else if (req.query.userid)
-    {
-        //this request form child process;
-        userid = req.query.userid;
-    }
-
-    return userid;
-};
-
-function _getUserID(req) {
+function _getUserId(req) {
     "use strict";
     var userid = 0;
 
@@ -200,8 +181,8 @@ function _checkError(err, response, body) {
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        var error = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + error;
         log.debug(errStr);
         return new Error(errStr);
     }
@@ -221,8 +202,8 @@ function _requestGet(url, accessToken, callback) {
 
 router.get('/me', function (req, res) {
     "use strict";
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
+    var user_id = _getUserId(req);
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -256,9 +237,10 @@ router.get('/bot_bloglist', function (req, res) {
 
     log.debug("facebook: "+ req.url + ' : this is called by bot');
 
-    var userId = _getUserID(req);
-    if (userId === 0) {
-        var errorMsg = 'You have to login first!';
+    var errorMsg = "";
+    var userId = _getUserId(req);
+    if (!userId) {
+        errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -266,7 +248,7 @@ router.get('/bot_bloglist', function (req, res) {
     }
 
     if (req.query.providerid === false) {
-        var errorMsg = 'User:'+userId+' didnot have blog!';
+        errorMsg = 'User:'+userId+' didnot have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -320,6 +302,226 @@ router.get('/bot_bloglist', function (req, res) {
                 log.debug("pageId: "+pageId+", pageName: "+pageName+", pageLink: "+pageLink);
                 sendData.blogs.push({"blog_id":pageId, "blog_title":pageName, "blog_url":pageLink});
             }
+            res.send(sendData);
+        });
+    });
+});
+
+router.get('/bot_post_count/:blog_id', function (req, res) {
+    "use strict";
+
+    log.debug(req.url);
+
+    var user_id = _getUserId(req);
+    if (!user_id) {
+        return;
+    }
+
+    log.debug("get facebook post count!!");
+
+    //facebook did not support post_count.
+    var blog_id = req.params.blog_id;
+    var send_data = {};
+    send_data.provider_name = 'facebook';
+    send_data.blog_id = blog_id;
+    send_data.post_count = -1;
+
+    res.send(send_data);
+
+    return;
+});
+
+router.get('/bot_posts/:blog_id', function (req, res) {
+    "use strict";
+    var userId;
+    var blogId;
+    var errMsg;
+    var limit;
+    var until;
+    var pagingToken;
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    blogId = req.params.blog_id;
+    limit = req.query.limit;
+    until = req.query.until;
+    pagingToken = req.query.__paging_token;
+
+    UserDb.findById(userId, function (err, user) {
+        var p;
+        var apiUrl;
+
+        if (err) {
+            log.error(err.toString());
+            res.send(err);
+            return;
+        }
+        if (!user) {
+            log.error("Fail to get user");
+            log.error(err.toString());
+            res.send(err);
+            return;
+        }
+
+        p = user.findProvider("facebook");
+        if (!p) {
+            errMsg = "Fail to find provider";
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
+
+        apiUrl = FACEBOOK_API_URL+"/"+blogId+"/posts";
+        apiUrl += "?limit=25&";
+        /*
+        if (limit) {
+            apiUrl += "limit="+limit+"&";
+        }
+        */
+
+        if (until) {
+            apiUrl += "until=" + until + "&";
+        }
+
+        if (pagingToken) {
+            apiUrl += "__paging_token" + pagingToken + "&";
+        }
+
+        log.info("apiUrl=" + apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+            var hasError;
+            var sendData;
+            var sendPost;
+            var item;
+            var i;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+
+            sendData = {};
+            sendData.provider_name = 'facebook';
+            sendData.blog_id = blogId;
+
+            if (body.data) {
+                sendData.post_count = body.data.length;
+            }
+            else {
+                sendData.post_count = 0;
+            }
+
+            if (sendData.post_count === 25 && body.paging) {
+                sendData.nextPageToken = body.paging.next;
+            }
+
+            sendData.posts = [];
+
+            for (i = 0; i<sendData.post_count; i+=1) {
+                item = body.data[i];
+                sendPost = {};
+                if (item.message) {
+                    sendPost.title = item.message;
+                    sendPost.modified = item.updated_time;
+                    sendPost.id = item.id;
+                    sendPost.url = item.link;
+                    sendPost.categories = [];
+                    sendPost.tags = [];
+                    sendData.posts.push(sendPost);
+                }
+            }
+            res.send(sendData);
+        });
+    });
+});
+
+
+router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
+    "use strict";
+    var userId;
+    var errMsg;
+
+    log.debug("facebook: "+ req.url + ' : this is called by bot');
+
+    userId = _getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+
+    UserDb.findById(userId, function (err, user) {
+        var blogId;
+        var postId;
+        var p;
+        var apiUrl;
+
+        blogId = req.params.blog_id;
+        postId = req.params.post_id;
+
+        p = user.findProvider("facebook");
+        if (!p) {
+            errMsg = "Fail to find provider";
+            log.error(errMsg);
+            res.send(errMsg);
+            return;
+        }
+
+        apiUrl = FACEBOOK_API_URL+"/"+postId;
+
+        log.debug(apiUrl);
+
+        _requestGet(apiUrl, p.accessToken, function(err, response, body) {
+            var hasError;
+            var sendData;
+            var sendPost;
+            var rawPost;
+            var comment_count;
+            var like_count;
+
+            hasError = _checkError(err, response, body);
+            if (hasError) {
+                res.statusCode = response.statusCode;
+                res.send(hasError);
+                return;
+            }
+
+            //log.debug(data);
+            sendData = {};
+            sendData.provider_name = 'facebook';
+            sendData.blog_id = blogId;
+            sendData.posts = [];
+
+            rawPost = body;
+
+            if (rawPost.comments) {
+                comment_count = rawPost.comments.data.length;
+            }
+            else {
+                comment_count = 0;
+            }
+            if (rawPost.likes) {
+                like_count = rawPost.likes.data.length;
+            }
+            else {
+                like_count = 0;
+            }
+
+            sendPost = {};
+            sendPost.title = rawPost.message;
+            sendPost.modified = rawPost.updated_time;
+            sendPost.id = rawPost.id;
+            sendPost.url = rawPost.link;
+            sendPost.categories = [];
+            sendPost.tags = [];
+            sendPost.content = rawPost.message;
+            sendPost.replies = [];
+            sendPost.replies.push({"comment_count":comment_count});
+            sendPost.replies.push({"like_count":like_count});
+            sendData.posts.push(sendPost);
             res.send(sendData);
         });
     });
