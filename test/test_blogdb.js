@@ -6,6 +6,9 @@
 
 var assert  = require('assert');
 var Site = require('../models/blogdb');
+if (!global.log) {
+    global.log = require('winston');
+}
 
 var testProvider1 = {
     providerName: "twitter",

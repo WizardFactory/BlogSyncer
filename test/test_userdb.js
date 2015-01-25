@@ -4,6 +4,9 @@
 
 var assert  = require('assert');
 var User = require('../models/userdb');
+if (!global.log) {
+    global.log = require('winston');
+}
 
 var testProvider1 = {
     "providerName":"twitter",
