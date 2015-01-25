@@ -15,8 +15,6 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.facebook;
 
-var log = require('winston');
-
 var FACEBOOK_API_URL = "https://graph.facebook.com";
 
 passport.serializeUser(function(user, done) {

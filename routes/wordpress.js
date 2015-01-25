@@ -18,8 +18,6 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.Wordpress;
 
-var log = require('winston');
-
 var WORDPRESS_API_URL = "https://public-api.wordpress.com/rest/v1";
 
 passport.serializeUser(function(user, done) {

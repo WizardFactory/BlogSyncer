@@ -3,21 +3,18 @@
  */
 
 var UserDb = require('../models/userdb');
-
 var express = require('express');
 var passport = require('passport');
 var TwitterStrategy = require('passport-twitter').Strategy;
 var blogBot = require('./blogbot');
 var request = require('request');
+var svcConfig = require('../models/svcConfig.json');
+var OAuth = require('oauth').OAuth;
 
 var router = express.Router();
 
-var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.twitter;
 
-var log = require('winston');
-
-var OAuth = require('oauth').OAuth;
 // global variable for object of OAuth
 var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
     "https://api.twitter.com/oauth/access_token",
@@ -30,16 +27,19 @@ var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
 var TWITTER_API_URL = "https://api.twitter.com/1.1";
 
 passport.serializeUser(function(user, done) {
+    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
+    "use strict";
     done(null, obj);
 });
 
 function _updateOrCreateUser(req, provider, callback) {
-    UserDb.findOne({'providers.providerName':provider.providerName
-            , 'providers.providerId': provider.providerId},
+    "use strict";
+    UserDb.findOne({'providers.providerName':provider.providerName,
+            'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
@@ -56,8 +56,9 @@ function _updateOrCreateUser(req, provider, callback) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
                     user.save (function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, user, isNewProvider);
                     });
@@ -99,8 +100,9 @@ function _updateOrCreateUser(req, provider, callback) {
 
                     newUser.providers.push(provider);
                     newUser.save(function(err) {
-                        if (err)
+                        if (err) {
                             return callback(err);
+                        }
 
                         return callback(null, newUser, isNewProvider);
                     });
@@ -116,6 +118,7 @@ passport.use(new TwitterStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
+        "use strict";
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
@@ -156,6 +159,7 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('twitter', { failureRedirect: '/#signin' }),
     function(req, res) {
+        "use strict";
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
@@ -163,6 +167,8 @@ router.get('/authorized',
 );
 
 function _getUserID(req) {
+    "use strict";
+
     var userid = 0;
 
     if (req.user) {
@@ -178,19 +184,21 @@ function _getUserID(req) {
 }
 
 function _checkError(err, response, body) {
+    "use strict";
     if (err) {
         log.debug(err);
         return err;
     }
     if (response.statusCode >= 400) {
-        var err = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + err;
+        var errData = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + errData;
         log.debug(errStr);
         return new Error(errStr);
     }
 }
 
 function _requestGet(url, accessToken, callback) {
+    "use strict";
     request.get(url, {
         json: true,
         headers: {
@@ -202,21 +210,22 @@ function _requestGet(url, accessToken, callback) {
 }
 
 router.get('/bot_bloglist', function (req, res) {
-
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
+    var errorMsg;
+    var user_id;
+    user_id = _getUserID(req);
 
-    var user_id = _getUserID(req);
-
-    if (user_id == 0) {
-        var errorMsg = 'You have to login first!';
+    if (!user_id) {
+        errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
     }
 
-    if (req.query.providerid == false) {
-        var errorMsg = 'User:'+user_id+' did not have blog!';
+    if (req.query.providerid === false) {
+        errorMsg = 'User:'+user_id+' did not have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
@@ -262,11 +271,12 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-
+    "use strict";
     log.debug("Twitter: "+ req.url + ' : this is called by bot');
 
-    var user_id = _getUserID(req);
-    if (user_id == 0) {
+    var user_id;
+    user_id = _getUserID(req);
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -310,10 +320,11 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -322,7 +333,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
 
     UserDb.findById(user_id, function (err, user) {
-        var blog_id = req.query.providerid;
+        var provider_id = req.query.providerid;
+        var blog_id = req.params.blog_id;
         var last_id = req.query.offset;
         var after = req.query.after;
         // https://dev.twitter.com/rest/public/timelines
@@ -331,16 +343,16 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var count = 0;
         var api_url;
 
-        if (user.providers === null) {
-            log.error("user.providers is null !!!");
+        if (!user) {
+            log.error("user is null !!!");
             return;
         }
 
         count = 20;
 
-        var p = user.findProvider("twitter", blog_id);
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId
-            + "&count=" + count;
+        var p = user.findProvider("twitter", provider_id);
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
+            "&count=" + count;
 
         if (last_id) {
             api_url += "&";
@@ -359,10 +371,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return;
             }
 
-            result = JSON.parse(response);//data;
+            result = JSON.parse(response);
+            //log.debug(result);
 
             if(result.length === undefined) {
-                log.debug("result is empty !!!")
+                log.debug("result is empty !!!");
                 return;
             }
 
@@ -394,15 +407,23 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 send_post.tags = [];
                 send_post.content = raw_post.content;
 
+                log.debug(send_post);
+
                 send_data.posts.push(send_post);
+
                 send_data.stopReculsive = false;
             }
 
             send_data.post_count = send_data.posts.length;
 
-            if( (last_id == send_data.posts[i-1].id)
-                && (result.length == 1) ) {
-                log.debug("stop Reculsive!!!!");
+            if(!(send_data.posts[i-1])) {
+                log.debug("posts is undefined !!!");
+                return;
+            }
+
+            if( (last_id == send_data.posts[i-1].id) &&
+                 (result.length == 1) ) {
+                log.debug("stop Reculsive!!!!!");
                 send_data.stopReculsive = true;
             }
 
@@ -411,13 +432,15 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     });
 });
 
-// 추가 구현 예정
-/*
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
+    "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
 
+    var logStr;
+    logStr = "/bot_posts/:blog_id/:post_id";
+
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -425,76 +448,112 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
+        var provider_id = req.query.providerid;
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
-        var p = user.findProvider("Wordpress", blog_id);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blog_id;
+        var last_id = req.query.offset;
+        var after = req.query.after;
+        // https://dev.twitter.com/rest/public/timelines
+        // use max_id for twit offset in twitter
+        var lastCnt = 0;
+        var count = 0;
+        var api_url;
 
-        api_url += "/posts";
-        api_url += "/" + post_id;
+        if (!user) {
+            log.error("user is null !!!");
+            return;
+        }
 
-        log.debug(api_url);
+        // use count(1) with user_timeline for retweet and like counting
+        count = 1;
 
-        _requestGet(api_url, p.accessToken, function(err, response, body) {
+        var p = user.findProvider("twitter", provider_id);
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
+            "&count=" + count + "&max_id=" + post_id;
+
+        //log.debug(api_url);
+
+        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, response, body) {
+            var result = [];
+            var resultVal;
+
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
                 res.send(hasError);
                 return;
             }
 
-            //log.debug(data);
-            var send_data = {};
+            result = JSON.parse(response);
+            //log.debug(result);
 
-            send_data.provider_name = 'Wordpress';
+            if(result.length === undefined) {
+                log.debug("result is empty !!!");
+                return;
+            }
+
+            var send_data = {};
+            var i = 0;
+
+            send_data.provider_name = 'twitter';
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
-            var send_post = {};
-            var raw_post = body;
+            for (i = 0; i < result.length; i++) {
+                var raw_post = result[i];
+                if (after !== undefined) {
+                    var post_date = new Date(raw_post.created_at);
+                    var after_date = new Date(after);
 
-            send_post.title = raw_post.title;
-            send_post.modified = raw_post.modified;
-            send_post.id = raw_post.ID;
-            send_post.url = raw_post.URL;
-            send_post.categories = [];
-            send_post.tags = [];
-            var j=0;
-            if (raw_post.categories) {
-                var category_arr = Object.keys(raw_post.categories);
-                for (j=0; j<category_arr.length; j++) {
-                    send_post.categories.push(category_arr[j]);
+                    if (post_date < after_date) {
+                        //log.debug('post is before');
+                        continue;
+                    }
                 }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
+
+                var send_post = {};
+                send_post.title = raw_post.text;
+                send_post.modified = raw_post.created_at;
+                send_post.id = raw_post.id;
+                send_post.url = raw_post.url;
+                send_post.categories = [];
+                send_post.tags = [];
+                send_post.content = raw_post.content;
+                send_post.replies = [];
+                send_post.replies.push({"retweet_count":raw_post.retweet_count});
+                send_post.replies.push({"like_count":raw_post.favorite_count});
+
+                log.debug(send_post);
+
+                send_data.posts.push(send_post);
+
+                send_data.stopReculsive = false;
             }
-            if (raw_post.tags) {
-                var tag_arr = Object.keys(raw_post.tags);
-                for (j=0; j<tag_arr.length; j++) {
-                    send_post.tags.push(tag_arr[j]);
-                }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
+
+            send_data.post_count = send_data.posts.length;
+
+            if(!(send_data.posts[i-1])) {
+                log.debug("posts is undefined !!!");
+                return;
             }
-            send_post.content = raw_post.content;
-            send_post.replies = [];
-            send_post.replies.push({"comment_count":raw_post.comment_count});
-            send_post.replies.push({"like_count":raw_post.like_count});
-            send_data.posts.push(send_post);
+
+            if( (last_id == send_data.posts[i-1].id) &&
+                (result.length == 1) ) {
+                log.debug("stop Reculsive!!!!!");
+                send_data.stopReculsive = true;
+            }
+
             res.send(send_data);
         });
     });
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    log.debug('Wordpress ' + req.url);
+    "use strict";
+    log.debug('Twitter ' + req.url);
 
     var user_id = _getUserID(req);
-    if (user_id == 0) {
+    if (!user_id) {
         var errorMsg = 'You have to login first!';
         log.debug(errorMsg);
         res.send(errorMsg);
@@ -502,10 +561,10 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return;
     }
 
-    User.findById(user_id, function (err, user) {
+    UserDb.findById(user_id, function (err, user) {
         var blog_id = req.params.blog_id;
-        var p = user.findProvider("Wordpress", blog_id);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blog_id +"/posts/new";
+        var p = user.findProvider("twitter", blog_id);
+        var api_url = TWITTER_API_URL+"/sites/"+blog_id +"/posts/new";
 
         log.debug(api_url);
         request.post(api_url, {
@@ -522,7 +581,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //add post info
             var send_data = {};
-            send_data.provider_name = 'Wordpress';
+            send_data.provider_name = 'twitter';
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
@@ -557,6 +616,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //send_post.content = raw_post.content;
             send_data.posts.push(send_post);
+
             log.debug(send_data);
             res.send(send_data);
         });
@@ -564,56 +624,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    log.debug(req.url);
-    var userID = _getUserID(req);
-    if (userID == 0) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-        return;
-    }
+    "use strict";
+    log.debug("[bot_comments]" + req.url );
+    log.debug("twitter is not comments feature !!!!");
 
-    User.findById(user_id, function (err, user) {
-        var blogID = req.params.blogID;
-        var postID = req.params.postID;
-        var p = user.findProvider("Wordpress", blogID);
-        var api_url = WORDPRESS_API_URL+"/sites/"+blogID;
-        api_url += "/posts";
-        api_url += "/" + postID;
-        api_url += "/replies";
-
-        log.debug(api_url);
-
-        _requestGet(api_url, p.accessToken, function(err, response, body) {
-            var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
-                res.send(hasError);
-                return;
-            }
-
-            log.debug(body);
-
-            var send = {};
-
-            send.providerName = p.providerName;
-            send.blogID = blogID;
-            send.postID = postID;
-            send.found = body.found;
-            send.comments = [];
-            for(var i=0; i<body.found; i++) {
-                var comment = {};
-                comment.date = body.comments[i].date;
-                comment.URL = body.comments[i].short_URL;
-                comment.content = body.comments[i].content;
-                send.comments.push(comment);
-            }
-
-            res.send(send);
-        });
-    });
+    return;
 });
-*/
+
 
 module.exports = router;
 

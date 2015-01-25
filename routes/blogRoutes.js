@@ -3,10 +3,7 @@
  */
 
 var express = require('express');
-
-var log = require('winston');
 var router = express.Router();
-
 var blogBot = require('./blogbot');
 
 /**
@@ -21,6 +18,7 @@ function _getUser(req, res) {
 
     if (!req.user) {
         var errorMsg = 'You have to login first!';
+        log.error(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
@@ -73,8 +71,6 @@ router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
 
     user = _getUser(req,res);
     if (!user) {
-        log.error("Fail to get user");
-        res.send();
         return;
     }
 

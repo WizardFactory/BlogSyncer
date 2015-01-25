@@ -16,8 +16,6 @@ var router = express.Router();
 var svcConfig = require('../models/svcConfig.json');
 var clientConfig = svcConfig.tumblr;
 
-var log = require('winston');
-
 passport.serializeUser(function(user, done) {
     "use strict";
     done(null, user);

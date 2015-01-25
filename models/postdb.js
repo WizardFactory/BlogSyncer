@@ -3,7 +3,6 @@
  * posts db는 각 사용자별로 하나씩 가지게 된다.
  */
 
-var log = require('winston');
 var mongoose = require('mongoose');
 
 /*
@@ -22,7 +21,8 @@ var postinfoSechema = mongoose.Schema({
             url: String,
             modified: Date
         }
-    ]
+    ],
+    replies: []
 });
 
 /**
@@ -42,15 +42,47 @@ var postSchema = mongoose.Schema({
 postSchema.methods.findPostById = function(postId) {
     "use strict";
     var i;
+    var meta = {};
+
+    meta.cName = "postSchema";
+    meta.fName = "findPostById";
+    meta.postId = postId;
 
     for (i=0; i<this.posts.length; i+=1) {
         if (this.posts[i]._id === postId) {
-            log.debug('find post('+postId+')');
+            log.debug("Find post", meta);
             return this.posts[i];
         }
     }
 
-    log.debug('Fail to find post id=' + postId);
+    log.debug("Fail to find post", meta);
+};
+
+/**
+ *
+ * @param {string} providerName
+ * @param {string} blogId
+ * @param {string} postId
+ * @returns {{*}}
+ */
+postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId) {
+    "use strict";
+    var i;
+    var j;
+    var infos;
+
+    for (i = 0; i<this.posts.length; i++) {
+        infos = this.posts[i].infos;
+        for (j = 0; j<infos.length; j++) {
+            if (infos[j].provider_name === providerName &&
+                infos[j].blog_id === blogId &&
+                infos[j].post_id === postId) {
+                return this.posts[i];
+            }
+        }
+    }
+
+    log.debug('[getPostByPostIdOfBlog] Fail to find post id=' + postId);
 };
 
 /**
@@ -65,6 +97,14 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
     "use strict";
     var postInfo;
     var i;
+    var meta = {};
+
+    meta.cName = "postSchema";
+    meta.fName = "addPostInfo";
+    meta.postId = post._id;
+    meta.providerName = providerName;
+    meta.blogId = blogId;
+    meta.newPostId = newPost.id;
 
     postInfo = {};
     postInfo.provider_name = providerName;
@@ -90,6 +130,7 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
         }
     }
 
+    log.debug(" ", meta);
     post.infos.push(postInfo);
 
     return post;
@@ -104,6 +145,11 @@ postSchema.methods.findPostByTitle = function(title) {
     "use strict";
     var i;
     var post;
+    var meta = {};
+
+    meta.cName = "postSchema";
+    meta.fName = "findPostByTitle";
+    meta.title = title;
 
     for (i=0; i<this.posts.length; i+=1) {
         if (!this.posts[i].title) {
@@ -112,12 +158,12 @@ postSchema.methods.findPostByTitle = function(title) {
 
         if (this.posts[i].title === title) {
             post = this.posts[i];
-            log.debug('find post('+post.id+') by title='+title);
+            log.debug("Find post id="+post._id, meta);
             return this.posts[i];
         }
     }
 
-    log.debug('Fail to find post title=' + title);
+    log.debug("Fail to find post", meta);
 };
 
 /**
@@ -133,6 +179,13 @@ postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postI
     var i;
     var infos;
     var j;
+    var meta = {};
+
+    meta.cName = "postSchema";
+    meta.fName = "findPostByPostIdOfBlog";
+    meta.providerName = providerName;
+    meta.blogId = blogId;
+    meta.postId = postId;
 
     for (i = 0; i<this.posts.length; i+=1) {
         infos = this.posts[i].infos;
@@ -140,7 +193,7 @@ postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postI
            if (infos[j].provider_name === providerName &&
                     infos[j].blog_id === blogId &&
                     infos[j].post_id === postId) {
-               log.debug('posts index=' + i + ' infos index='+j);
+               log.debug("posts index=" + i + " infos index="+j, meta);
                foundIt = true;
                break;
            }
@@ -161,17 +214,24 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     var totalCount;
     var post = {};
     var postInfo;
+    var meta = {};
 
-    log.debug('add_post');
+    meta.cName = "postSchema";
+    meta.fName = "addPost";
+    meta.providerName = providerName;
+    meta.blogId = blogId;
+    meta.newPostId = newPost.id;
+
+    log.debug(" ", meta);
 
     totalCount = this.posts.length;
-    log.debug("total = " + totalCount);
+    log.debug("Total=" + totalCount, meta);
 
     if (newPost.title) {
         post.title = newPost.title;
     }
     else {
-        log.debug("title is undefined");
+        log.debug("Title is undefined", meta);
         post.title = 'title';
     }
 
@@ -179,7 +239,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.type = newPost.type;
     }
     else {
-        log.debug("type is undefined");
+        log.debug("Type is undefined", meta);
         post.type = 'text';
     }
 
@@ -187,7 +247,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.categories = newPost.categories;
     }
     else {
-        log.debug("categories is undefined");
+        log.debug("Categories is undefined", meta);
         post.categories = [];
     }
 
@@ -195,7 +255,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.tags = newPost.tags;
     }
     else {
-        log.debug("tags is undefined");
+        log.debug("Tags is undefined", meta);
         post.tags = [];
     }
 
@@ -206,6 +266,10 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     postInfo.post_id = newPost.id;
     postInfo.url = newPost.url;
     postInfo.modified = newPost.modified;
+
+    if(providerName === "twitter") {
+        post.replies = newPost.replies;
+    }
 
     post.infos.push(postInfo);
     this.posts.push(post);
