@@ -4,6 +4,9 @@
 
 var assert  = require('assert');
 var Post = require('../models/postdb');
+if (!global.log) {
+    global.log = require('winston');
+}
 
 var d = new Date();
 

@@ -893,7 +893,7 @@ BlogBot._requestGetBlogList = function(user, providerName, providerId, callback)
 
         hasError = _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -934,7 +934,7 @@ BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
 
         hasError= _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -996,7 +996,7 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
 
         hasError= _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -1171,7 +1171,7 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
 
         hasError = _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
