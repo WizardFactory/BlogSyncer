@@ -2,21 +2,19 @@
  * Created by aleckim on 2014. 7. 20.
  */
 
-var request = require('request');
-var express = require('express');
-var url = require('url');
+var router = require('express').Router();
 var passport = require('passport');
-var TistoryStrategy = require('passport-tistory').Strategy;
+var request = require('request');
+var url = require('url');
 
-var UserDb = require('../models/userdb');
 var blogBot = require('./blogbot');
-
-var router = express.Router();
-
+var userMgr = require('./userManager');
 var svcConfig = require('../models/svcConfig.json');
-var clientConfig = svcConfig.tistory;
 
+var clientConfig = svcConfig.tistory;
+var TistoryStrategy = require('passport-tistory').Strategy;
 var TISTORY_API_URL = "https://www.tistory.com/apis";
+var TISTORY_PROVIDER = "tistory";
 
 passport.serializeUser(function(user, done) {
     "use strict";
@@ -27,78 +25,6 @@ passport.deserializeUser(function(obj, done) {
     "use strict";
     done(null, obj);
 });
-
-function _updateOrCreateUser(req, provider, callback) {
-    "use strict";
-    UserDb.findOne({'providers.providerName':provider.providerName,
-            'providers.providerId': provider.providerId},
-        function (err, user) {
-            var p;
-            var newUser;
-            var isNewProvider = false;
-
-            if (err) {
-                return callback(err);
-            }
-
-            // if there is a user id already but no token (user was linked at one point and then removed)
-            if (user) {
-                log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
-                p = user.findProvider("tistory");
-                if (p.accessToken !== provider.accessToken) {
-                    p.accessToken = provider.accessToken;
-                    p.refreshToken = provider.refreshToken;
-                    user.save (function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-                        return callback(null, user, isNewProvider);
-                    });
-                }
-                else {
-                    return callback(null, user, isNewProvider);
-                }
-            }
-            else {
-                isNewProvider = true;
-
-                if (req.user) {
-                    UserDb.findById(req.user._id, function (err, user) {
-                        if (err) {
-                            log.error(err);
-                            return callback(err);
-                        }
-                        if (!user) {
-                            log.error("Fail to get user id="+req.user._id);
-                            log.error(err);
-                            return callback(err);
-                        }
-                        // if there is no provider, add to User
-                        user.providers.push(provider);
-                        user.save(function(err) {
-                            if (err) {
-                                return callback(err);
-                            }
-                            return callback(null, user, isNewProvider);
-                        });
-                    });
-                }
-                else {
-                    // if there is no provider, create new user
-                    newUser = new UserDb();
-                    newUser.providers = [];
-
-                    newUser.providers.push(provider);
-                    newUser.save(function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-                        return callback(null, newUser, isNewProvider);
-                    });
-                }
-            }
-        } );
-}
 
 passport.use(new TistoryStrategy({
         clientID: clientConfig.clientID,
@@ -113,14 +39,14 @@ passport.use(new TistoryStrategy({
 //       log.debug("profile:" + JSON.stringify(profile));
 
         var provider = {
-            "providerName": 'tistory',
+            "providerName": TISTORY_PROVIDER,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
             "providerId": profile.userId.toString(),
             "displayName": profile.id
         };
 
-        _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
+        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -156,77 +82,28 @@ router.get('/authorized',
     }
 );
 
-function _getUserId(req, res) {
-    "use strict";
-    var userId;
-    var errorMsg;
-
-    if (req.user) {
-        userId = req.user._id;
-    }
-    else if (req.query.userid) {
-
-       //this request form child process;
-       userId = req.query.userid;
-    }
-    else {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-    }
-
-    return userId;
-}
-
-function _checkError(err, response, body) {
-    "use strict";
-    var bodyErr;
-    var errStr;
-
-    if (err) {
-        log.error(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        bodyErr = body.meta ? body.meta.msg : body.error;
-        errStr = 'tistory API error: ' + response.statusCode + ' ' + bodyErr;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
-
 router.get('/info', function (req, res) {
     "use strict";
-    var userId = _getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
 
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
-        p = user.findProvider("tistory");
-        api_url = TISTORY_API_URL+"/blog/info?access_token="+ p.accessToken+"&output=json";
+        api_url = TISTORY_API_URL+"/blog/info?access_token="+ provider.accessToken+"&output=json";
 
         log.debug(api_url);
 
         request.get(api_url, function (err, response, body) {
-
             var hasError = _checkError(err, response, body);
             if (hasError) {
                 res.statusCode = response.statusCode;
@@ -241,37 +118,24 @@ router.get('/info', function (req, res) {
 
 router.get('/post/list/:simpleName', function (req, res) {
     "use strict";
-    var userId = _getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
 
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var blog_name;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         blog_name = req.params.simpleName;
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
-        api_url = TISTORY_API_URL+"/post/list?access_token="+ p.accessToken;
+        api_url = TISTORY_API_URL+"/post/list?access_token="+ provider.accessToken;
         api_url = api_url + "&targetUrl=" + blog_name;
         api_url = api_url + "&output=json";
 
@@ -292,7 +156,7 @@ router.get('/post/list/:simpleName', function (req, res) {
 
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
-    var userId = _getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     var providerId;
     if (!userId) {
         return;
@@ -300,30 +164,16 @@ router.get('/bot_bloglist', function (req, res) {
 
     providerId = req.query.providerid;
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, providerId, function (err, user, provider) {
         var api_url;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
-        p = user.findProvider("tistory", providerId);
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
-
-        api_url = TISTORY_API_URL + "/blog/info?access_token=" + p.accessToken + "&output=json";
+        api_url = TISTORY_API_URL + "/blog/info?access_token=" + provider.accessToken + "&output=json";
 
         log.debug(api_url);
         request.get(api_url, function (err, response, body) {
@@ -343,7 +193,7 @@ router.get('/bot_bloglist', function (req, res) {
             //log.debug(body);
 
             send_data = {};
-            send_data.provider = p;
+            send_data.provider = provider;
             //log.debug(p);
 
             send_data.blogs = [];
@@ -371,38 +221,25 @@ router.get('/bot_bloglist', function (req, res) {
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
     "use strict";
-    var userId = _getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
 
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var target_url;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         target_url = req.params.blog_id;
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
         api_url = TISTORY_API_URL + "/blog/info?";
-        api_url = api_url + "access_token=" + p.accessToken;
+        api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&output=json";
 
         log.debug(api_url);
@@ -434,7 +271,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             }
 
             send_data = {};
-            send_data.provider_name = 'tistory';
+            send_data.provider_name = TISTORY_PROVIDER;
 
             if (i === item.length) {
                 log.debug('Fail to find blog=' + target_url);
@@ -455,13 +292,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     "use strict";
     var userId;
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var target_url;
         var offset;
@@ -470,14 +306,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var page;
 
         if (err) {
-            log.error(this.name+" user="+user._id+" err="+err.toString());
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error(this.name+" user="+userId+" Fail to get user err="+err.toString());
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         target_url = req.params.blog_id;
@@ -488,14 +319,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             page = offset.split("-")[0] / count + 1; //start from 1
         }
 
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
         api_url = TISTORY_API_URL + "/post/list?";
-        api_url = api_url + "access_token=" + p.accessToken;
+        api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
         if (offset) {
             api_url += "&page=" + page;
@@ -538,7 +363,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             item = JSON.parse(body).tistory.item;
 
             send_data = {};
-            send_data.provider_name = 'tistory';
+            send_data.provider_name = TISTORY_PROVIDER;
             send_data.blog_id = target_url;
             send_data.post_count = 0;
             send_data.posts = [];
@@ -593,40 +418,27 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var userId;
 
     log.debug(req.url);
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var target_url;
         var post_id;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         target_url = req.params.blog_id;
         post_id = req.params.post_id;
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
 
         api_url = TISTORY_API_URL + "/post/read?";
-        api_url = api_url + "access_token=" + p.accessToken;
+        api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
         api_url += "&postId=" + post_id;
         api_url += "&output=json";
@@ -649,7 +461,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             item = JSON.parse(body).tistory.item;
 
             send_data = {};
-            send_data.provider_name = 'tistory';
+            send_data.provider_name = TISTORY_PROVIDER;
             send_data.blog_id = target_url;
             send_data.posts = [];
 
@@ -672,48 +484,33 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             res.send(send_data);
         });
     });
- });
-
+});
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     "use strict";
     //log.debug(req.url);
-    var userId = _getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
 
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var target_url;
         var new_post;
         var category_id;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         target_url = req.params.blog_id;
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
-
         api_url = TISTORY_API_URL + "/post/write";
         new_post = {};
-        new_post.access_token = p.accessToken;
+        new_post.access_token = provider.accessToken;
         new_post.targetUrl = target_url;
         new_post.visibility = 3; //3:발행
 
@@ -761,7 +558,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             item = JSON.parse(body).tistory;
 
             send_data = {};
-            send_data.provider_name = 'tistory';
+            send_data.provider_name = TISTORY_PROVIDER;
             send_data.blog_id = target_url;
             send_data.posts = [];
 
@@ -789,40 +586,26 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 
     log.debug(req.url);
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
         var targetURL;
         var postID;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         targetURL = req.params.blogID;
         postID = req.params.postID;
-        p = user.findProvider("tistory");
-        if (!p) {
-            log.error("Fail to find provider tistory");
-            res.send("Fail to find provider tistory");
-            return;
-        }
-
         api_url = TISTORY_API_URL + "/comment/list?";
-        api_url = api_url + "access_token=" + p.accessToken;
+        api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&targetUrl=" + targetURL; //조회할 티스토리 주소
         api_url += "&postId=" + postID;
         api_url += "&output=json";
@@ -845,7 +628,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             //log.debug(body);
             item = JSON.parse(body).tistory.item;
             send = {};
-            send.providerName = p.providerName;
+            send.providerName = provider.providerName;
             send.blogID = targetURL;
             send.postID = postID;
             send.found = item.totalCount;
@@ -862,5 +645,22 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
         });
     });
 });
+
+function _checkError(err, response, body) {
+    "use strict";
+    var bodyErr;
+    var errStr;
+
+    if (err) {
+        log.error(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        bodyErr = body.meta ? body.meta.msg : body.error;
+        errStr = 'tistory API error: ' + response.statusCode + ' ' + bodyErr;
+        log.debug(errStr);
+        return new Error(errStr);
+    }
+}
 
 module.exports = router;
