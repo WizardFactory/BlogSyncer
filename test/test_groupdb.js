@@ -4,6 +4,9 @@
 
 var assert  = require('assert');
 var Group = require('../models/groupdb');
+if (!global.log) {
+    global.log = require('winston');
+}
 
 var testBlog1 = {
     blog_id: "33377",

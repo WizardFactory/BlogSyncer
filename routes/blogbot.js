@@ -745,6 +745,16 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
                 log.info("[Twitter] Stop recursive call functions", meta);
             }
         }
+        else if(providerName === "facebook") {
+            if (rcvPosts.nextPageToken) {
+                newOpts.nextPageToken = rcvPosts.nextPageToken;
+                log.debug("[facebook] nextPageToken: ", newOpts.nextPageToken);
+                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
+            }
+            else {
+                log.info("[facebook] Stop recursive call functions");
+            }
+        }
         else {
             if (rcvPosts.posts.length) {
                 if (options.offset) {
@@ -765,7 +775,7 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
                     }
                 }
 
-                log.debug("kakao/google get posts", meta);
+                log.debug("kakao/google/facebook get posts", meta);
                 BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
             }
             else {
@@ -893,7 +903,7 @@ BlogBot._requestGetBlogList = function(user, providerName, providerId, callback)
 
         hasError = _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -934,7 +944,7 @@ BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
 
         hasError= _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -996,7 +1006,7 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
 
         hasError= _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
@@ -1171,7 +1181,7 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
 
         hasError = _checkError(err, response, body);
         if (hasError) {
-            callback(hasError);
+            callback(user);
             return;
         }
 
