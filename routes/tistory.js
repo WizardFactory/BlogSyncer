@@ -314,101 +314,103 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         target_url = req.params.blog_id;
         offset = req.query.offset;
         after = req.query.after;
-        if (offset) {
-            count = offset.split("-")[1];
-            page = offset.split("-")[0] / count + 1; //start from 1
-        }
 
-        api_url = TISTORY_API_URL + "/post/list?";
-        api_url = api_url + "access_token=" + provider.accessToken;
-        api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
-        if (offset) {
-            api_url += "&page=" + page;
-            api_url += "&count=" + count;
-        }
-        if (after) {
-            if (!offset) {
-                api_url += "&count=" + 30;
+        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
+            if (offset) {
+                count = offset.split("-")[1];
+                page = offset.split("-")[0] / count + 1; //start from 1
             }
-            api_url += "&sort=date";
-        }
-        api_url += "&output=json";
 
-        //log.debug(api_url);
-
-        request.get(api_url, function (err, response, body) {
-            var hasError;
-            var item;
-            var send_data;
-            var recv_post_count;
-            var i;
-            var raw_post;
-            var post_date;
-            var after_date;
-            var send_post;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                if (response.statusCode) {
-                    res.statusCode = response.statusCode;
-                }
-                else {
-                    log.error(" userId="+userId+" You have to set detail error!!");
-                    res.statusCode = 400;
-                }
-                res.send(hasError);
-                return;
+            api_url = TISTORY_API_URL + "/post/list?";
+            api_url = api_url + "access_token=" + provider.accessToken;
+            api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
+            if (offset) {
+                api_url += "&page=" + page;
+                api_url += "&count=" + count;
             }
-            //log.debug(body);
-            item = JSON.parse(body).tistory.item;
-
-            send_data = {};
-            send_data.provider_name = TISTORY_PROVIDER;
-            send_data.blog_id = target_url;
-            send_data.post_count = 0;
-            send_data.posts = [];
-
-            recv_post_count = 0;
-            if (item.totalCount === 1) {
-                recv_post_count = item.totalCount;
-            }
-            else {
-                recv_post_count = item.posts.post.length;
-            }
-            //log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
-
-            for (i = 0; i < recv_post_count; i+=1) {
-                raw_post = {};
-                if (recv_post_count === 1) {
-                    raw_post = item.posts.post;
+            if (after) {
+                if (!offset) {
+                    api_url += "&count=" + 30;
                 }
-                else {
-                    raw_post = item.posts.post[i];
-                }
-                post_date = new Date(raw_post.date);
-                if (after) {
-                    after_date = new Date(after);
-                    if (post_date < after_date) {
-                        //log.debug('post(' + raw_post.id + ') is before');
-                        continue;
+                api_url += "&sort=date";
+            }
+            api_url += "&output=json";
+
+            //log.debug(api_url);
+
+            request.get(api_url, function (err, response, body) {
+                var hasError;
+                var item;
+                var send_data;
+                var recv_post_count;
+                var i;
+                var raw_post;
+                var post_date;
+                var after_date;
+                var send_post;
+
+                hasError = _checkError(err, response, body);
+                if (hasError) {
+                    if (response.statusCode) {
+                        res.statusCode = response.statusCode;
                     }
                     else {
-                        log.debug("add post(" + raw_post.id + ")");
+                        log.error(" userId=" + userId + " You have to set detail error!!");
+                        res.statusCode = 400;
                     }
+                    res.send(hasError);
+                    return;
                 }
+                //log.debug(body);
+                item = JSON.parse(body).tistory.item;
 
-                send_post = {};
-                send_post.title = raw_post.title;
-                send_post.modified = raw_post.date;
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.postUrl;
-                send_post.categories = [];
-                //send_post.categories.push(change_to_string(raw_post.categoryId));
-                send_post.categories.push(raw_post.categoryId);
-                send_data.posts.push(send_post);
-                send_data.post_count += 1;
-            }
-            res.send(send_data);
+                send_data = {};
+                send_data.provider_name = TISTORY_PROVIDER;
+                send_data.blog_id = target_url;
+                send_data.post_count = 0;
+                send_data.posts = [];
+
+                recv_post_count = 0;
+                if (item.totalCount === 1) {
+                    recv_post_count = item.totalCount;
+                }
+                else {
+                    recv_post_count = item.posts.post.length;
+                }
+                //log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
+
+                for (i = 0; i < recv_post_count; i += 1) {
+                    raw_post = {};
+                    if (recv_post_count === 1) {
+                        raw_post = item.posts.post;
+                    }
+                    else {
+                        raw_post = item.posts.post[i];
+                    }
+                    post_date = new Date(raw_post.date);
+                    if (after) {
+                        after_date = new Date(after);
+                        if (post_date < after_date) {
+                            //log.debug('post(' + raw_post.id + ') is before');
+                            continue;
+                        }
+                        else {
+                            log.debug("add post(" + raw_post.id + ")");
+                        }
+                    }
+
+                    send_post = {};
+                    send_post.title = raw_post.title;
+                    send_post.modified = raw_post.date;
+                    send_post.id = raw_post.id;
+                    send_post.url = raw_post.postUrl;
+                    send_post.categories = [];
+                    send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
+                    send_data.posts.push(send_post);
+                    send_data.post_count += 1;
+                }
+                res.send(send_data);
+            });
         });
     });
 });
@@ -437,51 +439,52 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         target_url = req.params.blog_id;
         post_id = req.params.post_id;
 
-        api_url = TISTORY_API_URL + "/post/read?";
-        api_url = api_url + "access_token=" + provider.accessToken;
-        api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
-        api_url += "&postId=" + post_id;
-        api_url += "&output=json";
+        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
+            api_url = TISTORY_API_URL + "/post/read?";
+            api_url = api_url + "access_token=" + provider.accessToken;
+            api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
+            api_url += "&postId=" + post_id;
+            api_url += "&output=json";
 
-        log.debug(api_url);
-        request.get(api_url, function (err, response, body) {
-            var hasError;
-            var item;
-            var send_data;
-            var raw_post;
-            var send_post;
+            log.debug(api_url);
+            request.get(api_url, function (err, response, body) {
+                var hasError;
+                var item;
+                var send_data;
+                var raw_post;
+                var send_post;
 
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
-            }
-            //log.debug(data);
-            item = JSON.parse(body).tistory.item;
+                hasError = _checkError(err, response, body);
+                if (hasError) {
+                    res.statusCode = response.statusCode;
+                    res.send(hasError);
+                    return;
+                }
+                //log.debug(data);
+                item = JSON.parse(body).tistory.item;
 
-            send_data = {};
-            send_data.provider_name = TISTORY_PROVIDER;
-            send_data.blog_id = target_url;
-            send_data.posts = [];
+                send_data = {};
+                send_data.provider_name = TISTORY_PROVIDER;
+                send_data.blog_id = target_url;
+                send_data.posts = [];
 
-            raw_post = item;
+                raw_post = item;
 
-            send_post = {};
-            send_post.title = raw_post.title;
-            send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
-            send_post.id = raw_post.id;
-            send_post.url = raw_post.postUrl;
-            send_post.categories = [];
-            //send_post.categories.push(change_to_string(raw_post.categoryId));
-            send_post.categories.push(raw_post.categoryId);
+                send_post = {};
+                send_post.title = raw_post.title;
+                send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
+                send_post.id = raw_post.id;
+                send_post.url = raw_post.postUrl;
+                send_post.categories = [];
+                send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
 
-            send_post.content = raw_post.content;
-            send_post.replies = [];
-            send_post.replies.push({"comment_count": raw_post.comments});
-            send_post.replies.push({"trackback_count": raw_post.trackbacks});
-            send_data.posts.push(send_post);
-            res.send(send_data);
+                send_post.content = raw_post.content;
+                send_post.replies = [];
+                send_post.replies.push({"comment_count": raw_post.comments});
+                send_post.replies.push({"trackback_count": raw_post.trackbacks});
+                send_data.posts.push(send_post);
+                res.send(send_data);
+            });
         });
     });
 });
@@ -508,74 +511,75 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }
 
         target_url = req.params.blog_id;
-        api_url = TISTORY_API_URL + "/post/write";
-        new_post = {};
-        new_post.access_token = provider.accessToken;
-        new_post.targetUrl = target_url;
-        new_post.visibility = 3; //3:발행
 
-        //change catgory name to id
-        if (req.body.title) {
-            new_post.title = req.body.title;
-        }
-        else {
-            log.error("Fail to get title");
-            res.send("Fail to get title");
-            return;
-        }
+        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
+            api_url = TISTORY_API_URL + "/post/write";
+            new_post = {};
+            new_post.access_token = provider.accessToken;
+            new_post.targetUrl = target_url;
+            new_post.visibility = 3; //3:발행
 
-        if (req.body.content) {
-            new_post.content = req.body.content;
-        }
-        if (req.body.tags) {
-            new_post.tag = req.body.tags;
-        }
-
-        category_id = 0;
-
-        //get category_id from name
-        if (category_id) {
-            new_post.category_id = category_id;
-        }
-        new_post.output = "json";
-
-        request.post(api_url, {
-            form: new_post
-        }, function (err, response, body) {
-            var hasError;
-            var item;
-            var send_data;
-            var send_post;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
+            //change catgory name to id
+            if (req.body.title) {
+                new_post.title = req.body.title;
+            }
+            else {
+                log.error("Fail to get title");
+                res.send("Fail to get title");
                 return;
             }
 
-            //log.debug(body);
-            item = JSON.parse(body).tistory;
+            if (req.body.content) {
+                new_post.content = req.body.content;
+            }
+            if (req.body.tags) {
+                new_post.tag = req.body.tags;
+            }
 
-            send_data = {};
-            send_data.provider_name = TISTORY_PROVIDER;
-            send_data.blog_id = target_url;
-            send_data.posts = [];
+            category_id = 0;
 
-            send_post = {};
-            send_post.title = new_post.title;
-            //todo: get date
-            send_post.modified = new Date();
-            send_post.id = item.postId;
-            send_post.url = item.url;
-            send_post.categories = [];
-            //send_post.categories.push(change_to_string(raw_post.categoryId));
-            send_post.categories.push(new_post.category_id);
+            //get category_id from name
+            if (category_id) {
+                new_post.category_id = category_id;
+            }
+            new_post.output = "json";
 
-            send_data.posts.push(send_post);
+            request.post(api_url, {
+                form: new_post
+            }, function (err, response, body) {
+                var hasError;
+                var item;
+                var send_data;
+                var send_post;
 
-            //log.debug(send_data);
-            res.send(send_data);
+                hasError = _checkError(err, response, body);
+                if (hasError) {
+                    res.statusCode = response.statusCode;
+                    res.send(hasError);
+                    return;
+                }
+
+                //log.debug(body);
+                item = JSON.parse(body).tistory;
+
+                send_data = {};
+                send_data.provider_name = TISTORY_PROVIDER;
+                send_data.blog_id = target_url;
+                send_data.posts = [];
+
+                send_post = {};
+                send_post.title = new_post.title;
+                //todo: get date
+                send_post.modified = new Date();
+                send_post.id = item.postId;
+                send_post.url = item.url;
+                send_post.categories = [];
+                send_post.categories.push(_getCategoryNameById(category, new_post.categoryId));
+                send_data.posts.push(send_post);
+
+                //log.debug(send_data);
+                res.send(send_data);
+            });
         });
     });
 });
@@ -662,5 +666,79 @@ function _checkError(err, response, body) {
         return new Error(errStr);
     }
 }
+
+/**
+ * 이 함수처럼, request.get과 callback을 분리해서 unit test가능한 구조로 변경할 필요가 있음.
+ * @param target_api_url
+ * @param accessToken
+ * @param get
+ * @param cb
+ * @private
+ */
+function _getCategoryIds(target_api_url, accessToken, get, cb) {
+    "use strict";
+    var api_url;
+    var category;
+
+    api_url = TISTORY_API_URL + "/category/list?";
+    api_url += "access_token=" + accessToken;
+    api_url += "&targetUrl=" + target_api_url; //조회할 티스토리 주소
+    api_url += "&output=json";
+
+    log.debug("url="+api_url);
+
+    get(api_url, function (err, response, body) {
+        if (err) {
+            log.error("Fail to request get");
+        }
+//        log.debug(body);
+        category = JSON.parse(body).tistory.item.categories.category;
+//        log.debug(category);
+        cb(category);
+    });
+}
+
+/*
+ *
+ * @param category
+ * @param categoryId
+ * @returns {*}
+ * @private
+ */
+function _getCategoryNameById(category, categoryId) {
+    "use strict";
+    var len;
+
+    if (!category) {
+        return categoryId;
+    }
+
+    len = category.length;
+    for (var i=0; i<len; i+=1)  {
+        if (category[i].id === categoryId) {
+            return category[i].name;
+        }
+    }
+}
+
+/* It's only for test */
+//router.get('/bot_category/:blog_id', function(req, res) {
+//    "use strict";
+//    var userId = _getUserId(req, res);
+//    UserDb.findById(userId, function (err, user) {
+//        var target_url;
+//        var category;
+//        var p;
+//
+//        target_url = req.params.blog_id;
+//        p = user.findProvider("tistory");
+//        log.debug("target_url="+target_url);
+//        _getCategoryIds(target_url, p.accessToken, request.get, function(category) {
+//            log.debug("catogory=");
+//            log.debug(category);
+//            res.send(category);
+//        });
+//    });
+//});
 
 module.exports = router;
