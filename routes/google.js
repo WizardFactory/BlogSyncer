@@ -116,7 +116,7 @@ router.get('/info', function (req, res) {
 
     meta.userId = userId;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -149,7 +149,6 @@ router.get('/info', function (req, res) {
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
     var userId;
-    var errMsg;
     var providerId;
     var meta = {};
 
@@ -164,7 +163,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, providerId, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -215,7 +214,6 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     "use strict";
     var userId;
     var blogId;
-    var errMsg;
     var meta = {};
 
     meta.cName = "google";
@@ -231,7 +229,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     blogId = req.params.blog_id;
     meta.blogId = blogId;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -261,7 +259,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             }
 
             sendData = {};
-            sendData.provider_name = 'google';
+            sendData.provider_name = GOOGLE_PROVIDER;
             sendData.blog_id = body.id;
             sendData.post_count = body.posts.totalItems;
             log.info("post_count="+sendData.post_count, meta);
@@ -279,7 +277,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var count;  //maxResults
     var nextPageToken;
     var hasOptionalParameters = false;
-    var errMsg;
     var meta = {};
 
     meta.cName = "google";
@@ -308,7 +305,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         hasOptionalParameters = true;
     }
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -363,7 +360,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
 
             sendData = {};
-            sendData.provider_name = 'google';
+            sendData.provider_name = GOOGLE_PROVIDER;
             sendData.blog_id = blogId;
 
             if (body.items) {
@@ -403,7 +400,6 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var userId;
     var blogId;
     var postId;
-    var errMsg;
     var meta = {};
 
     meta.cName = "google";
@@ -419,7 +415,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     postId = req.params.post_id;
     meta.postId = postId;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -454,7 +450,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return;
             }
             sendData = {};
-            sendData.provider_name = 'google';
+            sendData.provider_name = GOOGLE_PROVIDER;
             sendData.blog_id = blogId;
             sendData.post_count = 1;
             sendData.posts = [];
@@ -488,7 +484,6 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
     var userId;
     var blogId;
     var postId;
-    var errMsg;
     var meta = {};
 
     meta.cName = "google";
@@ -503,7 +498,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
     postId = req.params.postId;
     meta.postId = postId;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
@@ -565,7 +560,6 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     "use strict";
     var userId;
     var blogId;
-    var errMsg;
     var meta = {};
 
     meta.cName = "google";
@@ -579,7 +573,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     blogId = req.params.blog_id;
     meta.blogId = blogId;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
         var newPost;
 
@@ -627,7 +621,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
 
             sendData = {};
-            sendData.provider_name = 'google';
+            sendData.provider_name = GOOGLE_PROVIDER;
             sendData.blog_id = blogId;
             sendData.post_count = 1;
             sendData.posts = [];

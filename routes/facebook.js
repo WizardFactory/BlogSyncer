@@ -2,20 +2,18 @@
  * Created by aleckim on 2014. 7. 14..
  */
 
-// load up the user model
-var UserDb = require('../models/userdb');
-
-var express = require('express');
+var router = require('express').Router();
 var passport = require('passport');
 var request = require('request');
-var FacebookStrategy = require('passport-facebook').Strategy;
+
 var blogBot = require('./blogbot');
-var router = express.Router();
-
+var userMgr = require('./userManager');
 var svcConfig = require('../models/svcConfig.json');
-var clientConfig = svcConfig.facebook;
 
+var clientConfig = svcConfig.facebook;
+var FacebookStrategy = require('passport-facebook').Strategy;
 var FACEBOOK_API_URL = "https://graph.facebook.com";
+var FACEBOOK_PROVIDER = "facebook";
 
 passport.serializeUser(function(user, done) {
     "use strict";
@@ -26,81 +24,6 @@ passport.deserializeUser(function(obj, done) {
     "use strict";
     done(null, obj);
 });
-
-function _updateOrCreateUser(req, provider, callback) {
-    "use strict";
-    UserDb.findOne({'providers.providerName':provider.providerName,
-            'providers.providerId': provider.providerId},
-        function (err, user) {
-            var p;
-            var isNewProvider = false;
-
-            if (err) {
-                return callback(err);
-            }
-
-            // if there is a user id already but no token (user was linked at one point and then removed)
-            if (user) {
-                log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
-                p = user.findProvider("facebook");
-                if (p.accessToken !== provider.accessToken) {
-                    p.accessToken = provider.accessToken;
-                    p.refreshToken = provider.refreshToken;
-                    user.save (function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        return callback(null, user, isNewProvider);
-                    });
-                }
-                else {
-                    return callback(null, user, isNewProvider);
-                }
-            }
-            else {
-                isNewProvider = true;
-                
-                if (req.user) {
-                    UserDb.findById(req.user._id, function (err, user) {
-                        if (err) {
-                            log.error(err);
-                            return callback(err);
-                        }
-                        if (!user) {
-                            log.error("Fail to get user id="+req.user._id);
-                            log.error(err);
-                            return callback(err);
-                        }
-                        // if there is no provider, add to User
-                        user.providers.push(provider);
-                        user.save(function(err) {
-
-                            if (err) {
-                                return callback(err);
-                            }
-
-                            return callback(null, user, isNewProvider);
-                        });
-                    });
-                }
-                else {
-                    // if there is no provider, create new user
-                    var newUser = new UserDb();
-                    newUser.providers = [];
-
-                    newUser.providers.push(provider);
-                    newUser.save(function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        return callback(null, newUser, isNewProvider);
-                    });
-                }
-            }
-        } );
-}
 
 passport.use(new FacebookStrategy({
         clientID: clientConfig.clientID,
@@ -122,7 +45,7 @@ passport.use(new FacebookStrategy({
             "displayName": profile.displayName
         };
 
-        _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
+        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -158,69 +81,27 @@ router.get('/authorized',
     }
 );
 
-function _getUserId(req) {
-    "use strict";
-    var userid = 0;
-
-    if (req.user) {
-        userid = req.user._id;
-    }
-    else if (req.query.userid)
-    {
-        //this request form child process;
-        userid = req.query.userid;
-    }
-
-    return userid;
-}
-
-function _checkError(err, response, body) {
-    "use strict";
-    if (err) {
-        log.debug(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        var error = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + error;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
-
-function _requestGet(url, accessToken, callback) {
-    "use strict";
-    request.get(url, {
-        json: true,
-        headers: {
-            "authorization": "Bearer " + accessToken
-        }
-    }, function (err, response, body) {
-        callback(err, response, body);
-    });
-}
-
 router.get('/me', function (req, res) {
     "use strict";
-    var user_id = _getUserId(req);
-    if (!user_id) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    var userId = userMgr._getUserId(req, res);
+
+    if (!userId) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         var api_url;
 
-        p = user.findProvider("facebook");
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
+        }
 
         api_url = FACEBOOK_API_URL+"/me";
         log.debug(api_url);
 
-        _requestGet(api_url, p.accessToken, function(err, response, body) {
+        _requestGet(api_url, provider.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
                 res.send(hasError);
@@ -238,12 +119,10 @@ router.get('/bot_bloglist', function (req, res) {
     log.debug("facebook: "+ req.url + ' : this is called by bot');
 
     var errorMsg = "";
-    var userId = _getUserId(req);
+    var userId = userMgr._getUserId(req, res);
+    var providerId;
+
     if (!userId) {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
         return;
     }
 
@@ -255,16 +134,21 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    providerId = req.query.providerid;
+
+    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, providerId, function (err, user, provider) {
         var apiUrl;
 
-        p = user.findProvider("facebook", req.query.providerid);
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
+        }
 
-        apiUrl = FACEBOOK_API_URL+"/"+p.providerId+"/accounts";
+        apiUrl = FACEBOOK_API_URL+"/"+provider.providerId+"/accounts";
         log.debug(apiUrl);
 
-        _requestGet(apiUrl, p.accessToken, function(err, response, body) {
+        _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
             var hasError = _checkError(err, response, body);
             if (hasError !== undefined) {
                 res.send(hasError);
@@ -274,11 +158,11 @@ router.get('/bot_bloglist', function (req, res) {
             log.debug(body);
 
             var sendData = {};
-            sendData.provider = p;
+            sendData.provider = provider;
             sendData.blogs = [];
 
-            log.debug("pageId: "+p.providerId+", pageName: feed, pageLink: https://www.facebook.com");
-            sendData.blogs.push({"blog_id":p.providerId, "blog_title":"feed", "blog_url":"https://www.facebook.com"});
+            log.debug("pageId: "+provider.providerId+", pageName: feed, pageLink: https://www.facebook.com");
+            sendData.blogs.push({"blog_id":provider.providerId, "blog_title":"feed", "blog_url":"https://www.facebook.com"});
 
             for (var i = 0; i  < body.data.length; i+=1) {
                 var item = body.data[i];
@@ -312,7 +196,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     log.debug(req.url);
 
-    var user_id = _getUserId(req);
+    var user_id = userMgr._getUserId(req);
     if (!user_id) {
         return;
     }
@@ -322,7 +206,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     //facebook did not support post_count.
     var blog_id = req.params.blog_id;
     var send_data = {};
-    send_data.provider_name = 'facebook';
+    send_data.provider_name = FACEBOOK_PROVIDER;
     send_data.blog_id = blog_id;
     send_data.post_count = -1;
 
@@ -335,12 +219,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     "use strict";
     var userId;
     var blogId;
-    var errMsg;
     var limit;
     var until;
     var pagingToken;
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -349,28 +232,13 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     until = req.query.until;
     pagingToken = req.query.__paging_token;
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         var apiUrl;
 
         if (err) {
+            log.error("Fail to find provider");
             log.error(err.toString());
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user");
-            log.error(err.toString());
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("facebook");
-        if (!p) {
-            errMsg = "Fail to find provider";
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            return res.send(err);
         }
 
         apiUrl = FACEBOOK_API_URL+"/"+blogId+"/posts";
@@ -391,7 +259,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
         log.info("apiUrl=" + apiUrl);
 
-        _requestGet(apiUrl, p.accessToken, function (err, response, body) {
+        _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             var hasError;
             var sendData;
             var sendPost;
@@ -406,7 +274,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
 
             sendData = {};
-            sendData.provider_name = 'facebook';
+            sendData.provider_name = FACEBOOK_PROVIDER;
             sendData.blog_id = blogId;
 
             if (body.data) {
@@ -444,37 +312,32 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     "use strict";
     var userId;
-    var errMsg;
 
     log.debug("facebook: "+ req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
+    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         var blogId;
         var postId;
-        var p;
         var apiUrl;
+
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
+        }
 
         blogId = req.params.blog_id;
         postId = req.params.post_id;
-
-        p = user.findProvider("facebook");
-        if (!p) {
-            errMsg = "Fail to find provider";
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
-        }
-
         apiUrl = FACEBOOK_API_URL+"/"+postId;
 
         log.debug(apiUrl);
 
-        _requestGet(apiUrl, p.accessToken, function(err, response, body) {
+        _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
             var hasError;
             var sendData;
             var sendPost;
@@ -491,7 +354,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             //log.debug(data);
             sendData = {};
-            sendData.provider_name = 'facebook';
+            sendData.provider_name = FACEBOOK_PROVIDER;
             sendData.blog_id = blogId;
             sendData.posts = [];
 
@@ -526,5 +389,31 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         });
     });
 });
+
+function _checkError(err, response, body) {
+    "use strict";
+    if (err) {
+        log.debug(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var error = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + error;
+        log.debug(errStr);
+        return new Error(errStr);
+    }
+}
+
+function _requestGet(url, accessToken, callback) {
+    "use strict";
+    request.get(url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + accessToken
+        }
+    }, function (err, response, body) {
+        callback(err, response, body);
+    });
+}
 
 module.exports = router;

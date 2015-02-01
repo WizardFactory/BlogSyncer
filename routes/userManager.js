@@ -41,7 +41,13 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
             // if there is a user id already but no token (user was linked at one point and then removed)
             if (user) {
                 log.debug("Found user="+user._id, meta);
-                p = user.findProvider("google");
+                p = user.findProvider(provider.providerName);
+                if (!p) {
+                    log.error("Fail to get user id="+req.user._id, meta);
+                    log.error(err.toString(), meta);
+                    return callback(err);
+                }
+
                 if (p.accessToken !== provider.accessToken) {
                     p.accessToken = provider.accessToken;
                     p.refreshToken = provider.refreshToken;
@@ -74,7 +80,6 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
                         // if there is no provider, add to user
                         user.providers.push(provider);
                         user.save(function(err) {
-
                             if (err) {
                                 return callback(err);
                             }
@@ -112,6 +117,10 @@ UserMgr._getUserId = function (req, res) {
     "use strict";
     var userId;
     var errorMsg;
+    var meta = {};
+
+    meta.cName = "UserMgr";
+    meta.fName = "_getUserId";
 
     if (req.user) {
         userId = req.user._id;
@@ -122,9 +131,11 @@ UserMgr._getUserId = function (req, res) {
     }
     else {
         errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+        log.debug(errorMsg, meta);
+        if (res) {
+            res.send(errorMsg);
+            res.redirect("/#/signin");
+        }
     }
     return userId;
 };
@@ -137,7 +148,7 @@ UserMgr._getUserId = function (req, res) {
  * @returns {*}
  * @private
  */
-UserMgr._findProviderByUserId = function (userId, providerName, callback) {
+UserMgr._findProviderByUserId = function (userId, providerName, providerId, callback) {
     "use strict";
     var meta = {};
 
@@ -155,7 +166,7 @@ UserMgr._findProviderByUserId = function (userId, providerName, callback) {
             return callback(err);
         }
 
-        provider = user.findProvider(providerName);
+        provider = user.findProvider(providerName, providerId);
         if (!provider) {
             errMsg = "Fail to find provider";
             log.error(errMsg, meta);
