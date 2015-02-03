@@ -191,6 +191,7 @@ function _checkError(err, response, body) {
         log.debug(err);
         return err;
     }
+
     if (response.statusCode >= 400) {
         var errData = body.meta ? body.meta.msg : body.error;
         var errStr = 'API error: ' + response.statusCode + ' ' + errData;
@@ -368,7 +369,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var resultVal;
 
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
                 res.send(hasError);
                 return;
             }
@@ -376,7 +377,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             result = JSON.parse(response);
             //log.debug(result);
 
-            if(result.length === undefined) {
+            if(!result.length) {
                 log.debug("result is empty !!!");
                 return;
             }
@@ -390,7 +391,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             for (i = 0; i < result.length; i++) {
                 var raw_post = result[i];
-                if (after !== undefined) {
+                if (after) {
                     var post_date = new Date(raw_post.created_at);
                     var after_date = new Date(after);
 
@@ -418,15 +419,18 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
             send_data.post_count = send_data.posts.length;
 
-            if(!(send_data.posts[i-1])) {
-                log.debug("posts is undefined !!!");
-                return;
-            }
+            if(!after)
+            {
+                if(!(send_data.posts[i-1])) {
+                    log.debug("posts is undefined !!!");
+                    return;
+                }
 
-            if( (last_id == send_data.posts[i-1].id) &&
-                 (result.length == 1) ) {
-                log.debug("stop Reculsive!!!!!");
-                send_data.stopReculsive = true;
+                if( (last_id == send_data.posts[i-1].id) &&
+                    (result.length == 1) ) {
+                    log.debug("stop Reculsive!!!!!");
+                    send_data.stopReculsive = true;
+                }
             }
 
             res.send(send_data);
@@ -481,7 +485,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             var resultVal;
 
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
                 res.send(hasError);
                 return;
             }
@@ -489,7 +493,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             result = JSON.parse(response);
             //log.debug(result);
 
-            if(result.length === undefined) {
+            if(!result.length) {
                 log.debug("result is empty !!!");
                 return;
             }
@@ -503,7 +507,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             for (i = 0; i < result.length; i++) {
                 var raw_post = result[i];
-                if (after !== undefined) {
+                if (after) {
                     var post_date = new Date(raw_post.created_at);
                     var after_date = new Date(after);
 
@@ -525,7 +529,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 send_post.replies.push({"retweet_count":raw_post.retweet_count});
                 send_post.replies.push({"like_count":raw_post.favorite_count});
 
-                log.debug(send_post);
+                //log.debug(send_post);
 
                 send_data.posts.push(send_post);
 
@@ -550,9 +554,31 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     });
 });
 
+function _makeNewPost(body) {
+    "use strict";
+    var newPost = {};
+
+    newPost.content = "";
+
+    if (body.title) {
+        newPost.content += body.title +'\n';
+    }
+    if (body.content) {
+        newPost.content += body.content;
+    }
+
+    log.debug(newPost);
+
+    return newPost;
+}
+
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     "use strict";
-    log.debug('Twitter ' + req.url);
+    var logStr;
+
+    logStr = "[Twitter] /bot_posts/new/:blog_id =>";
+
+    log.debug(logStr + req.url);
 
     var user_id = _getUserID(req);
     if (!user_id) {
@@ -564,20 +590,21 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
 
     UserDb.findById(user_id, function (err, user) {
-        var blog_id = req.params.blog_id;
-        var p = user.findProvider("twitter", blog_id);
-        var api_url = TWITTER_API_URL+"/sites/"+blog_id +"/posts/new";
+        var newPost = _makeNewPost(req.body);
+        var encodedPost = encodeURIComponent(newPost.content);
 
-        log.debug(api_url);
-        request.post(api_url, {
-            json: true,
-            headers: {
-                "authorization": "Bearer " + p.accessToken
-            },
-            form: req.body
-        }, function (err, response, body) {
+        //log.debug(logStr + encodedPost);
+
+        var provider_id = req.query.providerid;
+        var blog_id = req.params.blog_id;
+        var p = user.findProvider("twitter", provider_id);
+        var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
+
+        //log.debug(logStr + api_url);
+
+        objOAuth.post(api_url, p.token, p.tokenSecret, newPost, 'application/json', function (error, response, body) {
             var hasError = _checkError(err, response, body);
-            if (hasError !== undefined) {
+            if (hasError) {
                 res.send(hasError);
                 return;
             }
@@ -586,7 +613,6 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             send_data.provider_name = 'twitter';
             send_data.blog_id = blog_id;
             send_data.posts = [];
-
             var send_post = {};
             var raw_post = body;
             send_post.title = raw_post.title;
@@ -618,7 +644,6 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //send_post.content = raw_post.content;
             send_data.posts.push(send_post);
-
             log.debug(send_data);
             res.send(send_data);
         });

@@ -422,6 +422,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         isExtended = false;
 
         apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
+
+        if (!user) {
+            log.error("user is null !!!");
+            return;
+        }
+
         p = user.findProvider("Wordpress", blogId);
 
         apiUrl += "/posts";

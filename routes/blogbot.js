@@ -74,6 +74,9 @@ BlogBot._sendPostToBlogs = function (user, recvPosts) {
     var j;
     var targetBlog;
     var provider;
+    var logStr;
+
+    logStr = "[BlogBot] _sendPostToBlogs user=" + user._id + " =>";
 
     if (!recvPosts)  {
         log.error("Fail to get recvposts");
@@ -85,6 +88,8 @@ BlogBot._sendPostToBlogs = function (user, recvPosts) {
     providerName = recvPosts.provider_name;
     post = recvPosts.posts[0];
     groups = groupDb.findGroupByBlogInfo(providerName, blogId);
+
+    log.debug(logStr + providerName);
 
     for (i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
@@ -117,6 +122,9 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
     var i;
     var newPost;
     var postDbIsUpdated = false;
+    var logStr;
+
+    logStr = "[BlogBot] _pushPostsToBlogs user=" + user._id + " =>";
 
     if (!recvPosts)  {
         log.error("Fail to get recvposts");
@@ -125,7 +133,7 @@ BlogBot._pushPostsToBlogs = function(user, recvPosts) {
 
     postDb = BlogBot._findDbByUser(user, "post");
 
-    log.debug(recvPosts.posts);
+    log.debug(logStr + recvPosts.posts);
 
     if(!recvPosts.posts) {
         log.error("length is undefined !!!");
@@ -178,6 +186,7 @@ BlogBot._getAndPush = function(user) {
     var i;
     var j;
     var groups;
+    var options;
 
     log.debug("start get blog of user" + user._id);
     blogDb = BlogBot._findDbByUser(user, "blog");
@@ -398,6 +407,9 @@ BlogBot._addBlogsToDb = function (user, recvBlogs) {
     var i;
     var site;
     var blog;
+    var logStr;
+
+    logStr = "[BlogBot] _addBlogsToDb user=" + user._id + " =>";
 
     if (!recvBlogs) {
         log.error("add blogs to db Fail to get recv_blogs");
