@@ -27,12 +27,12 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
     meta.providerName = provider.providerName;
     meta.providerId = provider.providerId;
 
-    UserDb.findOne({'providers.providerName':provider.providerName,
-            'providers.providerId': provider.providerId},
+    UserDb.findOne({'providers.providerName':provider.providerName, 'providers.providerId': provider.providerId},
         function (err, user) {
             var p;
             var isNewProvider = false;
             var newUser;
+            var isSaved = false;
 
             if (err) {
                 return callback(err);
@@ -41,25 +41,68 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
             // if there is a user id already but no token (user was linked at one point and then removed)
             if (user) {
                 log.debug("Found user="+user._id, meta);
-                p = user.findProvider(provider.providerName);
-                if (!p) {
-                    log.error("Fail to get user id="+req.user._id, meta);
-                    log.error(err.toString(), meta);
-                    return callback(err);
-                }
 
-                if (p.accessToken !== provider.accessToken) {
-                    p.accessToken = provider.accessToken;
-                    p.refreshToken = provider.refreshToken;
-                    user.save (function(err) {
+                if (req.user && (req.user._id !== user._id && req.user._id.toString() !== user._id.toString())) {
+                    UserDb.findById(req.user._id, function (err, newUser) {
                         if (err) {
+                            log.error(err.toString(), meta);
+                            return callback(err);
+                        }
+                        if (!newUser) {
+                            log.error("Fail to get user id=" + req.user._id, meta);
+                            log.error(err.toString(), meta);
                             return callback(err);
                         }
 
-                        return callback(null, user, isNewProvider);
+                        for (var i = user.providers.length - 1; i >= 0; i -= 1) {
+                            newUser.providers.push(user.providers[i]);
+                        }
+
+                        p = newUser.findProvider(provider.providerName);
+                        if (!p) {
+                            log.error("Fail to get provider="+provider.providerName, meta);
+                            log.error(err.toString(), meta);
+                            return callback(err);
+                        }
+
+                        if (p.accessToken !== provider.accessToken) {
+                            p.accessToken = provider.accessToken;
+                            p.refreshToken = provider.refreshToken;
+                        }
+
+                        user.remove(function(err) {
+                            if (err) {
+                                return callback(err);
+                            }
+                            newUser.save (function(err) {
+                                if (err) {
+                                    return callback(err);
+                                }
+
+                                return callback(null, newUser, isNewProvider);
+                            });
+                        });
                     });
                 }
                 else {
+                    p = user.findProvider(provider.providerName);
+                    if (!p) {
+                        log.error("Fail to get provider="+provider.providerName, meta);
+                        log.error(err.toString(), meta);
+                        return callback(err);
+                    }
+
+                    if (p.accessToken !== provider.accessToken) {
+                        p.accessToken = provider.accessToken;
+                        p.refreshToken = provider.refreshToken;
+                        user.save (function(err) {
+                            if (err) {
+                                return callback(err);
+                            }
+                            return callback(null, user, isNewProvider);
+                        });
+                    }
+
                     return callback(null, user, isNewProvider);
                 }
             }
@@ -83,7 +126,6 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
                             if (err) {
                                 return callback(err);
                             }
-
                             return callback(null, user, isNewProvider);
                         });
                     });
@@ -98,12 +140,12 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
                         if (err) {
                             return callback(err);
                         }
-
                         return callback(null, newUser, isNewProvider);
                     });
                 }
             }
-        } );
+        }
+    );
 };
 
 /**
