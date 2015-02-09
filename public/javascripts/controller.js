@@ -202,6 +202,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
 
     var reqStartNum;
     var reqTotalNum;
+    var sites;
 
     function getPost(providerName, blogID, postID) {
         for (var i = 0; i<$scope.posts.length; i += 1) {
@@ -249,7 +250,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
                         }
 
                         indexes = getPost(data.providerName, data.blogID, data.postID);
-                        console.log(indexes);
+                        //console.log(indexes);
                         $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
                     })
                     .error(function (data) {
@@ -306,17 +307,54 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
             });
     };
 
-    function init() {
-        reqStartNum = 0;
-        reqTotalNum = 20;
+    $scope.getBlogTitle = function(providerName, blogID) {
+        var i;
+        var len;
 
+       if (!sites)  {
+          console.log("Fail to get sites");
+          return;
+       }
+        len = sites.length;
+        for (i=0; i<len; i+=1) {
+           if (sites[i].provider.providerName === providerName &&
+                    sites[i].blog.blog_id === blogID)  {
+              return sites[i].blog.blog_title;
+           }
+        }
+    };
+
+    function init() {
+        var url;
         var user = $scope.user;
+
         if (user._id === undefined) {
             console.log('you have to signin~');
             return;
         }
 
-        var url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
+        url = "/blogs/sites";
+        $http.get(url)
+            .success(function (data) {
+                //console.log(data);
+                if (sites) {
+                    console.log("Sites already was made");
+                }
+                sites = [];
+                for (var i = 0; i < data.sites.length; i += 1) {
+                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                        sites.push(site);
+                    }
+                }
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+            });
+
+        reqStartNum = 0;
+        reqTotalNum = 20;
+        url = "/blogs/posts/" + reqStartNum + "/" + reqTotalNum;
 
         $http.get(url)
             .success(function (data) {

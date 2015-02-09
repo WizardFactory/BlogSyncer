@@ -2,20 +2,21 @@
  * Created by aleckim on 2014. 7. 19..
  */
 
-var UserDb = require('../models/userdb');
-var express = require('express');
+var router = require('express').Router();
 var passport = require('passport');
-var TwitterStrategy = require('passport-twitter').Strategy;
-var blogBot = require('./blogbot');
 var request = require('request');
-var svcConfig = require('../models/svcConfig.json');
-var log = require('winston');
-var OAuth = require('oauth').OAuth;
+var url = require('url');
 
-var router = express.Router();
+var blogBot = require('./blogbot');
+var userMgr = require('./userManager');
+var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.twitter;
+var TwitterStrategy = require('passport-twitter').Strategy;
+var TWITTER_API_URL = "https://api.twitter.com/1.1";
+var TWITTER_PROVIDER = "twitter";
 
+var OAuth = require('oauth').OAuth;
 // global variable for object of OAuth
 var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
     "https://api.twitter.com/oauth/access_token",
@@ -24,8 +25,6 @@ var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
     "1.0A",
     null,
     "HMAC-SHA1");
-
-var TWITTER_API_URL = "https://api.twitter.com/1.1";
 
 passport.serializeUser(function(user, done) {
     "use strict";
@@ -36,81 +35,6 @@ passport.deserializeUser(function(obj, done) {
     "use strict";
     done(null, obj);
 });
-
-function _updateOrCreateUser(req, provider, callback) {
-    "use strict";
-    UserDb.findOne({'providers.providerName':provider.providerName,
-            'providers.providerId': provider.providerId},
-        function (err, user) {
-            var p;
-            var isNewProvider = false;
-
-            if (err) {
-                return callback(err);
-            }
-
-            // if there is a user id already but no token (user was linked at one point and then removed)
-            if (user) {
-                log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
-                p = user.findProvider("twitter");
-                if (p.accessToken !== provider.accessToken) {
-                    p.accessToken = provider.accessToken;
-                    p.refreshToken = provider.refreshToken;
-                    user.save (function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        return callback(null, user, isNewProvider);
-                    });
-                }
-                else {
-                    return callback(null, user, isNewProvider);
-                }
-            }
-            else {
-                isNewProvider = true;
-
-                if (req.user) {
-                    UserDb.findById(req.user._id, function (err, user) {
-                        if (err) {
-                            log.error(err);
-                            return callback(err);
-                        }
-                        if (!user) {
-                            log.error("Fail to get user id="+req.user._id);
-                            log.error(err);
-                            return callback(err);
-                        }
-                        // if there is no provider, add to User
-                        user.providers.push(provider);
-                        user.save(function(err) {
-
-                            if (err) {
-                                return callback(err);
-                            }
-
-                            return callback(null, user, isNewProvider);
-                        });
-                    });
-                }
-                else {
-                    // if there is no provider, create new user
-                    var newUser = new UserDb();
-                    newUser.providers = [];
-
-                    newUser.providers.push(provider);
-                    newUser.save(function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        return callback(null, newUser, isNewProvider);
-                    });
-                }
-            }
-        } );
-}
 
 passport.use(new TwitterStrategy({
         consumerKey: clientConfig.clientID,
@@ -123,8 +47,8 @@ passport.use(new TwitterStrategy({
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
-        var provider;
-        provider = {
+
+        var provider = {
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
@@ -132,7 +56,7 @@ passport.use(new TwitterStrategy({
             "displayName":profile.displayName
         };
 
-        _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
+        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -168,86 +92,43 @@ router.get('/authorized',
     }
 );
 
-function _getUserID(req) {
-    "use strict";
-
-    var userid = 0;
-
-    if (req.user) {
-        userid = req.user._id;
-    }
-    else if (req.query.userid)
-    {
-        //this request form child process;
-        userid = req.query.userid;
-    }
-
-    return userid;
-}
-
-function _checkError(err, response, body) {
-    "use strict";
-    if (err) {
-        log.debug(err);
-        return err;
-    }
-
-    if (response.statusCode >= 400) {
-        var errData = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + errData;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
-
-function _requestGet(url, accessToken, callback) {
-    "use strict";
-    request.get(url, {
-        json: true,
-        headers: {
-            "authorization": "Bearer " + accessToken
-        }
-    }, function (err, response, body) {
-        callback(err, response, body);
-    });
-}
-
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
     var errorMsg;
-    var user_id;
-    user_id = _getUserID(req);
+    var userId = userMgr._getUserId(req, res);
+    var providerId;
+    if (!userId) {
+        return;
+    }
 
-    if (!user_id) {
-        errorMsg = 'You have to login first!';
+    providerId = req.query.providerid;
+
+    if (providerId === false) {
+        errorMsg = 'User:'+userId+' did not have blog!';
         log.debug(errorMsg);
         res.send(errorMsg);
         res.redirect("/#/signin");
         return;
     }
 
-    if (req.query.providerid === false) {
-        errorMsg = 'User:'+user_id+' did not have blog!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-        return;
-    }
-
-    UserDb.findById(user_id, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
         var api_url;
 
-        p = user.findProvider("twitter", req.query.providerid);
-        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + p.providerId;
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
+        }
+
+        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
         // instantiate Twit module
         //var twitter = new Twit(twitConfig);
         //var twit = new twitter(twitConfig);
 
         //userTimeline(p, req, res);
 
-        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, data) {
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, data) {
             var result;
             if(error) {
                 result = {error: error};
@@ -264,7 +145,7 @@ router.get('/bot_bloglist', function (req, res) {
             var blog_url = result.url;
             var send_data = {};
 
-            send_data.provider = p;
+            send_data.provider = provider;
             send_data.blogs = [];
             send_data.blogs.push({"blog_id":blog_id, "blog_title":blog_title, "blog_url":blog_url});
 
@@ -277,27 +158,27 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     "use strict";
     log.debug("Twitter: "+ req.url + ' : this is called by bot');
 
-    var user_id;
-    user_id = _getUserID(req);
-    if (!user_id) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    var userId = userMgr._getUserId(req, res);
+    var providerId;
+    if (!userId) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
-        var p;
-        var api_url;
-        var blog_id = req.query.providerid;
+    providerId = req.query.providerid;
 
-        p = user.findProvider("twitter", blog_id);
-        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + p.providerId;
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
+        var api_url;
+
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
+        }
+
+        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
 
         log.debug(api_url);
-
-        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, data) {
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, data) {
             var result;
             var send_data = {};
 
@@ -311,7 +192,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
             log.debug(result);
 
-            send_data.provider_name = 'twitter';
+            send_data.provider_name = TWITTER_PROVIDER;
             send_data.blog_id = result.id;
             send_data.post_count = result.statuses_count;
 
@@ -324,19 +205,25 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id', function (req, res) {
     "use strict";
-    log.debug("Twitter : "+ req.url + ' : this is called by bot');
+    var meta = {};
+    var userId = userMgr._getUserId(req, res);
 
-    var user_id = _getUserID(req);
-    if (!user_id) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    meta.cName = "twitter";
+    meta.fName = "/bot_posts/:blog_id";
+    meta.userId = userId;
+    //meta.providerName = providerName;
+
+    var provider_id;
+    var blogId;
+    if (!userId) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
-        var provider_id = req.query.providerid;
+    provider_id = req.query.providerid;
+    //log.debug("provider_id : " + provider_id, meta);
+    blogId = req.params.blog_id;
+
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
         var blog_id = req.params.blog_id;
         var last_id = req.query.offset;
         var after = req.query.after;
@@ -346,25 +233,25 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var count = 0;
         var api_url;
 
-        if (!user) {
-            log.error("user is null !!!");
-            return;
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         count = 20;
-
-        var p = user.findProvider("twitter", provider_id);
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
-            "&count=" + count;
+        log.debug(provider, meta );
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId + "&count=" + count;
+        //api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider_id + "&count=" + count;
 
         if (last_id) {
             api_url += "&";
             api_url += "max_id=" + last_id;
         }
 
-        //log.debug(api_url);
+        log.debug(api_url);
 
-        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, response, body) {
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, response, body) {
             var result = [];
             var resultVal;
 
@@ -385,7 +272,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var send_data = {};
             var i = 0;
 
-            send_data.provider_name = 'twitter';
+            send_data.provider_name = TWITTER_PROVIDER;
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
@@ -441,21 +328,17 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
-
+    var userId;
     var logStr;
     logStr = "/bot_posts/:blog_id/:post_id";
 
-    var user_id = _getUserID(req);
-    if (!user_id) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    userId = userMgr._getUserId(req, res);
+    if (!userId) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
-        var provider_id = req.query.providerid;
+    var provider_id = req.query.providerid;
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
         var last_id = req.query.offset;
@@ -466,21 +349,21 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         var count = 0;
         var api_url;
 
-        if (!user) {
-            log.error("user is null !!!");
-            return;
+        if (err) {
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         // use count(1) with user_timeline for retweet and like counting
         count = 1;
 
-        var p = user.findProvider("twitter", provider_id);
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ p.providerId +
+        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId +
             "&count=" + count + "&max_id=" + post_id;
 
         //log.debug(api_url);
 
-        objOAuth.get(api_url, p.token, p.tokenSecret, function (error, response, body) {
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, response, body) {
             var result = [];
             var resultVal;
 
@@ -501,7 +384,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             var send_data = {};
             var i = 0;
 
-            send_data.provider_name = 'twitter';
+            send_data.provider_name = TWITTER_PROVIDER;
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
@@ -574,35 +457,39 @@ function _makeNewPost(body) {
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     "use strict";
-    var logStr;
+    var blogId;
+    var meta = {};
+    var userId = userMgr._getUserId(req, res);
+    var provider_id;
 
-    logStr = "[Twitter] /bot_posts/new/:blog_id =>";
+    meta.cName = "twitter";
+    meta.fName = "/bot_posts/:blog_id";
+    meta.userId = userId;
+    meta.providerName = TWITTER_PROVIDER;
 
-    log.debug(logStr + req.url);
+    log.debug(req.url, meta);
 
-    var user_id = _getUserID(req);
-    if (!user_id) {
-        var errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
+    if (!userId) {
         return;
     }
 
-    UserDb.findById(user_id, function (err, user) {
+    blogId = req.params.blog_id;
+    provider_id = req.query.providerid;
+
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
         var newPost = _makeNewPost(req.body);
         var encodedPost = encodeURIComponent(newPost.content);
 
-        //log.debug(logStr + encodedPost);
+        //log.debug(encodedPost, meta);
 
         var provider_id = req.query.providerid;
         var blog_id = req.params.blog_id;
-        var p = user.findProvider("twitter", provider_id);
         var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
 
         //log.debug(logStr + api_url);
 
-        objOAuth.post(api_url, p.token, p.tokenSecret, newPost, 'application/json', function (error, response, body) {
+        objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, response, body) {
+
             var hasError = _checkError(err, response, body);
             if (hasError) {
                 res.send(hasError);
@@ -610,7 +497,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //add post info
             var send_data = {};
-            send_data.provider_name = 'twitter';
+            send_data.provider_name = TWITTER_PROVIDER;
             send_data.blog_id = blog_id;
             send_data.posts = [];
             var send_post = {};
@@ -644,7 +531,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             //send_post.content = raw_post.content;
             send_data.posts.push(send_post);
-            log.debug(send_data);
+            log.debug(send_data, meta);
             res.send(send_data);
         });
     });
@@ -658,6 +545,31 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     return;
 });
 
+function _checkError(err, response, body) {
+    "use strict";
+    if (err) {
+        log.debug(err);
+        return err;
+    }
+    if (response.statusCode >= 400) {
+        var errData = body.meta ? body.meta.msg : body.error;
+        var errStr = 'API error: ' + response.statusCode + ' ' + errData;
+        log.debug(errStr);
+        return new Error(errStr);
+    }
+}
+
+function _requestGet(url, accessToken, callback) {
+    "use strict";
+    request.get(url, {
+        json: true,
+        headers: {
+            "authorization": "Bearer " + accessToken
+        }
+    }, function (err, response, body) {
+        callback(err, response, body);
+    });
+}
 
 module.exports = router;
 

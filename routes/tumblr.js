@@ -2,21 +2,17 @@
  * Created by aleckim on 2014. 7. 5..
  */
 
-var UserDb = require('../models/userdb');
-
-var express = require('express');
+var router = require('express').Router();
 var passport = require('passport');
-var tumblr = require('tumblr.js');
 
-var TumblrStrategy = require('passport-tumblr').Strategy;
 var blogBot = require('./blogbot');
-
-var router = express.Router();
-
+var userMgr = require('./userManager');
 var svcConfig = require('../models/svcConfig.json');
-var clientConfig = svcConfig.tumblr;
 
-var log = require('winston');
+var clientConfig = svcConfig.tumblr;
+var TumblrStrategy = require('passport-tumblr').Strategy;
+var tumblr = require('tumblr.js');
+var TUMBLR_PROVIDER = "tumblr";
 
 passport.serializeUser(function(user, done) {
     "use strict";
@@ -27,93 +23,6 @@ passport.deserializeUser(function(obj, done) {
     "use strict";
     done(null, obj);
 });
-
-/**
- *
- * @param req
- * @param provider
- * @param callback
- * @private
- */
-function _updateOrCreateUser(req, provider, callback) {
-    "use strict";
-    UserDb.findOne({'providers.providerName':provider.providerName,
-            'providers.providerId': provider.providerId},
-        function (err, user) {
-            var p;
-            var isNewProvider = false;
-            var errMsg;
-
-            if (err) {
-                return callback(err);
-            }
-
-            // if there is a user id already but no token (user was linked at one point and then removed)
-            if (user) {
-                log.debug("Found user of pName="+provider.providerName+",pId="+provider.providerId);
-                p = user.findProvider("tumblr");
-                if (!p) {
-                    errMsg = "Fail to get tumblr user id=" + user._id;
-                    log.error(errMsg);
-                    return;
-                }
-
-                if (p.accessToken !== provider.accessToken) {
-                    p.accessToken = provider.accessToken;
-                    p.refreshToken = provider.refreshToken;
-                    user.save (function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-
-                        return callback(null, user, isNewProvider);
-                    });
-                }
-                else {
-                    return callback(null, user, isNewProvider);
-                }
-            }
-            else {
-                isNewProvider = true;
-
-                if (req.user) {
-                    UserDb.findById(req.user._id, function (err, user) {
-                        if (err) {
-                            log.error(err);
-                            return callback(err);
-                        }
-                        if (!user) {
-                            log.error("Fail to get user id="+req.user._id);
-                            log.error(err);
-                            return callback(err);
-                        }
-                        // if there is no provider, add to User
-                        user.providers.push(provider);
-                        user.save(function(err) {
-                            if (err) {
-                                return callback(err);
-                            }
-                            return callback(null, user, isNewProvider);
-                        });
-                    });
-                }
-                else {
-
-                    // if there is no provider, create new user
-                    var newUser = new UserDb();
-                    newUser.providers = [];
-
-                    newUser.providers.push(provider);
-                    newUser.save(function(err) {
-                        if (err) {
-                            return callback(err);
-                        }
-                        return callback(null, newUser, isNewProvider);
-                    });
-                }
-            }
-        } );
-}
 
 passport.use(new TumblrStrategy({
         consumerKey: clientConfig.clientID,
@@ -137,7 +46,7 @@ passport.use(new TumblrStrategy({
             "displayName":profile.username
         };
 
-        _updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
+        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -174,75 +83,29 @@ router.get('/authorized',
     }
 );
 
-/**
- *
- * @param req
- * @param res
- * @returns {*}
- * @private
- */
-function _getUserId(req, res) {
-    "use strict";
-    var userId;
-    var errorMsg;
-
-    if (req.user) {
-        userId = req.user._id;
-    }
-    else if (req.query.userid) {
-
-       //this request form child process;
-       userId = req.query.userid;
-    }
-    else {
-        errorMsg = 'You have to login first!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
-        res.redirect("/#/signin");
-    }
-
-    return userId;
-}
-
 router.get('/info', function (req, res) {
     "use strict";
     var userId;
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr  user id="+userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         client.userInfo(function(error, data) {
@@ -263,44 +126,28 @@ router.get('/posts/:blogName', function (req, res) {
     "use strict";
     var userId;
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
         var blogName;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         blogName = req.params.blogName;
 
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr blog="+blogName+" user id="+userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
-        }
-
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         client.posts(blogName, function (error, response) {
@@ -324,43 +171,27 @@ router.get('/bot_bloglist', function (req, res) {
 
     log.debug(req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
     providerId = req.query.providerid;
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, providerId, function (err, user, provider) {
         var client;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("tumblr", providerId);
-        if (!p) {
-            errMsg = "Fail to get tumblr providerId="+providerId+" user id="+userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         client.userInfo(function (error, response) {
@@ -377,7 +208,7 @@ router.get('/bot_bloglist', function (req, res) {
             //log.debug(response);
 
             send_data = {};
-            send_data.provider = p;
+            send_data.provider = provider;
             send_data.blogs = [];
 
             blogs = response.user.blogs;
@@ -398,35 +229,19 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
         var blog_id;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr user id=" + userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         blog_id = req.params.blog_id;
@@ -434,8 +249,8 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         client.blogInfo(blog_id, function(error, response) {
@@ -448,7 +263,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             }
             //log.debug(response);
             var send_data = {};
-            send_data.provider_name = 'tumblr';
+            send_data.provider_name = TUMBLR_PROVIDER;
             send_data.blog_id = response.blog.name;
             send_data.post_count = response.blog.posts;
 
@@ -580,13 +395,12 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
         var options;
 
@@ -594,33 +408,18 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var offset = req.query.offset;
         var after = req.query.after;
         var start_index;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr user id=" + userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         if (offset) {
@@ -640,7 +439,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
             //log.debug(response);
 
-            send_data.provider_name = 'tumblr';
+            send_data.provider_name = TUMBLR_PROVIDER;
             send_data.blog_id = response.posts[0].blog_name;
             send_data.post_count = 0;
             send_data.posts = [];
@@ -658,45 +457,28 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
-
         var blog_id = req.params.blog_id;
         var post_id = req.params.post_id;
         var options;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
-        }
-
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr user id=" + userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         options = {id: post_id};
@@ -712,7 +494,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             }
             //log.debug(response);
 
-            send_data.provider_name = 'tumblr';
+            send_data.provider_name = TUMBLR_PROVIDER;
             send_data.blog_id = response.posts[0].blog_name;
             send_data.post_count = 0;
             send_data.posts = [];
@@ -731,46 +513,30 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     log.debug("tumblr: "+ req.url + ' : this is called by bot');
 
-    userId = _getUserId(req, res);
+    userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    UserDb.findById(userId, function (err, user) {
-        var p;
+    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         var client;
         var blog_id;
         var options;
-        var errMsg;
 
         if (err) {
-            log.error(err);
-            res.send(err);
-            return;
-        }
-        if (!user) {
-            log.error("Fail to get user id="+userId);
-            log.error(err);
-            res.send(err);
-            return;
+            log.error("Fail to find provider");
+            log.error(err.toString());
+            return res.send(err);
         }
 
         blog_id = req.params.blog_id;
         options = {};
 
-        p = user.findProvider("tumblr");
-        if (!p) {
-            errMsg = "Fail to get tumblr user id=" + userId;
-            log.error(errMsg);
-            res.send(errMsg);
-            return;
-        }
-
         client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
-            token: p.token,
-            token_secret: p.tokenSecret
+            token: provider.token,
+            token_secret: provider.tokenSecret
         });
 
         if (req.body.content) {
@@ -814,7 +580,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 //log.debug(response);
 
                 send_data = {};
-                send_data.provider_name = 'tumblr';
+                send_data.provider_name = TUMBLR_PROVIDER;
                 send_data.blog_id = response.posts[0].blog_name;
                 send_data.post_count = 0;
                 send_data.posts = [];

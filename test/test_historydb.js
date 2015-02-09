@@ -4,6 +4,9 @@
 
 var assert  = require('assert');
 var History = require('../models/historydb');
+if (!global.log) {
+    global.log = require('winston');
+}
 
 var d = new Date();
 

@@ -21,7 +21,7 @@
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
-var logger = require('morgan');
+//var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var passport = require('passport');
@@ -37,7 +37,9 @@ var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
 
-var log = require('./routes/log');
+var Logger = require('./routes/log');
+global.log  = new Logger(__dirname + "/debug.log");
+
 var svcConfig = require('./models/svcConfig.json');
 
 var app = express();
@@ -57,7 +59,7 @@ else {
     connectInfo = 'mongodb://localhost/blogsync';
 }
 
-log.debug(connectInfo);
+log.info(connectInfo);
 mongoose.connect(connectInfo);
 
 blogBot.load();
