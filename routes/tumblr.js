@@ -440,7 +440,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             //log.debug(response);
 
             send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.blog_id = response.posts[0].blog_name;
+            send_data.blog_id = response.blog.name;
             send_data.post_count = 0;
             send_data.posts = [];
             _pushPostsFromTumblr(send_data.posts, response.posts, false, after);
@@ -495,7 +495,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             //log.debug(response);
 
             send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.blog_id = response.posts[0].blog_name;
+            send_data.blog_id = response.blog.name;
             send_data.post_count = 0;
             send_data.posts = [];
 
@@ -581,7 +581,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
                 send_data = {};
                 send_data.provider_name = TUMBLR_PROVIDER;
-                send_data.blog_id = response.posts[0].blog_name;
+                send_data.blog_id = response.blog.name;
                 send_data.post_count = 0;
                 send_data.posts = [];
 
