@@ -50,10 +50,19 @@ passport.use(new KakaoStrategy({
             "displayName": profile.username
         };
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider) {
+        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user", meta);
                 return done(err);
+            }
+
+            if (delUser) {
+                blogBot.combineUser(user, delUser);
+                userMgr._combineUser(user, delUser, function(err) {
+                    if (err) {
+                        return done(err);
+                    }
+                });
             }
 
             if (isNewProvider) {

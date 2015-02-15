@@ -5,7 +5,7 @@
 
 var request = require('request');
 
-var UserDb = require('../models/userdb');
+var userMgr = require('./userManager');
 var SiteDb = require('../models/blogdb');
 var GroupDb = require('../models/groupdb');
 var HistoryDb = require('../models/historydb');
@@ -51,6 +51,8 @@ BlogBot._findDbByUser = function (user, dbName) {
                     return this.users[i].historyDb;
                 case "post":
                     return this.users[i].postDb;
+                case "all":
+                    return this.users[i];
                 default:
                     log.error("Unknown dbName:"+dbName, meta);
                     return;
@@ -261,7 +263,7 @@ BlogBot.load = function () {
     meta.cName = this.name;
     meta.fName = "load";
 
-    UserDb.find({}, function(err, users) {
+    userMgr._findUsers(function(err, users) {
         var i;
 
         if (err) {
@@ -419,13 +421,129 @@ BlogBot.isStarted = function (user) {
  */
 BlogBot.stop = function (user) {
     "use strict";
+    var i;
     var meta = {};
 
     meta.cName = this.name;
     meta.fName = "stop";
     meta.userId = user._id.toString();
 
+    for(i=0; i<this.users.length; i+=1) {
+        if (this.users[i].user._id === user._id ||
+            this.users[i].user._id.toString() === user._id.toString()) {
+            this.users.splice(i, 1);
+            return;
+        }
+    }
+
     log.debug(" ", meta);
+};
+
+/**
+ *
+ * @param {User} user
+ * @param {User} delUser
+ */
+BlogBot.combineUser = function (user, delUser) {
+    "use strict";
+    var userInfo;
+    var delUserInfo;
+    var i, j, isAdded;
+    var meta = {};
+
+    meta.cName = this.name;
+    meta.fName = "combineUser";
+
+    log.info(" ", meta);
+
+    userInfo = BlogBot._findDbByUser(user, "all");
+    delUserInfo = BlogBot._findDbByUser(delUser, "all");
+
+    if (!userInfo || !delUserInfo) {
+        return;
+    }
+
+    if (delUserInfo.blogDb) {
+        if (!userInfo.blogDb) {
+            userInfo.blogDb = new SiteDb();
+            userInfo.blogDb.userId = user._id;
+        }
+
+        userInfo.blogDb.sites = userInfo.blogDb.sites.concat(delUserInfo.blogDb.sites);
+        delUserInfo.blogDb.remove();
+        userInfo.blogDb.save(function (err) {
+            if (err) {
+                log.error("Fail to save sites", meta);
+            }
+        });
+    }
+
+    if (delUserInfo.groupDb) {
+        if (!userInfo.groupDb) {
+            userInfo.groupDb = new GroupDb();
+            userInfo.groupDb.userId = user._id;
+        }
+
+        userInfo.groupDb.groups = userInfo.groupDb.groups.concat(delUserInfo.groupDb.groups);
+        delUserInfo.groupDb.remove();
+        userInfo.groupDb.save(function (err) {
+            if (err) {
+                log.error("Fail to save groups", meta);
+            }
+        });
+    }
+
+    if (delUserInfo.historyDb) {
+        if (!userInfo.historyDb) {
+            userInfo.historyDb = new HistoryDb();
+            userInfo.historyDb.userId = user._id;
+        }
+
+        userInfo.historyDb.histories = userInfo.historyDb.histories.concat(delUserInfo.historyDb.histories);
+        delUserInfo.historyDb.remove();
+        userInfo.historyDb.save(function (err) {
+            if (err) {
+                log.error("Fail to save histories", meta);
+            }
+        });
+    }
+
+    if (delUserInfo.postDb) {
+        if (!userInfo.postDb) {
+            userInfo.postDb = new PostDb();
+            userInfo.postDb.userId = user._id;
+            userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
+            userInfo.postDb.posts = userInfo.postDb.posts.concat(delUserInfo.postDb.posts);
+        }
+        else {
+            if (userInfo.postDb.lastUpdateTime.getTime() > delUserInfo.postDb.lastUpdateTime.getTime()) {
+                userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
+            }
+
+            for (i = delUserInfo.postDb.posts.length - 1; i >= 0; i -= 1) {
+                isAdded = false;
+                for (j = userInfo.postDb.posts.length - 1; j >= 0; j -= 1) {
+                    if (userInfo.postDb.posts[j].title === delUserInfo.postDb.posts[i].title) {
+                        userInfo.postDb.posts[j].infos = userInfo.postDb.posts[j].infos.concat(delUserInfo.postDb.posts[i].infos);
+                        isAdded = true;
+                        break;
+                    }
+                }
+                if (isAdded === false) {
+                    userInfo.postDb.posts.push(delUserInfo.postDb.posts[i]);
+                }
+            }
+        }
+
+        delUserInfo.postDb.remove();
+        userInfo.postDb.save(function (err) {
+            if (err) {
+                log.error("Fail to save posts", meta);
+            }
+        });
+    }
+
+    BlogBot.stop(delUser);
 };
 
 /**
