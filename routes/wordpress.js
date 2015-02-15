@@ -264,6 +264,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
         apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
 
+        if (!user) {
+            log.error("user is null !!!");
+            return;
+        }
+
         apiUrl += "/posts";
         apiUrl += "?";
         if (offSet) {

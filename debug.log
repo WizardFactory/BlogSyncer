@@ -1,0 +1,371 @@
+2015-02-03T14:38:15.649Z - debug: Successful!
+2015-02-03T14:38:15.748Z - debug: Find or create blog db cName=BlogBot, fName=findOrCreate, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:15.749Z - debug: Url=http://www.justwapps.com/Wordpress/bot_bloglist?providerid=72408697&userid=54d0dd54fa847c0fbde16c72 cName=BlogBot, fName=_requestGetBlogList, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:15.803Z - debug: Wordpress: /bot_bloglist?providerid=72408697&userid=54d0dd54fa847c0fbde16c72 : this is called by bot
+2015-02-03T14:38:16.040Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:38:16.829Z - debug: Url=http://www.justwapps.com/Wordpress/bot_post_count/72408697?userid=54d0dd54fa847c0fbde16c72 cName=BlogBot, fName=_requestGetPostCount, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:16.831Z - debug: Provider Name=Wordpress Id=72408697 cName=BlogBot, fName=_cbAddBlogsToDb, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:16.851Z - debug: Wordpress: /bot_post_count/72408697?userid=54d0dd54fa847c0fbde16c72 : this is called by bot
+2015-02-03T14:38:16.855Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:38:17.712Z - debug: post count=13
+2015-02-03T14:38:17.714Z - debug:   cName=BlogBot, fName=_cbAddPostsFromNewBlog, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:17.715Z - debug: Url=http://www.justwapps.com/Wordpress/bot_posts/72408697?offset=0-20&userid=54d0dd54fa847c0fbde16c72 cName=BlogBot, fName=_requestGetPosts, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:19.290Z - debug:   cName=BlogBot, fName=_cbAddPostsToDb, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:38:19.291Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=test11
+&lt;p&gt;test11&lt;/p&gt;
+2015-02-03T14:38:19.291Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:38:19.292Z - debug: Total=0 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:38:19.292Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:38:19.297Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=test11
+2015-02-03T14:38:19.297Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:38:19.297Z - debug: Total=1 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:38:19.297Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:38:19.301Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 10 for blogsyncer test
+2015-02-03T14:38:19.301Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:38:19.301Z - debug: Total=2 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:38:19.302Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:38:19.302Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 9 for blogsyncer test
+2015-02-03T14:38:19.303Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:38:19.303Z - debug: Total=3 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:38:19.303Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:38:19.307Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 8 for blogsyncer test
+2015-02-03T14:38:19.307Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:38:19.308Z - debug: Total=4 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:38:19.308Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:38:19.313Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 7 for blogsyncer test
+2015-02-03T14:38:19.313Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:38:19.313Z - debug: Total=5 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:38:19.313Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:38:19.316Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 6 for blogsyncer test
+2015-02-03T14:38:19.316Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:38:19.316Z - debug: Total=6 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:38:19.316Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:38:19.317Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 5 for blogsyncer test
+2015-02-03T14:38:19.318Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:38:19.318Z - debug: Total=7 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:38:19.319Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:38:19.322Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 4 for blogsyncer test
+2015-02-03T14:38:19.323Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:38:19.323Z - debug: Total=8 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:38:19.323Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:38:19.325Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 3 for blogsyncer test
+2015-02-03T14:38:19.326Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:38:19.326Z - debug: Total=9 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:38:19.326Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:38:19.356Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 2 for blogsyncer test
+2015-02-03T14:38:19.357Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:38:19.358Z - debug: Total=10 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:38:19.358Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:38:19.359Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 1 for blogsyncer test
+2015-02-03T14:38:19.359Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:38:19.359Z - debug: Total=11 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:38:19.359Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:39:21.766Z - debug: Find or create blog db cName=BlogBot, fName=findOrCreate, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:39:21.766Z - debug: Url=http://www.justwapps.com/Wordpress/bot_bloglist?providerid=72408697&userid=54d0dd54fa847c0fbde16c72 cName=BlogBot, fName=_requestGetBlogList, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:39:21.767Z - debug: Url=http://www.justwapps.com/twitter/bot_bloglist?providerid=mis2010&userid=54d0dd54fa847c0fbde16c72 cName=BlogBot, fName=_requestGetBlogList, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:39:21.769Z - debug: Successful!
+2015-02-03T14:39:21.799Z - debug: Wordpress: /bot_bloglist?providerid=72408697&userid=54d0dd54fa847c0fbde16c72 : this is called by bot
+2015-02-03T14:39:21.800Z - debug: Twitter : /bot_bloglist?providerid=mis2010&userid=54d0dd54fa847c0fbde16c72 : this is called by bot
+2015-02-03T14:39:21.802Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:39:22.719Z - debug: Provider Name=Wordpress Id=72408697 cName=BlogBot, fName=_cbAddBlogsToDb, userId=54d0dd54fa847c0fbde16c72
+2015-02-03T14:39:25.686Z - debug:  id=86051098, id_str=86051098, name=KwangHo Kim, screen_name=mis2010, location=, profile_location=null, description=, url=null, urls=[], protected=false, followers_count=16, friends_count=13, listed_count=0, created_at=Thu Oct 29 12:05:39 +0000 2009, favourites_count=9, utc_offset=null, time_zone=null, geo_enabled=true, verified=false, statuses_count=33, lang=en, created_at=Tue Feb 03 14:21:22 +0000 2015, id=562616839612547100, id_str=562616839612547073, text=test11
+&lt;p&gt;test11&lt;/p&gt;, source=<a href="http://www.justwapps.com" rel="nofollow">justwapps</a>, truncated=false, in_reply_to_status_id=null, in_reply_to_status_id_str=null, in_reply_to_user_id=null, in_reply_to_user_id_str=null, in_reply_to_screen_name=null, geo=null, coordinates=null, place=null, contributors=null, retweet_count=0, favorite_count=0, hashtags=[], symbols=[], user_mentions=[], urls=[], favorited=false, retweeted=false, lang=fr, contributors_enabled=false, is_translator=false, is_translation_enabled=false, profile_background_color=C0DEED, profile_background_image_url=http://abs.twimg.com/images/themes/theme1/bg.png, profile_background_image_url_https=https://abs.twimg.com/images/themes/theme1/bg.png, profile_background_tile=false, profile_image_url=http://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_image_url_https=https://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_link_color=0084B4, profile_sidebar_border_color=C0DEED, profile_sidebar_fill_color=DDEEF6, profile_text_color=333333, profile_use_background_image=true, default_profile=true, default_profile_image=false, following=false, follow_request_sent=false, notifications=false, suspended=false, needs_phone_verification=false
+2015-02-03T14:42:14.224Z - debug: Successful!
+2015-02-03T14:42:14.233Z - debug: Find or create blog db cName=BlogBot, fName=findOrCreate, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:14.234Z - debug: Url=http://www.justwapps.com/Wordpress/bot_bloglist?providerid=72408697&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetBlogList, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:14.253Z - debug: Wordpress: /bot_bloglist?providerid=72408697&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:14.276Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:42:15.145Z - debug: Url=http://www.justwapps.com/Wordpress/bot_post_count/72408697?userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPostCount, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:15.146Z - debug: Provider Name=Wordpress Id=72408697 cName=BlogBot, fName=_cbAddBlogsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:15.157Z - debug: Wordpress: /bot_post_count/72408697?userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:15.160Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:42:15.925Z - debug: post count=13
+2015-02-03T14:42:15.926Z - debug:   cName=BlogBot, fName=_cbAddPostsFromNewBlog, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:15.927Z - debug: Url=http://www.justwapps.com/Wordpress/bot_posts/72408697?offset=0-20&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:17.287Z - debug:   cName=BlogBot, fName=_cbAddPostsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:17.287Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=test11
+&lt;p&gt;test11&lt;/p&gt;
+2015-02-03T14:42:17.288Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:42:17.288Z - debug: Total=0 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:42:17.288Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4880
+2015-02-03T14:42:17.291Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=test11
+2015-02-03T14:42:17.291Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:42:17.291Z - debug: Total=1 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:42:17.291Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4878
+2015-02-03T14:42:17.293Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 10 for blogsyncer test
+2015-02-03T14:42:17.293Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:42:17.293Z - debug: Total=2 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:42:17.293Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=34
+2015-02-03T14:42:17.294Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 9 for blogsyncer test
+2015-02-03T14:42:17.294Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:42:17.294Z - debug: Total=3 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:42:17.294Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=32
+2015-02-03T14:42:17.296Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 8 for blogsyncer test
+2015-02-03T14:42:17.296Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:42:17.296Z - debug: Total=4 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:42:17.296Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=30
+2015-02-03T14:42:17.297Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 7 for blogsyncer test
+2015-02-03T14:42:17.297Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:42:17.298Z - debug: Total=5 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:42:17.299Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=28
+2015-02-03T14:42:17.300Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 6 for blogsyncer test
+2015-02-03T14:42:17.301Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:42:17.301Z - debug: Total=6 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:42:17.301Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=26
+2015-02-03T14:42:17.302Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 5 for blogsyncer test
+2015-02-03T14:42:17.303Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:42:17.303Z - debug: Total=7 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:42:17.303Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=24
+2015-02-03T14:42:17.305Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 4 for blogsyncer test
+2015-02-03T14:42:17.305Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:42:17.306Z - debug: Total=8 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:42:17.306Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=22
+2015-02-03T14:42:17.307Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 3 for blogsyncer test
+2015-02-03T14:42:17.307Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:42:17.308Z - debug: Total=9 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:42:17.308Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=20
+2015-02-03T14:42:17.309Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 2 for blogsyncer test
+2015-02-03T14:42:17.310Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:42:17.310Z - debug: Total=10 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:42:17.310Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=18
+2015-02-03T14:42:17.311Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=post 1 for blogsyncer test
+2015-02-03T14:42:17.311Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:42:17.311Z - debug: Total=11 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:42:17.311Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=16
+2015-02-03T14:42:36.361Z - debug: Find or create blog db cName=BlogBot, fName=findOrCreate, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:36.362Z - debug: Url=http://www.justwapps.com/Wordpress/bot_bloglist?providerid=72408697&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetBlogList, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:36.363Z - debug: Url=http://www.justwapps.com/twitter/bot_bloglist?providerid=mis2010&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetBlogList, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:36.364Z - debug: Successful!
+2015-02-03T14:42:36.374Z - debug: Wordpress: /bot_bloglist?providerid=72408697&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:36.377Z - debug: Twitter : /bot_bloglist?providerid=mis2010&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:36.380Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697
+2015-02-03T14:42:37.247Z - debug: Provider Name=Wordpress Id=72408697 cName=BlogBot, fName=_cbAddBlogsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:38.086Z - debug:  id=86051098, id_str=86051098, name=KwangHo Kim, screen_name=mis2010, location=, profile_location=null, description=, url=null, urls=[], protected=false, followers_count=16, friends_count=13, listed_count=0, created_at=Thu Oct 29 12:05:39 +0000 2009, favourites_count=9, utc_offset=null, time_zone=null, geo_enabled=true, verified=false, statuses_count=33, lang=en, created_at=Tue Feb 03 14:21:22 +0000 2015, id=562616839612547100, id_str=562616839612547073, text=test11
+&lt;p&gt;test11&lt;/p&gt;, source=<a href="http://www.justwapps.com" rel="nofollow">justwapps</a>, truncated=false, in_reply_to_status_id=null, in_reply_to_status_id_str=null, in_reply_to_user_id=null, in_reply_to_user_id_str=null, in_reply_to_screen_name=null, geo=null, coordinates=null, place=null, contributors=null, retweet_count=0, favorite_count=0, hashtags=[], symbols=[], user_mentions=[], urls=[], favorited=false, retweeted=false, lang=fr, contributors_enabled=false, is_translator=false, is_translation_enabled=false, profile_background_color=C0DEED, profile_background_image_url=http://abs.twimg.com/images/themes/theme1/bg.png, profile_background_image_url_https=https://abs.twimg.com/images/themes/theme1/bg.png, profile_background_tile=false, profile_image_url=http://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_image_url_https=https://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_link_color=0084B4, profile_sidebar_border_color=C0DEED, profile_sidebar_fill_color=DDEEF6, profile_text_color=333333, profile_use_background_image=true, default_profile=true, default_profile_image=false, following=false, follow_request_sent=false, notifications=false, suspended=false, needs_phone_verification=false
+2015-02-03T14:42:38.091Z - debug: Url=http://www.justwapps.com/twitter/bot_post_count/86051098?userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPostCount, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:38.092Z - debug: Provider Name=twitter Id=mis2010 cName=BlogBot, fName=_cbAddBlogsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:38.104Z - debug: Twitter: /bot_post_count/86051098?userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:38.106Z - debug: https://api.twitter.com/1.1/users/show.json?screen_name=mis2010
+2015-02-03T14:42:39.733Z - debug:  id=86051098, id_str=86051098, name=KwangHo Kim, screen_name=mis2010, location=, profile_location=null, description=, url=null, urls=[], protected=false, followers_count=16, friends_count=13, listed_count=0, created_at=Thu Oct 29 12:05:39 +0000 2009, favourites_count=9, utc_offset=null, time_zone=null, geo_enabled=true, verified=false, statuses_count=33, lang=en, created_at=Tue Feb 03 14:21:22 +0000 2015, id=562616839612547100, id_str=562616839612547073, text=test11
+&lt;p&gt;test11&lt;/p&gt;, source=<a href="http://www.justwapps.com" rel="nofollow">justwapps</a>, truncated=false, in_reply_to_status_id=null, in_reply_to_status_id_str=null, in_reply_to_user_id=null, in_reply_to_user_id_str=null, in_reply_to_screen_name=null, geo=null, coordinates=null, place=null, contributors=null, retweet_count=0, favorite_count=0, hashtags=[], symbols=[], user_mentions=[], urls=[], favorited=false, retweeted=false, lang=fr, contributors_enabled=false, is_translator=false, is_translation_enabled=false, profile_background_color=C0DEED, profile_background_image_url=http://abs.twimg.com/images/themes/theme1/bg.png, profile_background_image_url_https=https://abs.twimg.com/images/themes/theme1/bg.png, profile_background_tile=false, profile_image_url=http://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_image_url_https=https://pbs.twimg.com/profile_images/1189405967/myProfileImage_normal.jpg, profile_link_color=0084B4, profile_sidebar_border_color=C0DEED, profile_sidebar_fill_color=DDEEF6, profile_text_color=333333, profile_use_background_image=true, default_profile=true, default_profile_image=false, following=false, follow_request_sent=false, notifications=false, suspended=false, needs_phone_verification=false
+2015-02-03T14:42:39.733Z - debug: 33
+2015-02-03T14:42:39.735Z - debug:   cName=BlogBot, fName=_cbAddPostsFromNewBlog, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:39.735Z - debug: Url=http://www.justwapps.com/twitter/bot_posts/86051098?userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:39.755Z - debug: Twitter : /bot_posts/86051098?userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:42.238Z - debug:  title=test11
+&lt;p&gt;test11&lt;/p&gt;, modified=Tue Feb 03 14:21:22 +0000 2015, id=562616839612547100, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.238Z - debug:  title=만화로 영상통화하는 앱 ‘눈길’ - 지디넷코리아 http://t.co/EfKjK3Xz, modified=Thu Aug 16 06:23:39 +0000 2012, id=235985154416443400, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.240Z - debug:  title=앱 출시! 헬로툰2
+탱고, 카카오톡, 페이스북기능을 하나의 앱에서 쓸수 있는 소셜 앱이구여
+안드로이드 아이폰 둘다 지원하구여
+'헬로툰'으로 검색하세여~
+전 id가 mis2010입니다. 친추하삼, modified=Fri Jun 15 04:59:33 +0000 2012, id=213495942236745730, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.240Z - debug:  title=국민앱 푸딩시리즈의 새로운 버전, 푸딩.투! mis2010님도 시작했어요. 멋지고 세련된 사진 필터를 경험해 보세요. http://t.co/mxIvXP6c #pudding_to, modified=Fri Mar 16 13:54:53 +0000 2012, id=180653364638527500, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.240Z - debug:  title=http://twitpic.com/3rz8ey, modified=Fri Jan 21 11:03:13 +0000 2011, id=28407262573760510, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.241Z - debug:  title=http://twitpic.com/3rwcmm, modified=Fri Jan 21 03:32:46 +0000 2011, id=28293902121304064, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.241Z - debug:  title=[아이폰 위치추적어플 진돗개] 01월19일오전12시56분59초, 당신의 아이폰으로부터 현재위치 신호가 수신되었습니다. 현재 위치를 확인하시려면 아래 링크를 클릭하세요▶▶ http://maps.google.com/maps?q=37.5569,127.14, modified=Tue Jan 18 15:57:02 +0000 2011, id=27394038290190336, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.241Z - debug:  title=[아이폰 위치추적어플 진돗개] 01월19일오전12시56분12초, 당신의 아이폰으로부터 현재위치 신호가 수신되었습니다. 현재 위치를 확인하시려면 아래 링크를 클릭하세요▶▶ http://maps.google.com/maps?q=37.5569,127.14, modified=Tue Jan 18 15:56:16 +0000 2011, id=27393847625519104, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.244Z - debug:  title=해피뉴이어
+ http://twitpic.com/3ktw8p, modified=Wed Dec 29 11:42:34 +0000 2010, id=20082242143391744, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.244Z - debug:  title=자장면 맛있음 ("양자강"에서 체크인) #CyworldFlag http://bit.ly/h5Qm9O, modified=Sun Dec 26 15:40:05 +0000 2010, id=19054853414199296, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.244Z - debug:  title=커피맛있음 ("파리바게뜨 암사롯데캐슬점"에서 체크인) #CyworldFlag http://bit.ly/hTVWjz, modified=Sun Dec 26 15:37:08 +0000 2010, id=19054109218832384, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.244Z - debug:  title=메리크리스마스~~~~^^ http://twitpic.com/3j13al, modified=Fri Dec 24 10:01:26 +0000 2010, id=18244850562375680, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.248Z - debug:  title=카쿤오매틱을 즐겨보아요 ㅋㅋ http://twitpic.com/3h2zym, modified=Sat Dec 18 13:06:52 +0000 2010, id=16117190138798080, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.248Z - debug:  title=카툰오매틱 짱 http://twitpic.com/3h2pm7, modified=Sat Dec 18 12:36:28 +0000 2010, id=16109541661872128, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.249Z - debug:  title=RT @sinbaramj: iPhone 용 Cartoon O'matic 이 출시되었습니다!!ㅎㅎ&lt;br&gt;많은 사랑 부탁드려요!! http://twitpic.com/3gzz01, modified=Sat Dec 18 10:14:13 +0000 2010, id=16073744078340096, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.249Z - debug:  title=RT @sinbaramj: by Cartoon O'matic http://twitpic.com/3g1enj, modified=Wed Dec 15 09:58:17 +0000 2010, id=14982569124700160, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.249Z - debug:  title=@zoo_korea ㅋㅋ 친구추가해서 카툰 문자도 보내봐봐 친구끼리 생각보다 그거 잼난다 전화보단 그게 잼날듯 ㅋ 난 az0053이야, modified=Wed Dec 15 02:29:58 +0000 2010, id=14869744582664192, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.249Z - debug:  title=RT @HelloToon: "포스트국내 여자연예인 카툰~#2 http://blog.naver.com/jhchoi919/60119966188, modified=Wed Dec 15 02:26:47 +0000 2010, id=14868945169289216, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.250Z - debug:  title=RT @HelloToon: "Hello Toon 이라는 아이폰의 단 하나뿐인 카툰영상통화~카툰 문자메시지 어플!! http://blog.naver.com/jhchoi919/60119944596, modified=Wed Dec 15 02:25:54 +0000 2010, id=14868722825043968, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.250Z - debug:  title=RT @HelloToon: "국내 여자연예인 카툰~ http://blog.naver.com/jhchoi919/60119946313, modified=Mon Dec 13 08:05:17 +0000 2010, id=14229356180148224, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:42.257Z - debug: rcvPosts cName=BlogBot, fName=_recursiveGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:42.258Z - debug:   cName=BlogBot, fName=_cbAddPostsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:42.258Z - debug: Find post id=54d0de490ddbe0ffbd22ebec cName=postSchema, fName=findPostByTitle, title=test11
+&lt;p&gt;test11&lt;/p&gt;
+2015-02-03T14:42:42.264Z - debug:   cName=postSchema, fName=addPostInfo, _bsontype=ObjectID, id=TÐÞIÛàÿ½"ëì, providerName=twitter, blogId=86051098, newPostId=562616839612547100
+2015-02-03T14:42:42.270Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=만화로 영상통화하는 앱 ‘눈길’ - 지디넷코리아 http://t.co/EfKjK3Xz
+2015-02-03T14:42:42.271Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=235985154416443400
+2015-02-03T14:42:42.271Z - debug: Total=12 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=235985154416443400
+2015-02-03T14:42:42.272Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=235985154416443400
+2015-02-03T14:42:42.288Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=앱 출시! 헬로툰2
+탱고, 카카오톡, 페이스북기능을 하나의 앱에서 쓸수 있는 소셜 앱이구여
+안드로이드 아이폰 둘다 지원하구여
+'헬로툰'으로 검색하세여~
+전 id가 mis2010입니다. 친추하삼
+2015-02-03T14:42:42.293Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=213495942236745730
+2015-02-03T14:42:42.310Z - debug: Total=13 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=213495942236745730
+2015-02-03T14:42:42.310Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=213495942236745730
+2015-02-03T14:42:42.317Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=국민앱 푸딩시리즈의 새로운 버전, 푸딩.투! mis2010님도 시작했어요. 멋지고 세련된 사진 필터를 경험해 보세요. http://t.co/mxIvXP6c #pudding_to
+2015-02-03T14:42:42.317Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=180653364638527500
+2015-02-03T14:42:42.317Z - debug: Total=14 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=180653364638527500
+2015-02-03T14:42:42.317Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=180653364638527500
+2015-02-03T14:42:42.319Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=http://twitpic.com/3rz8ey
+2015-02-03T14:42:42.319Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28407262573760510
+2015-02-03T14:42:42.319Z - debug: Total=15 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28407262573760510
+2015-02-03T14:42:42.320Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28407262573760510
+2015-02-03T14:42:42.322Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=http://twitpic.com/3rwcmm
+2015-02-03T14:42:42.322Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28293902121304064
+2015-02-03T14:42:42.323Z - debug: Total=16 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28293902121304064
+2015-02-03T14:42:42.323Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=28293902121304064
+2015-02-03T14:42:42.324Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=[아이폰 위치추적어플 진돗개] 01월19일오전12시56분59초, 당신의 아이폰으로부터 현재위치 신호가 수신되었습니다. 현재 위치를 확인하시려면 아래 링크를 클릭하세요▶▶ http://maps.google.com/maps?q=37.5569,127.14
+2015-02-03T14:42:42.324Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27394038290190336
+2015-02-03T14:42:42.324Z - debug: Total=17 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27394038290190336
+2015-02-03T14:42:42.325Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27394038290190336
+2015-02-03T14:42:42.326Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=[아이폰 위치추적어플 진돗개] 01월19일오전12시56분12초, 당신의 아이폰으로부터 현재위치 신호가 수신되었습니다. 현재 위치를 확인하시려면 아래 링크를 클릭하세요▶▶ http://maps.google.com/maps?q=37.5569,127.14
+2015-02-03T14:42:42.326Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27393847625519104
+2015-02-03T14:42:42.326Z - debug: Total=18 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27393847625519104
+2015-02-03T14:42:42.326Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27393847625519104
+2015-02-03T14:42:42.328Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=해피뉴이어
+ http://twitpic.com/3ktw8p
+2015-02-03T14:42:42.329Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20082242143391744
+2015-02-03T14:42:42.329Z - debug: Total=19 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20082242143391744
+2015-02-03T14:42:42.329Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20082242143391744
+2015-02-03T14:42:42.330Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=자장면 맛있음 ("양자강"에서 체크인) #CyworldFlag http://bit.ly/h5Qm9O
+2015-02-03T14:42:42.331Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054853414199296
+2015-02-03T14:42:42.331Z - debug: Total=20 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054853414199296
+2015-02-03T14:42:42.331Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054853414199296
+2015-02-03T14:42:42.332Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=커피맛있음 ("파리바게뜨 암사롯데캐슬점"에서 체크인) #CyworldFlag http://bit.ly/hTVWjz
+2015-02-03T14:42:42.332Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054109218832384
+2015-02-03T14:42:42.332Z - debug: Total=21 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054109218832384
+2015-02-03T14:42:42.333Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19054109218832384
+2015-02-03T14:42:42.334Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=메리크리스마스~~~~^^ http://twitpic.com/3j13al
+2015-02-03T14:42:42.334Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=18244850562375680
+2015-02-03T14:42:42.334Z - debug: Total=22 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=18244850562375680
+2015-02-03T14:42:42.334Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=18244850562375680
+2015-02-03T14:42:42.335Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=카쿤오매틱을 즐겨보아요 ㅋㅋ http://twitpic.com/3h2zym
+2015-02-03T14:42:42.335Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16117190138798080
+2015-02-03T14:42:42.336Z - debug: Total=23 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16117190138798080
+2015-02-03T14:42:42.336Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16117190138798080
+2015-02-03T14:42:42.337Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=카툰오매틱 짱 http://twitpic.com/3h2pm7
+2015-02-03T14:42:42.338Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16109541661872128
+2015-02-03T14:42:42.338Z - debug: Total=24 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16109541661872128
+2015-02-03T14:42:42.338Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16109541661872128
+2015-02-03T14:42:42.340Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @sinbaramj: iPhone 용 Cartoon O'matic 이 출시되었습니다!!ㅎㅎ&lt;br&gt;많은 사랑 부탁드려요!! http://twitpic.com/3gzz01
+2015-02-03T14:42:42.340Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16073744078340096
+2015-02-03T14:42:42.340Z - debug: Total=25 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16073744078340096
+2015-02-03T14:42:42.340Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=16073744078340096
+2015-02-03T14:42:42.341Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @sinbaramj: by Cartoon O'matic http://twitpic.com/3g1enj
+2015-02-03T14:42:42.341Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14982569124700160
+2015-02-03T14:42:42.342Z - debug: Total=26 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14982569124700160
+2015-02-03T14:42:42.342Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14982569124700160
+2015-02-03T14:42:42.343Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@zoo_korea ㅋㅋ 친구추가해서 카툰 문자도 보내봐봐 친구끼리 생각보다 그거 잼난다 전화보단 그게 잼날듯 ㅋ 난 az0053이야
+2015-02-03T14:42:42.343Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14869744582664192
+2015-02-03T14:42:42.344Z - debug: Total=27 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14869744582664192
+2015-02-03T14:42:42.344Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14869744582664192
+2015-02-03T14:42:42.346Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @HelloToon: "포스트국내 여자연예인 카툰~#2 http://blog.naver.com/jhchoi919/60119966188
+2015-02-03T14:42:42.347Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868945169289216
+2015-02-03T14:42:42.348Z - debug: Total=28 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868945169289216
+2015-02-03T14:42:42.349Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868945169289216
+2015-02-03T14:42:42.352Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @HelloToon: "Hello Toon 이라는 아이폰의 단 하나뿐인 카툰영상통화~카툰 문자메시지 어플!! http://blog.naver.com/jhchoi919/60119944596
+2015-02-03T14:42:42.362Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868722825043968
+2015-02-03T14:42:42.363Z - debug: Total=29 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868722825043968
+2015-02-03T14:42:42.363Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14868722825043968
+2015-02-03T14:42:42.366Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @HelloToon: "국내 여자연예인 카툰~ http://blog.naver.com/jhchoi919/60119946313
+2015-02-03T14:42:42.366Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14229356180148224
+2015-02-03T14:42:42.366Z - debug: Total=30 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14229356180148224
+2015-02-03T14:42:42.366Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=14229356180148224
+2015-02-03T14:42:42.370Z - debug: [Twitter] get posts cName=BlogBot, fName=_recursiveGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:42.371Z - debug: Url=http://www.justwapps.com/twitter/bot_posts/86051098?offset=14229356180148224&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:42.567Z - debug: Twitter : /bot_posts/86051098?offset=14229356180148224&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:44.648Z - debug:  title=RT @HelloToon: "국내 여자연예인 카툰~ http://blog.naver.com/jhchoi919/60119946313, modified=Mon Dec 13 08:05:17 +0000 2010, id=14229356180148224, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.648Z - debug:  title=RT @sj010: @mis2010 하이 광호~ 올만이얌~ ㅋㅋ 잘지내지 방가워, modified=Thu Nov 25 02:09:20 +0000 2010, id=7616797620568064, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.648Z - debug:  title=@JAYBUMAOM 안녕하세요~재범님~^^ 재미있는 영상통화인데요~한번 어떤지 봐 주실수 있나요?바쁘실텐데..죄송합니다~^^ 오늘 발표한 신곡 대박나시구여 좋은 하루 되세요~
+http://www.youtube.com/watch?v=9-TLNkCf9hY, modified=Wed Oct 13 10:04:11 +0000 2010, id=27227439419, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.648Z - debug:  title=@Time_kr 오옷 추카해 마눌님한테 잘해드려라^^, modified=Mon Aug 30 05:35:17 +0000 2010, id=22500022646, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.649Z - debug:  title=@ungtury 돈마너 너. 나도 사줘, modified=Sun Aug 22 14:13:52 +0000 2010, id=21832374951, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.649Z - debug:  title=@naomikang hello toon 이요 근데 아직 애플에서 review 상태라 앱스토어에 아직 안올랏어요, modified=Wed Aug 18 10:35:50 +0000 2010, id=21479994446, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.649Z - debug:  title=@HelloToon hi hellotoon, modified=Mon Aug 16 10:50:23 +0000 2010, id=21305377336, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.649Z - debug:  title=선희랑 울산다녀온다. 울산은. 재미없단다 ㅋ, modified=Sun Aug 15 03:58:53 +0000 2010, id=21202580672, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.650Z - debug:  title=@naomikang 방가방가 ㅋㅋ, modified=Fri Aug 13 15:40:37 +0000 2010, id=21073855769, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.650Z - debug:  title=@Time_kr 혼자중얼거리길조아하는너에겐 트윗은 최고의 어풀이군 냐하하, modified=Thu Aug 12 07:26:55 +0000 2010, id=20956350373, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.650Z - debug:  title=@hckim78 스타2해봣따 할만하던데 컴터가 살짝. 버벅거리는거 빼고는 ㅋ, modified=Wed Aug 11 13:52:29 +0000 2010, id=20887046574, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.650Z - debug:  title=@sinbaramj hi too, modified=Tue Aug 10 11:33:30 +0000 2010, id=20787536893, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.650Z - debug:  title=mis2010의 아이폰 방송시작합니다. http://twitonair.com/mis2010 #twitonair, modified=Fri Jul 30 08:27:31 +0000 2010, id=19894971641, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.651Z - debug:  title=광호테스트 http://twitonair.com/mis2010, modified=Fri Jun 11 11:10:16 +0000 2010, id=15920440781, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:44.653Z - debug: rcvPosts cName=BlogBot, fName=_recursiveGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:44.653Z - debug:   cName=BlogBot, fName=_cbAddPostsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:44.654Z - debug: Find post id=54d0de620ddbe0ffbd22ec2c cName=postSchema, fName=findPostByTitle, title=RT @HelloToon: "국내 여자연예인 카툰~ http://blog.naver.com/jhchoi919/60119946313
+2015-02-03T14:42:44.654Z - debug:   cName=postSchema, fName=addPostInfo, _bsontype=ObjectID, id=TÐÞbÛàÿ½"ì,, providerName=twitter, blogId=86051098, newPostId=14229356180148224
+2015-02-03T14:42:44.656Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=RT @sj010: @mis2010 하이 광호~ 올만이얌~ ㅋㅋ 잘지내지 방가워
+2015-02-03T14:42:44.657Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=7616797620568064
+2015-02-03T14:42:44.657Z - debug: Total=31 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=7616797620568064
+2015-02-03T14:42:44.657Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=7616797620568064
+2015-02-03T14:42:44.659Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@JAYBUMAOM 안녕하세요~재범님~^^ 재미있는 영상통화인데요~한번 어떤지 봐 주실수 있나요?바쁘실텐데..죄송합니다~^^ 오늘 발표한 신곡 대박나시구여 좋은 하루 되세요~
+http://www.youtube.com/watch?v=9-TLNkCf9hY
+2015-02-03T14:42:44.659Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27227439419
+2015-02-03T14:42:44.660Z - debug: Total=32 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27227439419
+2015-02-03T14:42:44.661Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=27227439419
+2015-02-03T14:42:44.664Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@Time_kr 오옷 추카해 마눌님한테 잘해드려라^^
+2015-02-03T14:42:44.665Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=22500022646
+2015-02-03T14:42:44.665Z - debug: Total=33 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=22500022646
+2015-02-03T14:42:44.665Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=22500022646
+2015-02-03T14:42:44.667Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@ungtury 돈마너 너. 나도 사줘
+2015-02-03T14:42:44.667Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21832374951
+2015-02-03T14:42:44.667Z - debug: Total=34 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21832374951
+2015-02-03T14:42:44.667Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21832374951
+2015-02-03T14:42:44.669Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@naomikang hello toon 이요 근데 아직 애플에서 review 상태라 앱스토어에 아직 안올랏어요
+2015-02-03T14:42:44.670Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21479994446
+2015-02-03T14:42:44.670Z - debug: Total=35 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21479994446
+2015-02-03T14:42:44.670Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21479994446
+2015-02-03T14:42:44.671Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@HelloToon hi hellotoon
+2015-02-03T14:42:44.671Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21305377336
+2015-02-03T14:42:44.671Z - debug: Total=36 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21305377336
+2015-02-03T14:42:44.673Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21305377336
+2015-02-03T14:42:44.674Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=선희랑 울산다녀온다. 울산은. 재미없단다 ㅋ
+2015-02-03T14:42:44.675Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21202580672
+2015-02-03T14:42:44.675Z - debug: Total=37 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21202580672
+2015-02-03T14:42:44.675Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21202580672
+2015-02-03T14:42:44.677Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@naomikang 방가방가 ㅋㅋ
+2015-02-03T14:42:44.677Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21073855769
+2015-02-03T14:42:44.677Z - debug: Total=38 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21073855769
+2015-02-03T14:42:44.677Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=21073855769
+2015-02-03T14:42:44.679Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@Time_kr 혼자중얼거리길조아하는너에겐 트윗은 최고의 어풀이군 냐하하
+2015-02-03T14:42:44.679Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20956350373
+2015-02-03T14:42:44.679Z - debug: Total=39 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20956350373
+2015-02-03T14:42:44.680Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20956350373
+2015-02-03T14:42:44.681Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@hckim78 스타2해봣따 할만하던데 컴터가 살짝. 버벅거리는거 빼고는 ㅋ
+2015-02-03T14:42:44.681Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20887046574
+2015-02-03T14:42:44.681Z - debug: Total=40 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20887046574
+2015-02-03T14:42:44.682Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20887046574
+2015-02-03T14:42:44.683Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=@sinbaramj hi too
+2015-02-03T14:42:44.698Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20787536893
+2015-02-03T14:42:44.699Z - debug: Total=41 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20787536893
+2015-02-03T14:42:44.699Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=20787536893
+2015-02-03T14:42:44.701Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=mis2010의 아이폰 방송시작합니다. http://twitonair.com/mis2010 #twitonair
+2015-02-03T14:42:44.701Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19894971641
+2015-02-03T14:42:44.701Z - debug: Total=42 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19894971641
+2015-02-03T14:42:44.701Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=19894971641
+2015-02-03T14:42:44.703Z - debug: Fail to find post cName=postSchema, fName=findPostByTitle, title=광호테스트 http://twitonair.com/mis2010
+2015-02-03T14:42:44.703Z - debug:   cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=15920440781
+2015-02-03T14:42:44.703Z - debug: Total=43 cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=15920440781
+2015-02-03T14:42:44.703Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=twitter, blogId=86051098, newPostId=15920440781
+2015-02-03T14:42:44.709Z - debug: [Twitter] get posts cName=BlogBot, fName=_recursiveGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:44.709Z - debug: Url=http://www.justwapps.com/twitter/bot_posts/86051098?offset=15920440781&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:44.787Z - debug: Twitter : /bot_posts/86051098?offset=15920440781&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:42:46.447Z - debug:  title=광호테스트 http://twitonair.com/mis2010, modified=Fri Jun 11 11:10:16 +0000 2010, id=15920440781, url=undefined, categories=[], tags=[], content=undefined
+2015-02-03T14:42:46.448Z - debug: stop Reculsive!!!!!
+2015-02-03T14:42:46.450Z - debug: rcvPosts cName=BlogBot, fName=_recursiveGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:46.450Z - debug:   cName=BlogBot, fName=_cbAddPostsToDb, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:42:46.451Z - debug: Find post id=54d0de640ddbe0ffbd22ec47 cName=postSchema, fName=findPostByTitle, title=광호테스트 http://twitonair.com/mis2010
+2015-02-03T14:42:46.451Z - debug:   cName=postSchema, fName=addPostInfo, _bsontype=ObjectID, id=TÐÞdÛàÿ½"ìG, providerName=twitter, blogId=86051098, newPostId=15920440781
+2015-02-03T14:44:01.886Z - debug:   cName=BlogBot, fName=getSites, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:45:28.043Z - debug: Url=http://www.justwapps.com/Wordpress/bot_posts/72408697?after=2015-02-03T14:43:28.014Z&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:45:28.045Z - debug: Url=http://www.justwapps.com/twitter/bot_posts/86051098?after=2015-02-03T14:43:28.014Z&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:45:28.091Z - debug: Twitter : /bot_posts/86051098?after=2015-02-03T14:43:28.014Z&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:45:29.026Z - debug: [ { title: 'test13',
+    modified: '2015-02-03T23:44:12+09:00',
+    id: '4883',
+    url: 'https://khkim2010.wordpress.com/2015/02/03/test13/',
+    categories: [ '미분류' ],
+    tags: [] } ] cName=BlogBot, fName=_cbPushPostsToBlogs, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:45:29.028Z - debug:   cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4883
+2015-02-03T14:45:29.028Z - debug: Total=44 cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4883
+2015-02-03T14:45:29.029Z - debug: Type is undefined cName=postSchema, fName=addPost, providerName=Wordpress, blogId=72408697, newPostId=4883
+2015-02-03T14:45:29.031Z - debug: Url=http://www.justwapps.com/Wordpress/bot_posts/72408697/4883?userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:45:29.046Z - debug: Wordpress: /bot_posts/72408697/4883?userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:45:29.049Z - debug: https://public-api.wordpress.com/rest/v1/sites/72408697/posts/4883
+2015-02-03T14:48:52.949Z - debug: Url=http://www.justwapps.com/Wordpress/bot_posts/72408697?after=2015-02-03T14:45:28.051Z&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:48:52.953Z - debug: Url=http://www.justwapps.com/twitter/bot_posts/86051098?after=2015-02-03T14:45:28.051Z&userid=54d0de430ddbe0ffbd22ebe4 cName=BlogBot, fName=_requestGetPosts, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:48:52.994Z - debug: Twitter : /bot_posts/86051098?after=2015-02-03T14:45:28.051Z&userid=54d0de430ddbe0ffbd22ebe4 : this is called by bot
+2015-02-03T14:48:54.108Z - debug: [] cName=BlogBot, fName=_cbPushPostsToBlogs, userId=54d0de430ddbe0ffbd22ebe4
+2015-02-03T14:48:58.015Z - debug: [] cName=BlogBot, fName=_cbPushPostsToBlogs, userId=54d0de430ddbe0ffbd22ebe4

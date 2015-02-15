@@ -96,6 +96,8 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
     post = rcvPosts.posts[0];
     groups = groupDb.findGroupByBlogInfo(providerName, blogId);
 
+    log.debug(providerName, meta);
+
     for (i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
         for (j=0; j<group.length; j+=1) {
