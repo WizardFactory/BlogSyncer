@@ -9,9 +9,9 @@ var mongoose = require('mongoose');
  * provider내에 사용자 상관없이 blogId는 유일하기 때문에 providerId는 필요없다.
  */
 var postinfoSechema = mongoose.Schema({
-    title: String,
-    type: String,
-    categories: [],
+    title: String, //각각의 post를 구분하는 key로 사용(title은 동일하지만 body가 다른 경우에도 동일한 post로 인식)
+    type: String, //원본 post의 type(동기화 시에는 다른 type으로 추가될 수 있음)
+    categories: [], //one depth & multi categories만 고려되어 있음
     tags: [],
     infos: [
         {
