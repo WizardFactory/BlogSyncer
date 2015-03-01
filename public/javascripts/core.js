@@ -29,6 +29,37 @@ bs.factory('User', function () {
     };
 });
 
+bs.factory('Site', function SiteList($http) {
+   "use strict";
+    var sites;
+
+    return {
+        getSiteList: function getSiteList() {
+            return sites;
+        },
+        pullSitesFromServer: function pullSitesFromServer(cb) {
+            console.log("pullSitesFromServer: blogs/sites");
+
+            sites = [];
+            $http.get("/blogs/sites")
+                .success(function (data) {
+                    console.log(data);
+                    for (var i = 0; i < data.sites.length; i += 1) {
+                        for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                            var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                            sites.push(site);
+                        }
+                    }
+                    cb(undefined, sites);
+                })
+                .error(function (data) {
+                    var errStr = 'Error: ' + data;
+                    cb(errStr);
+                });
+        }
+    };
+});
+
 // setting module
 bs.config(function ($routeProvider) {
     "use strict";
