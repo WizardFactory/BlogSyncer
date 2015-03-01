@@ -72,7 +72,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
         });
 });
 
-bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
+bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
     "use strict";
 
     $scope.user = User.getUser();
@@ -121,8 +121,10 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     };
 
     function disselectAllBlog() {
-        for (var i = 0; i < $scope.sites.length; i += 1) {
-            $scope.selected[i] = 'normal';
+        if ($scope.sites && $scope.sites.length) {
+            for (var i = 0; i < $scope.sites.length; i += 1) {
+                $scope.selected[i] = 'normal';
+            }
         }
     }
 
@@ -195,20 +197,15 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
             return;
         }
 
-        console.log("init: blogs/sites");
-        $http.get("/blogs/sites")
-            .success(function (data) {
-                console.log(data);
-                for (var i = 0; i < data.sites.length; i += 1) {
-                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
-                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
-                        $scope.sites.push(site);
-                    }
+        $scope.sites = Site.getSiteList();
+        if (!$scope.sites) {
+            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+                if (err) {
+                    window.alert(err);
                 }
-            })
-            .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.sites = rcvSites;
             });
+        }
 
         console.log("init: blogs/groups");
         $http.get("/blogs/groups")
@@ -226,7 +223,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
     init();
 });
 
-bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout) {
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, Site, $timeout) {
     "use strict";
 
     var reqStartNum;
@@ -340,16 +337,16 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
         var i;
         var len;
 
-       if (!sites)  {
-          console.log("Fail to get sites");
-          return;
-       }
+        if (!sites)  {
+            console.log("Fail to get sites");
+            return;
+        }
         len = sites.length;
         for (i=0; i<len; i+=1) {
-           if (sites[i].provider.providerName === providerName &&
-                    sites[i].blog.blog_id === blogID)  {
-              return sites[i].blog.blog_title;
-           }
+            if (sites[i].provider.providerName === providerName &&
+                sites[i].blog.blog_id === blogID)  {
+                return sites[i].blog.blog_title;
+            }
         }
     };
 
@@ -362,24 +359,15 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, $timeout
             return;
         }
 
-        url = "/blogs/sites";
-        $http.get(url)
-            .success(function (data) {
-                //console.log(data);
-                if (sites) {
-                    console.log("Sites already was made");
+        sites = Site.getSiteList();
+        if (!sites) {
+            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+                if (err) {
+                    window.alert(err);
                 }
-                sites = [];
-                for (var i = 0; i < data.sites.length; i += 1) {
-                    for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
-                        var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
-                        sites.push(site);
-                    }
-                }
-            })
-            .error(function (data) {
-                window.alert('Error: ' + data);
+               sites = rcvSites;
             });
+        }
 
         reqStartNum = 0;
         reqTotalNum = 20;

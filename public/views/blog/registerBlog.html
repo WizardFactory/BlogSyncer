@@ -10,7 +10,7 @@
              ng-show="button[0]==='Confirm'" ng-click="onClickGroup($index);"/>
         <p class="btn btn-default btn-blog" ng-repeat="site in group.group">
             <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
-            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_id}}
+            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
         </p>
     </div>
     <div class="content-box">
@@ -22,7 +22,7 @@
     <div class="content-box" ng-if="button[1]==='Register'">
         <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === 'selected'}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
             <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
-            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_id}}
+            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
         </a>
     </div>
 </div>
