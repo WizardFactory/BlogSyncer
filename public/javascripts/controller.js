@@ -77,10 +77,11 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
     $scope.user = User.getUser();
     $scope.title = 'Your blog groups';
-    $scope.button = ['Delete', 'Create', 'Close'];
+    $scope.button = ['Delete', 'Register', 'Close'];
     $scope.groups = [];
     $scope.sites = [];
     $scope.selected = [];
+    $scope.info = "";
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
@@ -100,22 +101,19 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
         }
     };
 
-    $scope.onClickGroup = function(group_index, blog_index) {
+    $scope.onClickGroup = function(group_index) {
         if ($scope.button[0] !== 'Confirm') {
             return;
         }
-        var group = $scope.groups[group_index].group;
-        group.splice(blog_index, 1);
-        if (group.length === 0) {
-            $scope.groups.splice(group_index, 1);
-        }
+        $scope.groups.splice(group_index, 1);
         if ($scope.groups.length === 0) {
+            updateBlogGroup();
             $scope.button[0] = 'Delete';
         }
     };
 
     $scope.onClickBlog = function(index) {
-        if ($scope.selected[index] === 'normal') {
+        if ($scope.selected[index] !== 'selected') {
             $scope.selected[index] = 'selected';
         } else {
             $scope.selected[index] = 'normal';
@@ -140,23 +138,54 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User) {
 
     function registerBlogGroup() {
         var group = [];
-        for (var i = 0; i < $scope.sites.length; i += 1) {
+        var i, j, k, isExist;
+        for (i = 0; i < $scope.sites.length; i += 1) {
             if ($scope.selected[i] === 'selected') {
                 $scope.selected[i] = 'normal';
                 group.push($scope.sites[i]);
             }
         }
-        if (group.length > 0) {
-            $scope.groups.push({"group":group});
-            console.log(group);
-            $http.post("/blogs/group",{"group":group})
-                .success(function (data) {
-                    console.log(data);
-                })
-                .error(function (data) {
-                    window.alert('Error: ' + data);
-                });
+
+        if (group.length <= 1) {
+            $scope.info = "A group must have at least more than two blogs!!";
+            return;
         }
+
+        for (i = 0; i < $scope.groups.length; i += 1) {
+            if ($scope.groups[i].group.length !== group.length) {
+                continue;
+            }
+
+            for (j = 0; j < group.length; j += 1) {
+                isExist = false;
+                for (k = 0; k < $scope.groups[i].group.length; k += 1) {
+                    if (group[j].provider.providerName === $scope.groups[i].group[k].provider.providerName &&
+                        group[j].blog.blog_id === $scope.groups[i].group[k].blog.blog_id) {
+                        isExist = true;
+                        break;
+                    }
+                }
+                if (!isExist) {
+                    break;
+                }
+            }
+            if (isExist) {
+                $scope.info = "The group already exists!!";
+                return;
+            }
+        }
+
+        $scope.groups.push({"group":group});
+        console.log(group);
+        $http.post("/blogs/group",{"group":group})
+            .success(function (data) {
+                console.log(data);
+                $scope.info = "";
+            })
+            .error(function (data) {
+                window.alert('Error: ' + data);
+                $scope.info = data;
+            });
     }
 
     function init() {
