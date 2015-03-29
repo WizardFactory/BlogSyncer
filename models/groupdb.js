@@ -9,9 +9,9 @@ var mongoose = require('mongoose');
  */
 var groupSchema = mongoose.Schema({
     userId : Object,
-    groups : [
-        {group: [
-            {provider: {
+    groups : [{
+        group: [{
+            provider: {
                 providerName: String,
                 providerId: String,
                 accessToken: String,
@@ -25,8 +25,12 @@ var groupSchema = mongoose.Schema({
                 blog_title: String,
                 blog_url: String
             }}
-        ]}
-    ]
+        ],
+        groupInfo: [{
+            syncEnable: String,
+            postType: String
+        }]
+    }]
 });
 
 /**

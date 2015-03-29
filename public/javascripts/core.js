@@ -4,10 +4,20 @@
 var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap']);
 
 // define service
-bs.factory('User', function () {
+bs.factory('Data', function () {
     "use strict";
 
     var user= {};
+    var providerType = ["facebook", "google", "kakao", "tistory", "tumblr", "twitter", "Wordpress"];
+    var postType = [
+        ["post","post","post","post","post","post","post"],
+        ["link","post","link","post","post","link","post"],
+        ["post","post","post","post","post","post","post"],
+        ["link","post","link","post","post","link","post"],
+        ["link","post","link","post","post","link","post"],
+        ["post","post","post","post","post","post","post"],
+        ["link","post","link","post","post","link","post"]
+    ];
 //    var port = -1;
 
     return {
@@ -16,6 +26,11 @@ bs.factory('User', function () {
         },
         setUser: function (usr) {
             user = usr;
+        },
+        getPostType: function (fromProvider, toProvider) {
+            var from = providerType.indexOf(fromProvider);
+            var to = providerType.indexOf(toProvider);
+            return postType[from][to];
         }
 //        getChildPort: function() {
 //           console.log('getChildPort port='+port);
