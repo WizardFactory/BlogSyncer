@@ -24,14 +24,14 @@
                 <td ng-repeat="site in group track by $index">
                     {{site.provider.providerName}}
                     <br>
-                    {{site.blog.blog_id}}
+                    {{site.blog.blog_title}}
                 </td>
             </tr>
             <tr ng-repeat="infos in groupInfo track by $index"  ng-init="fromIndex = $index">
                 <td>
                     {{group[$index].provider.providerName}}
                     <br>
-                    {{group[$index].blog.blog_id}}
+                    {{group[$index].blog.blog_title}}
                 </td>
                 <td ng-repeat="info in infos" ng-click="onClickGroupInfo(fromIndex, $index);"
                     ng-class="{'sync-true': info.syncEnable == 'true', 'sync-false': info.syncEnable == 'false', 'sync-none': info.syncEnable == 'none'}">

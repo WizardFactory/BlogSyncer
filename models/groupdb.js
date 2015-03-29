@@ -79,6 +79,40 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     return newGroups;
 };
 
+groupSchema.methods.getSyncInfoByBlogInfo = function(groupIndex, fromProviderName, fromBlogId, toProviderName, toBlogId) {
+    "use strict";
+    var group;
+    var blog;
+    var provider;
+    var fromIndex = -1, toIndex = -1;
+    var meta = {};
+
+    meta.cName = "groupSchema";
+    meta.fName = "getPostTypeByBlogInfo";
+    meta.fromProviderName = fromProviderName;
+    meta.fromBlogId = fromBlogId;
+    meta.toProviderName = toProviderName;
+    meta.toBlogId = toBlogId;
+
+    group = this.groups[groupIndex];
+    for (var i = 0; i < group.group.length; i += 1) {
+        blog = group.group[i].blog;
+        provider = group.group[i].provider;
+        if (provider.providerName === fromProviderName && blog.blog_id === fromBlogId) {
+            fromIndex = i;
+        }
+        if (provider.providerName === toProviderName && blog.blog_id === toBlogId) {
+            toIndex = i;
+        }
+        if (fromIndex >= 0 && toIndex >= 0) {
+            break;
+        }
+    }
+
+    var index = fromIndex * group.group.length + toIndex;
+    return group.groupInfo[index];
+};
+
 module.exports = mongoose.model('Group', groupSchema);
 
 

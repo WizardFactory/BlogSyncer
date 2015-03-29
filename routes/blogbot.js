@@ -112,8 +112,12 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
             else {
                 log.info('postId='+post.id+' to provider='+provider.providerName+
                                 ' blog='+targetBlog.blog_id, meta);
-                BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
+                var syncInfo = groupDb.getSyncInfoByBlogInfo(i, providerName, blogId, provider.providerName, targetBlog.blog_id);
+                if (syncInfo.syncEnable === 'true') {
+                    //syncInfo.postType에 따라 post 처리
+                    BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
                         BlogBot._cbAddPostInfoToDb);
+                }
             }
         }
     }
