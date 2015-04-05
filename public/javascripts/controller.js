@@ -123,7 +123,18 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             for (var i = 0; i < count; i += 1) {
                 $scope.groupInfo[i] = new Array(count);
                 for (var j = 0; j < count; j += 1) {
-                    $scope.groupInfo[i][j] = $scope.groups[group_index].groupInfo[index];
+
+                    //if group didn't have groupinfo, postType is set to post. It's for legacy groupDb
+                    if (!$scope.groups[group_index].groupInfo[index]) {
+                        if (i === j) {
+                            $scope.groupInfo[i][j] = {"syncEnable": 'none', "postType": 'none'};
+                        } else {
+                            $scope.groupInfo[i][j] = {"syncEnable": 'true', "postType": 'post'};
+                        }
+                    }
+                    else {
+                        $scope.groupInfo[i][j] = $scope.groups[group_index].groupInfo[index];
+                    }
                     index += 1;
                 }
             }
