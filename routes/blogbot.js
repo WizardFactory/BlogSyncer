@@ -102,23 +102,46 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
 
     for (i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
+
         for (j=0; j<group.length; j+=1) {
             targetBlog = group[j].blog;
             provider = group[j].provider;
+
             if (targetBlog.blog_id === blogId && provider.providerName === providerName) {
                 log.debug('Skip current blog id='+blogId+' provider='+providerName, meta);
                 //skip current blog
+                continue;
             }
-            else {
-                log.info('postId='+post.id+' to provider='+provider.providerName+
-                                ' blog='+targetBlog.blog_id, meta);
-                var syncInfo = groupDb.getSyncInfoByBlogInfo(i, providerName, blogId, provider.providerName, targetBlog.blog_id);
-                if (syncInfo.syncEnable === 'true') {
-                    //syncInfo.postType에 따라 post 처리
-                    BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
-                        BlogBot._cbAddPostInfoToDb);
+
+            //TODO: get postType from db
+            log.info('postId='+post.id+' to provider='+provider.providerName+' blog='+targetBlog.blog_id, meta);
+
+            var syncInfo = groupDb.getSyncInfoByBlogInfo(i, providerName, blogId, provider.providerName,
+                targetBlog.blog_id);
+            var postType = "post";
+
+            if (syncInfo) {
+                if (syncInfo.syncEnable !== 'true') {
+                    continue;
                 }
+                postType = syncInfo.postType;
             }
+
+            //syncInfo.postType에 따라 post 처리
+            BlogBot._requestPostContent(user, postType, post, provider.providerName, targetBlog.blog_id,
+                function(user, newPosts) {
+                    if(!newPosts) {
+                        log.error("Fail to post content", meta);
+                        return;
+                    }
+
+                    var oPostInfo = {};
+                    oPostInfo.providerName = rcvPosts.provider_name;
+                    oPostInfo.blogId = rcvPosts.blog_id;
+                    oPostInfo.postId = rcvPosts.posts[0].id.toString();
+                    BlogBot._cbAddPostInfoToDb(user, newPosts, oPostInfo);
+                }
+            );
         }
     }
 };
@@ -158,7 +181,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<rcvPosts.posts.length;i+=1) {
         newPost = rcvPosts.posts[i];
-        if (postDb.findPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id)) {
+        if (postDb.findPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString())) {
             log.debug("This post was already saved - provider=" +
                     rcvPosts.provider_name + " blog=" + rcvPosts.blog_id + " post=" + newPost.id, meta);
             continue;
@@ -167,9 +190,17 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
         BlogBot._makeTitle(newPost);
         postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, newPost);
         postDbIsUpdated = true;
+        //get only one post for send to dstBlog
         BlogBot._requestGetPosts(user, rcvPosts.provider_name, rcvPosts.blog_id, {"post_id":newPost.id},
-                    BlogBot._cbSendPostToBlogs);
+            function(user, rcvPosts) {
+                if (!rcvPosts)  {
+                    log.error("Fail to get rcvPosts", meta);
+                    return;
+                }
 
+                BlogBot._cbSendPostToBlogs(user, rcvPosts);
+            }
+        );
         //push post to others blog and addPostInfo
     }
 
@@ -724,9 +755,10 @@ BlogBot.getGroups = function(user) {
  *
  * @param user
  * @param rcvPosts
+ * @param oPostInfo
  * @private
  */
-BlogBot._cbAddPostInfoToDb = function (user, rcvPosts) {
+BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, oPostInfo) {
     "use strict";
     var postDb;
     var post;
@@ -747,16 +779,14 @@ BlogBot._cbAddPostInfoToDb = function (user, rcvPosts) {
     }
 
     if (!rcvPosts.posts[0].title) {
-        log.error("Fail to find title !!", meta);
-        //TODO content 및 다른 것으로 찾아서 넣는다.
-        return;
+        log.debug("Fail to find title !!", meta);
     }
 
     postDb = BlogBot._findDbByUser(user, "post");
-
-    post = postDb.findPostByTitle(rcvPosts.posts[0].title);
+    post = postDb.getPostByPostIdOfBlog(oPostInfo.providerName, oPostInfo.blogId, oPostInfo.postId);
     if (!post) {
-        log.error("Fail to found post by title="+rcvPosts.posts[0].title, meta);
+        log.error("Fail to found post by providerName="+oPostInfo.providerName+" blogId="+oPostInfo.blogId+
+                " postId="+oPostInfo.postId, meta);
         return;
     }
 
@@ -802,6 +832,7 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
         BlogBot._makeTitle(rcvPosts.posts[i]);
 
         //log.debug(" " + rcvPosts.posts[i], meta);
+        //if there is same title in postdb, add new in post object what has same title.
         if (rcvPosts.posts[i].title) {
             post = postDb.findPostByTitle(rcvPosts.posts[i].title);
 
@@ -1269,13 +1300,14 @@ BlogBot._makeTitle = function (post) {
 /**
  *
  * @param user
+ * @param postType
  * @param post
  * @param providerName
  * @param blogId
  * @param callback
  * @private
  */
-BlogBot._requestPostContent = function (user, post, providerName, blogId, callback) {
+BlogBot._requestPostContent = function (user, postType, post, providerName, blogId, callback) {
     "use strict";
     var url;
     var opt;
@@ -1290,6 +1322,8 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
     url += "/"+encodeURIComponent(blogId);
     url += "?";
     url += "userid=" + user._id;
+    url += "&";
+    url += "postType=" + postType;
 
     //send_data title, content, tags, categories
 //    if (!post.title) {
@@ -1312,6 +1346,7 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
         //add post info
         //log.debug(body, meta);
         rcvPosts = JSON.parse(body);
+
         callback(user, rcvPosts);
 
         if (rcvPosts.posts) {
