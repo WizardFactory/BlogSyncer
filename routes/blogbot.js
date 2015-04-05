@@ -112,8 +112,12 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
             else {
                 log.info('postId='+post.id+' to provider='+provider.providerName+
                                 ' blog='+targetBlog.blog_id, meta);
-                BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
+                var syncInfo = groupDb.getSyncInfoByBlogInfo(i, providerName, blogId, provider.providerName, targetBlog.blog_id);
+                if (syncInfo.syncEnable === 'true') {
+                    //syncInfo.postType에 따라 post 처리
+                    BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
                         BlogBot._cbAddPostInfoToDb);
+                }
             }
         }
     }
@@ -658,7 +662,7 @@ BlogBot.getSites = function (user) {
  * @param user
  * @param group
  */
-BlogBot.addGroup = function(user, group) {
+BlogBot.addGroup = function(user, group, groupInfo) {
     "use strict";
     var groupDb;
     var meta={};
@@ -673,7 +677,7 @@ BlogBot.addGroup = function(user, group) {
 
     log.info("Group len="+group.length, meta);
     groupDb = BlogBot._findDbByUser(user, "group");
-    groupDb.groups.push({"group":group});
+    groupDb.groups.push({"group":group, "groupInfo":groupInfo});
     groupDb.save(function (err) {
        if (err)  {
            log.error("Fail to save group in addGroup", meta);

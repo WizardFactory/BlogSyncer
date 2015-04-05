@@ -46,7 +46,7 @@ body {
     width: 30px;
     height: 30px;
 }
-.icon-delete {
+.icon-delete, .icon-check {
     width: 16px;
     height: 16px;
     position: relative;
@@ -56,4 +56,13 @@ body {
 }
 .error-msg {
     color: #ff0000;
+}
+.sync-true {
+    background-color: #fc8c84;
+}
+.sync-false {
+    background-color: skyblue;
+}
+.sync-none {
+    background-color: #777777;
 }

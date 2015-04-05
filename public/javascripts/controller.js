@@ -1,7 +1,7 @@
-bs.controller('mainCtrl', function ($q, $scope, $http, User) {
+bs.controller('mainCtrl', function ($q, $scope, $http, Data) {
     "use strict";
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.username = '당신';
     $scope.message = '의 블로그 글들을 동기화 시킵니다.';
     $scope.signstat = '로그인';
@@ -24,7 +24,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, User) {
                 }
                 else {
                     var user = data;
-                    User.setUser(user);
+                    Data.setUser(user);
                     $scope.signstat = "내계정";
                     $scope.username = user.providers[0].displayName;
                     console.log('Change username, signstat');
@@ -43,17 +43,17 @@ bs.controller('homeCtrl', function ($q, $scope) {
     $scope.title = 'Home';
 });
 
-bs.controller('blogCtrl', function ($scope, $http, User) {
+bs.controller('blogCtrl', function ($scope, $http, Data) {
     "use strict";
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.title = 'Your blog ctrl';
 });
 
-bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
+bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
     "use strict";
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.title = "Blog Sync Histories";
     $scope.histories = [];
 
@@ -72,13 +72,15 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, User) {
         });
 });
 
-bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
+bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
     "use strict";
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.title = 'Your blog groups';
-    $scope.button = ['Delete', 'Register', 'Close'];
+    $scope.button = ['Delete', 'Detail Setting', 'Register', 'Close'];
     $scope.groups = [];
+    $scope.group = null;
+    $scope.groupInfo = null;
     $scope.sites = [];
     $scope.selected = [];
     $scope.info = "";
@@ -87,28 +89,62 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
         if (button === 'Delete') {
             if ($scope.groups.length > 0) {
                 $scope.button[0] = 'Confirm';
+                $scope.button[1] = '';
             }
+        } else if (button === 'Detail Setting') {
+            $scope.button[0] = '';
+            $scope.button[1] = 'Confirm';
         } else if (button === 'Confirm') {
-            updateBlogGroup();
+            if ($scope.button[0] === '') {
+                updateDetailSetting();
+            } else if ($scope.button[1] === '') {
+                updateBlogGroup();
+            }
             $scope.button[0] = 'Delete';
+            $scope.button[1] = 'Detail Setting';
         } else if (button === 'Create') {
             disselectAllBlog();
-            $scope.button[1] = 'Register';
+            $scope.button[2] = 'Register';
         } else if (button === 'Close') {
-            $scope.button[1] = 'Create';
+            $scope.button[2] = 'Create';
         } else if (button === 'Register') {
             registerBlogGroup();
         }
     };
 
     $scope.onClickGroup = function(group_index) {
-        if ($scope.button[0] !== 'Confirm') {
-            return;
+        if ($scope.button[0] === '' && $scope.button[1] === 'Confirm') {
+            var group = $scope.groups[group_index];
+            var count = group.group.length;
+            var index = 0;
+
+            $scope.group = group.group;
+            $scope.groupInfo = new Array(count);
+            for (var i = 0; i < count; i += 1) {
+                $scope.groupInfo[i] = new Array(count);
+                for (var j = 0; j < count; j += 1) {
+                    $scope.groupInfo[i][j] = $scope.groups[group_index].groupInfo[index];
+                    index += 1;
+                }
+            }
+        } else if ($scope.button[0] === 'Confirm' && $scope.button[1] === '') {
+            $scope.groups.splice(group_index, 1);
+            if ($scope.groups.length === 0) {
+                updateBlogGroup();
+                $scope.button[0] = 'Delete';
+                $scope.button[1] = 'Detail Setting';
+            }
         }
-        $scope.groups.splice(group_index, 1);
-        if ($scope.groups.length === 0) {
-            updateBlogGroup();
-            $scope.button[0] = 'Delete';
+    };
+
+    $scope.onClickGroupInfo = function(fromIndex, toIndex) {
+        if ($scope.button[0] === '' && $scope.button[1] === 'Confirm') {
+            var info = $scope.groupInfo[fromIndex][toIndex];
+            if (info.syncEnable === 'false') {
+                info.syncEnable = 'true';
+            } else if (info.syncEnable === 'true') {
+                info.syncEnable = 'false';
+            }
         }
     };
 
@@ -136,6 +172,20 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
             .error(function (data) {
                 window.alert('Error: ' + data);
             });
+    }
+
+    function updateDetailSetting() {
+        if ($scope.groupInfo !== null) {
+            $scope.groups.groupInfo = [];
+            for (var i = 0; i < $scope.groupInfo.length; i += 1) {
+                for (var j = 0; j < $scope.groupInfo[i].length; j += 1) {
+                    $scope.groups.groupInfo.push($scope.groupInfo[i][j]);
+                }
+            }
+            updateBlogGroup();
+            $scope.group = null;
+            $scope.groupInfo = null;
+        }
     }
 
     function registerBlogGroup() {
@@ -177,9 +227,22 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
             }
         }
 
-        $scope.groups.push({"group":group});
+        var groupInfo = [];
+        var fromProvider, toProvider;
+        for (i = 0; i < group.length; i += 1) {
+            fromProvider = group[i].provider.providerName;
+            for (j = 0; j < group.length; j += 1) {
+                toProvider = group[j].provider.providerName;
+                if (i === j) {
+                    groupInfo.push({"syncEnable": 'none', "postType": 'none'});
+                } else {
+                    groupInfo.push({"syncEnable": 'true', "postType": Data.getPostType(fromProvider, toProvider)});
+                }
+            }
+        }
+        $scope.groups.push({"group":group, "groupInfo":groupInfo});
         console.log(group);
-        $http.post("/blogs/group",{"group":group})
+        $http.post("/blogs/group", {"group":group, "groupInfo":groupInfo})
             .success(function (data) {
                 console.log(data);
                 $scope.info = "";
@@ -223,7 +286,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, User, Site) {
     init();
 });
 
-bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, Site, $timeout) {
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $timeout) {
     "use strict";
 
     var reqStartNum;
@@ -286,7 +349,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, Site, $t
         }
     }
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.title = 'Collect Feedback';
     $scope.posts = [];
     $scope.waiting = false;
@@ -394,10 +457,10 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, User, Site, $t
     init();
 });
 
-bs.controller('signinCtrl', function ($scope, $http, User) {
+bs.controller('signinCtrl', function ($scope, $http, Data) {
     "use strict";
 
-    $scope.user = User.getUser();
+    $scope.user = Data.getUser();
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
     if ($scope.user._id) {

@@ -137,7 +137,7 @@ router.post('/group', function (req, res) {
         return;
     }
 
-    blogBot.addGroup(user, req.body.group);
+    blogBot.addGroup(user, req.body.group, req.body.groupInfo);
     res.send("Success");
 });
 
