@@ -668,6 +668,7 @@ function _checkError(err, response, body) {
         log.error(err);
         return err;
     }
+
     if (response.statusCode >= 400) {
         bodyErr = body.meta ? body.meta.msg : body.error;
         errStr = 'tistory API error: ' + response.statusCode + ' ' + bodyErr;
@@ -701,7 +702,14 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
             log.error("Fail to request get");
         }
 //        log.debug(body);
-        category = JSON.parse(body).tistory.item.categories.category;
+        try {
+            category = JSON.parse(body).tistory.item.categories.category;
+        }
+        catch (e) {
+            log.error("Fail to get category info");
+            category = [];
+        }
+
 //        log.debug(category);
         cb(category);
     });
