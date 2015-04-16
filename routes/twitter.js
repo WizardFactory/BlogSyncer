@@ -104,7 +104,7 @@ router.get('/authorized',
 router.get('/bot_bloglist', function (req, res) {
     "use strict";
     log.debug("Twitter : "+ req.url + ' : this is called by bot');
-    var errorMsg;
+    var error;
     var userId = userMgr._getUserId(req, res);
     var providerId;
     if (!userId) {
@@ -114,9 +114,9 @@ router.get('/bot_bloglist', function (req, res) {
     providerId = req.query.providerid;
 
     if (providerId === false) {
-        errorMsg = 'User:'+userId+' did not have blog!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
+        error = new Error('User:'+userId+' did not have blog!');
+        log.debug(error);
+        res.status(500).send(error);
         res.redirect("/#/signin");
         return;
     }
@@ -125,9 +125,9 @@ router.get('/bot_bloglist', function (req, res) {
         var api_url;
 
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            res.status(500).send(err);
+            return;
         }
 
         api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
@@ -140,8 +140,8 @@ router.get('/bot_bloglist', function (req, res) {
         objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, data) {
             var result;
             if(error) {
-                result = {error: error};
-                res.send(result);
+                log.error(error);
+                res.status(error.statusCode).send(error);
                 return;
             } else {
                 result = JSON.parse(data);
@@ -179,9 +179,9 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
         var api_url;
 
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            res.status(500).send(err);
+            return;
         }
 
         api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
@@ -192,8 +192,8 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             var send_data = {};
 
             if(error) {
-                result = {error: error};
-                res.send(result);
+                log.error(error);
+                res.status(error.statusCode).send(error);
                 return;
             } else {
                 result = JSON.parse(data);
@@ -243,9 +243,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         var api_url;
 
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            res.status(500).send(err);
+            return;
         }
 
         count = 20;
@@ -264,7 +264,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             var result = [];
             var resultVal;
 
-            var hasError = _checkError(err, response, body);
+            var hasError = _checkError(error, response, body);
             if (hasError) {
                 res.send(hasError);
                 return;
@@ -274,7 +274,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             //log.debug(result);
 
             if(!result.length) {
-                log.debug("result is empty !!!");
+                error = new Error("result is empty !!!");
+                log.error(error);
+                res.status(500).send(error);
                 return;
             }
 
@@ -285,7 +287,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
-            for (i = 0; i < result.length; i++) {
+            for (i = 0; i < result.length; i+=1) {
                 var raw_post = result[i];
                 if (after) {
                     var post_date = new Date(raw_post.created_at);
@@ -318,12 +320,14 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             if(!after)
             {
                 if(!(send_data.posts[i-1])) {
-                    log.debug("posts is undefined !!!");
+                    error = new Error("posts in undefined !!");
+                    log.error(error);
+                    res.status(500).send(error);
                     return;
                 }
 
-                if( (last_id == send_data.posts[i-1].id) &&
-                    (result.length == 1) ) {
+                if( (last_id === send_data.posts[i-1].id.toString()) &&
+                    (result.length === 1) ) {
                     log.debug("stop Reculsive!!!!!");
                     send_data.stopReculsive = true;
                 }
@@ -359,9 +363,8 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         var api_url;
 
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
         // use count(1) with user_timeline for retweet and like counting
@@ -378,7 +381,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             var hasError = _checkError(err, response, body);
             if (hasError) {
-                res.send(hasError);
+                res.status(500).send(hasError);
                 return;
             }
 
@@ -386,7 +389,9 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             //log.debug(result);
 
             if(!result.length) {
-                log.debug("result is empty !!!");
+                error = new Error("result is empty !!!");
+                log.error(error);
+                res.status(500).send(error);
                 return;
             }
 
@@ -397,7 +402,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             send_data.blog_id = blog_id;
             send_data.posts = [];
 
-            for (i = 0; i < result.length; i++) {
+            for (i = 0; i < result.length; i+=1) {
                 var raw_post = result[i];
                 if (after) {
                     var post_date = new Date(raw_post.created_at);
@@ -431,12 +436,14 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             send_data.post_count = send_data.posts.length;
 
             if(!(send_data.posts[i-1])) {
-                log.debug("posts is undefined !!!");
+                error = new Error("posts is undefined !!!");
+                log.error(error);
+                res.status(500).send(error);
                 return;
             }
 
-            if( (last_id == send_data.posts[i-1].id) &&
-                (result.length == 1) ) {
+            if( (last_id === send_data.posts[i-1].id.toString()) &&
+                (result.length === 1) ) {
                 log.debug("stop Reculsive!!!!!");
                 send_data.stopReculsive = true;
             }
@@ -501,7 +508,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             var hasError = _checkError(err, response, body);
             if (hasError) {
-                res.send(hasError);
+                res.status(500).send(hasError);
                 return;
             }
             //add post info
@@ -520,7 +527,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             var j=0;
             if (raw_post.categories) {
                 var category_arr = Object.keys(raw_post.categories);
-                for (j=0; j<category_arr.length; j++) {
+                for (j=0; j<category_arr.length; j+=1) {
                     send_post.categories.push(category_arr[j]);
                 }
 //                log.debug('category-raw');
@@ -530,7 +537,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             if (raw_post.tags) {
                 var tag_arr = Object.keys(raw_post.tags);
-                for (j=0; j<tag_arr.length; j++) {
+                for (j=0; j<tag_arr.length; j+=1) {
                     send_post.tags.push(tag_arr[j]);
                 }
 //                log.debug('tag-raw');
@@ -557,7 +564,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 function _checkError(err, response, body) {
     "use strict";
     if (err) {
-        log.debug(err);
+        log.error(err);
         return err;
     }
     if (response.statusCode >= 400) {
