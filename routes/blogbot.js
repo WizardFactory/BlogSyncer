@@ -625,7 +625,7 @@ BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
     site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
     if (site) {
         for (i=0; i<blogs.length; i+=1) {
-            blog = blogDb.findBlogFromSite(site, blogs[i].blog_id);
+            blog = blogDb.findBlogFromSite(site, blogs[i].blog_id.toString());
             if (!blog) {
                 site.blogs.push(blogs[i]);
                 BlogBot._requestGetPostCount(user, site.provider.providerName, blogs[i].blog_id,
