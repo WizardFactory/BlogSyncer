@@ -3,12 +3,14 @@
  * Created by aleckim on 2014. 5. 15..
  */
 
+"use strict";
+
 var router = require('express').Router();
 var passport = require('passport');
-var request = require('request');
+var request = require('../controllers/requestEx');
 
-var blogBot = require('./blogbot');
-var userMgr = require('./userManager');
+var blogBot = require('./../controllers/blogbot');
+var userMgr = require('./../controllers/userManager');
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.Wordpress;
@@ -17,12 +19,10 @@ var WORDPRESS_API_URL = "https://public-api.wordpress.com/rest/v1";
 var WORDPRESS_PROVIDER = "Wordpress";
 
 passport.serializeUser(function(user, done) {
-    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
-    "use strict";
     done(null, obj);
 });
 
@@ -33,7 +33,6 @@ passport.use(new wordpressStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-        "use strict";
         var providerId;
         var provider;
 //        log.debug("accessToken:" + accessToken);
@@ -95,101 +94,83 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('wordpress', { failureRedirect: '/#signin' }),
     function(req, res) {
-        "use strict";
-
         // Successful authentication, redirect home.
-        log.debug('Successful!');
+        log.info('Successful!');
         res.redirect('/#');
     }
 );
 
 router.get('/me', function (req, res) {
-    "use strict";
-
     var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, undefined, function (err, user, provider) {
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        apiUrl = WORDPRESS_API_URL+"/me";
+        var apiUrl = WORDPRESS_API_URL+"/me";
         log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if(err) {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
+
             log.debug(body);
             res.send(body);
         });
     });
 });
 
-//router.get('/posts/:blog_id', function (req, res) {
-//    blogCommon.getWPPosts(req, res);
-//});
-
 router.get('/bot_bloglist', function (req, res) {
-    "use strict";
-    var userId;
-    var providerId;
-    var errorMsg;
-
-    log.debug("Wordpress: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
     if (req.query.providerid === false) {
-        errorMsg = 'User:'+userId+' didnot have blog!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
+        var error = new Error("User didn't have blog!");
+        log.error(error, meta);
+        res.status(404).send(error);    //404 Not Found
         res.redirect("/#/signin");
         return;
     }
 
-    providerId = req.query.providerid;
+    var providerId = req.query.providerid;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, providerId, function (err, user, provider) {
-        var apiUrl;
 
-        apiUrl = WORDPRESS_API_URL+"/sites/"+provider.providerId;
+        var apiUrl = WORDPRESS_API_URL+"/sites/"+provider.providerId;
         log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
             var blogId;
             var blogTitle;
             var blogUrl;
-            var sendData;
 
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            try {
+                blogId = body.ID.toString();
+                blogTitle = body.name;
+                blogUrl = body.URL;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.statusCode(500).send(e);
             }
 
-//          log.debug(body);
-            blogId = body.ID.toString();
-            blogTitle = body.name;
-            blogUrl = body.URL;
-            sendData = {};
+            var sendData = {};
 
             sendData.provider = provider;
             sendData.blogs = [];
@@ -206,78 +187,64 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-
-    log.debug("Wordpress: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blog_id;
+    var blogId = req.params.blog_id;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
-        var apiUrl;
 
-        apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
+        var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
 
-        log.debug(apiUrl);
+        log.debug(apiUrl, meta);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
-            var sendData;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
+            log.debug("post count=" + body.post_count, meta);
 
-            log.debug("post count=" + body.post_count);
-
-            sendData = {};
-            sendData.provider_name = WORDPRESS_PROVIDER;
-            sendData.blog_id = body.ID.toString();
-            sendData.post_count = body.post_count;
+            var sendData = {};
+            try {
+                sendData.provider_name = WORDPRESS_PROVIDER;
+                sendData.blog_id = body.ID.toString();
+                sendData.post_count = body.post_count;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
             res.send(sendData);
         });
     });
  });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-
-    //log.debug("Wordpress: "+ req.url + ' : this is called by bot');
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blog_id;
+    var blogId = req.params.blog_id;
+    var offSet = req.query.offset;
+    var after = req.query.after;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
-        var offSet;
-        var after;
-        var isExtended;
-        var apiUrl;
-
-        offSet = req.query.offset;
-        after = req.query.after;
-        isExtended = false;
-
-        apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
-
-        if (!user) {
-            log.error("user is null !!!");
-            return;
+        if (err) {
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
+        var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
+        var isExtended = false;
         apiUrl += "/posts";
         apiUrl += "?";
         if (offSet) {
@@ -294,94 +261,70 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 //        log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
-            var i;
-            var sendData;
-            var rawPost;
-            var postDate;
-            var afterDate;
-            var sendPost;
-            var j;
-            var categoryArr;
-            var tagArr;
-
-            hasError =  _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
-            }
-            //log.debug(data);
-            //for (i=0; i<data.posts.length;i++) {
-            //    log.debug('post_id='+data.posts[i].ID);
-            //}
-            if (!body.posts) {
-                log.debug('Fail to get posts');
-                res.send('Fail to get posts');
-                return;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            sendData = {};
+            var sendData = {};
             sendData.provider_name = WORDPRESS_PROVIDER;
             sendData.blog_id = blogId;
-            sendData.post_count = body.posts.length;
-            sendData.posts = [];
 
-            for (i = 0; i<body.posts.length; i+=1) {
-                rawPost = body.posts[i];
-                postDate = new Date(rawPost.modified);
-                afterDate = new Date(after);
-                if (postDate < afterDate) {
-                    //log.debug('post is before');
-                    continue;
-                }
-                sendPost = {};
-                sendPost.title = rawPost.title;
-                sendPost.modified = rawPost.modified;
-                sendPost.id = rawPost.ID.toString();
-                sendPost.url = rawPost.URL;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                if (rawPost.categories) {
-                    categoryArr = Object.keys(rawPost.categories);
-                    for (j=0; j<categoryArr.length; j+=1) {
-                        sendPost.categories.push(categoryArr[j]);
+            try {
+                sendData.post_count = body.posts.length;
+                sendData.posts = [];
+
+                for (var i = 0; i<body.posts.length; i+=1) {
+                    var rawPost = body.posts[i];
+                    var postDate = new Date(rawPost.modified);
+                    var afterDate = new Date(after);
+                    if (postDate < afterDate) {
+                        //log.debug('post is before');
+                        continue;
                     }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
-                }
-                if (rawPost.tags) {
-                    tagArr = Object.keys(rawPost.tags);
-                    for (j=0; j<tagArr.length; j+=1) {
-                        sendPost.tags.push(tagArr[j]);
+                    var sendPost = {};
+                    sendPost.title = rawPost.title;
+                    sendPost.modified = rawPost.modified;
+                    sendPost.id = rawPost.ID.toString();
+                    sendPost.url = rawPost.URL;
+                    sendPost.categories = [];
+                    sendPost.tags = [];
+
+                    if (rawPost.categories) {
+                        var categoryArr = Object.keys(rawPost.categories);
+                        for (var j=0; j<categoryArr.length; j+=1) {
+                            sendPost.categories.push(categoryArr[j]);
+                        }
                     }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
+                    if (rawPost.tags) {
+                        var tagArr = Object.keys(rawPost.tags);
+                        for (var h=0; h<tagArr.length; h+=1) {
+                            sendPost.tags.push(tagArr[h]);
+                        }
+                    }
+                    sendData.posts.push(sendPost);
                 }
-                sendData.posts.push(sendPost);
             }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
+
             res.send(sendData);
         });
     });
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-
-    log.debug("Wordpress: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blog_id;
+    var blogId = req.params.blog_id;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         var postId;
@@ -392,235 +335,181 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         apiUrl += "/posts";
         apiUrl += "/" + postId;
 
-        log.debug(apiUrl);
+        log.debug(apiUrl, meta);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
-            var sendData;
-            var sendPost;
-            var rawPost;
-            var j;
-            var categoryArr;
-            var tagArr;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
             //log.debug(data);
-            sendData = {};
+            var sendData = {};
             sendData.provider_name = WORDPRESS_PROVIDER;
             sendData.blog_id = blogId;
             sendData.posts = [];
 
-            rawPost = body;
+            try {
+                var rawPost = body;
+                var sendPost = {};
+                sendPost.title = rawPost.title;
+                sendPost.modified = rawPost.modified;
+                sendPost.id = rawPost.ID;
+                sendPost.url = rawPost.URL;
+                sendPost.categories = [];
+                sendPost.tags = [];
+                if (rawPost.categories) {
+                    var categoryArr = Object.keys(rawPost.categories);
+                    for (var j = 0; j < categoryArr.length; j += 1) {
+                        sendPost.categories.push(categoryArr[j]);
+                    }
+                }
+                if (rawPost.tags) {
+                    var tagArr = Object.keys(rawPost.tags);
+                    for (var h = 0; h < tagArr.length; h += 1) {
+                        sendPost.tags.push(tagArr[h]);
+                    }
+                }
+                sendPost.content = rawPost.content;
+                sendPost.replies = [];
+                sendPost.replies.push({"comment_count": rawPost.comment_count});
+                sendPost.replies.push({"like_count": rawPost.like_count});
+                sendData.posts.push(sendPost);
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
 
-            sendPost = {};
-            sendPost.title = rawPost.title;
-            sendPost.modified = rawPost.modified;
-            sendPost.id = rawPost.ID;
-            sendPost.url = rawPost.URL;
-            sendPost.categories = [];
-            sendPost.tags = [];
-            if (rawPost.categories) {
-                categoryArr = Object.keys(rawPost.categories);
-                for (j=0; j<categoryArr.length; j+=1) {
-                    sendPost.categories.push(categoryArr[j]);
-                }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
-            }
-            if (rawPost.tags) {
-                tagArr = Object.keys(rawPost.tags);
-                for (j=0; j<tagArr.length; j+=1) {
-                    sendPost.tags.push(tagArr[j]);
-                }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
-            }
-            sendPost.content = rawPost.content;
-            sendPost.replies = [];
-            sendPost.replies.push({"comment_count":rawPost.comment_count});
-            sendPost.replies.push({"like_count":rawPost.like_count});
-            sendData.posts.push(sendPost);
             res.send(sendData);
         });
     });
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-
-    log.debug('Wordpress ' + req.url);
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blog_id;
+    var blogId = req.params.blog_id;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
-        var apiUrl;
+        var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId +"/posts/new";
+        log.debug(apiUrl, meta);
 
-        apiUrl = WORDPRESS_API_URL+"/sites/"+blogId +"/posts/new";
-
-        log.debug(apiUrl);
-        request.post(apiUrl, {
+        request.postEx(apiUrl, {
             json: true,
             headers: {
                 "authorization": "Bearer " + provider.accessToken
             },
             form: req.body
         }, function (err, response, body) {
-            var hasError;
-            var sendData;
-            var sendPost;
-            var rawPost;
-            var j;
-            var categoryArr;
-            var tagArr;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
+
             //add post info
-            sendData = {};
+            var sendData = {};
             sendData.provider_name = WORDPRESS_PROVIDER;
             sendData.blog_id = blogId;
             sendData.posts = [];
 
-            rawPost = body;
-            sendPost = {};
-            sendPost.title = rawPost.title;
-            sendPost.modified = rawPost.modified;
-            sendPost.id = rawPost.ID;
-            sendPost.url = rawPost.URL;
-            sendPost.categories = [];
-            sendPost.tags = [];
-            if (rawPost.categories) {
-                categoryArr = Object.keys(rawPost.categories);
-                for (j=0; j<categoryArr.length; j+=1) {
-                    sendPost.categories.push(categoryArr[j]);
+            try {
+                var rawPost = body;
+                var sendPost = {};
+                sendPost.title = rawPost.title;
+                sendPost.modified = rawPost.modified;
+                sendPost.id = rawPost.ID;
+                sendPost.url = rawPost.URL;
+                sendPost.categories = [];
+                sendPost.tags = [];
+                if (rawPost.categories) {
+                    var categoryArr = Object.keys(rawPost.categories);
+                    for (var j=0; j<categoryArr.length; j+=1) {
+                        sendPost.categories.push(categoryArr[j]);
+                    }
                 }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
-            }
-            if (rawPost.tags) {
-                tagArr = Object.keys(rawPost.tags);
-                for (j=0; j<tagArr.length; j+=1) {
-                    sendPost.tags.push(tagArr[j]);
+                if (rawPost.tags) {
+                    var tagArr = Object.keys(rawPost.tags);
+                    for (var h=0; h<tagArr.length; h+=1) {
+                        sendPost.tags.push(tagArr[h]);
+                    }
                 }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
+                sendData.posts.push(sendPost);
             }
-            //send_post.content = raw_post.content;
-            sendData.posts.push(sendPost);
-            log.debug(sendData);
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
+
+            //log.debug(sendData);
             res.send(sendData);
         });
     });
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-
-    log.debug(req.url);
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req);
     if (!userId) {
         return;
     }
+    var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blogID;
+    var blogId = req.params.blogID;
+    var postId = req.params.postID;
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
-        var postId;
-        var apiUrl;
+        if (err) {
+            log.error(err);
+            return res.status(500).send(err);
+        }
 
-        postId = req.params.postID;
-        apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
+        var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
         apiUrl += "/posts";
         apiUrl += "/" + postId;
         apiUrl += "/replies";
 
-        log.debug(apiUrl);
+        log.debug(apiUrl, meta);
 
         _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
-            var hasError;
-            var send;
-            var i;
-            var comment;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if(err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            log.debug(body);
+            var sendData = {};
+            sendData.providerName = provider.providerName;
+            sendData.blogID = blogId;
+            sendData.postID = postId;
 
-            send = {};
-            send.providerName = provider.providerName;
-            send.blogID = blogId;
-            send.postID = postId;
-            send.found = body.found;
-            send.comments = [];
-            for(i=0; i<body.found; i+=1) {
-                comment = {};
-                comment.date = body.comments[i].date;
-                comment.URL = body.comments[i].short_URL;
-                comment.content = body.comments[i].content;
-                send.comments.push(comment);
+            try {
+                sendData.found = body.found;
+                sendData.comments = [];
+                for(var i=0; i<body.found; i+=1) {
+                    var comment = {};
+                    comment.date = body.comments[i].date;
+                    comment.URL = body.comments[i].short_URL;
+                    comment.content = body.comments[i].content;
+                    sendData.comments.push(comment);
+                }
+            }
+            catch (e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
             }
 
-            res.send(send);
+            res.send(sendData);
         });
     });
 });
-
-/**
- *
- * @param err
- * @param response
- * @param body
- * @returns {*}
- * @private
- */
-function _checkError(err, response, body) {
-    "use strict";
-    var errBody;
-    var errStr;
-
-    if (err) {
-        log.debug(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        errBody = body.meta ? body.meta.msg : body.error;
-        errStr = 'wordpress error: ' + response.statusCode + ' ' + errBody;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
 
 /**
  *
@@ -630,9 +519,7 @@ function _checkError(err, response, body) {
  * @private
  */
 function _requestGet(url, accessToken, callback) {
-    "use strict";
-
-    request.get(url, {
+    request.getEx(url, {
         json: true,
         headers: {
             "authorization": "Bearer " + accessToken
