@@ -971,7 +971,6 @@ BlogBot._cbAddPostsFromNewBlog = function(user, rcvPostCount) {
     var postCount;
     var i;
     var offset;
-    var options;
     var meta = {};
 
     meta.cName = "BlogBot";
@@ -992,22 +991,20 @@ BlogBot._cbAddPostsFromNewBlog = function(user, rcvPostCount) {
     //how many posts get per 1 time.
     /* Todo : 모두 하나로 통일 필요. */
 
+    var options = {};
+
     if (providerName === 'google') {
-        options = {};
         options.offset = '0-20'; //page count isn't used
     }
-    else if(providerName === "twitter") {
+    else if(providerName === "twitter" || postCount < 0) { //kakao, maybe facebook
         // twitter use max_id, so recursiveGetPosts must be called.
-        options = {};
-    }
-    else if (postCount < 0) { //kakao, maybe facebook
         log.debug("postCount didn't supported", meta);
-        options = {};
     }
     else if (postCount > 0) {
         for (i=0; i<postCount; i+=20) {
             offset = i + '-20';
-            BlogBot._requestGetPosts(user, providerName, blogId, {"offset": offset}, function (err, user, rcvPosts) {
+            options.offset = offset;
+            BlogBot._requestGetPosts(user, providerName, blogId, options, function (err, user, rcvPosts) {
                 if (err) {
                     log.error(err, meta);
                     return;
