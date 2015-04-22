@@ -2,9 +2,11 @@
  * Created by SeanKim on 2014. 8. 11..
  */
 
+"use strict";
+
 var express = require('express');
 var router = express.Router();
-var blogBot = require('./blogbot');
+var blogBot = require('./../controllers/blogbot');
 
 /**
  *
@@ -14,12 +16,11 @@ var blogBot = require('./blogbot');
  * @private
  */
 function _getUser(req, res) {
-    "use strict";
 
     if (!req.user) {
         var errorMsg = 'You have to login first!';
         log.error(errorMsg);
-        res.send(errorMsg);
+        res.status(401).send(errorMsg); //401 Unauthorized
         res.redirect("/#/signin");
         return;
     }
@@ -28,64 +29,70 @@ function _getUser(req, res) {
 }
 
 router.get('/sites', function (req, res) {
-    "use strict";
-    var user;
-    var sites;
-
-    user = _getUser(req,res);
+    var user = _getUser(req,res);
     if (!user) {
         return;
     }
-
-    sites = blogBot.getSites(user);
+    var sites = blogBot.getSites(user);
     res.send(sites);
 });
 
 router.get('/posts/:reqStartNum/:reqTotalNum', function (req, res) {
-    "use strict";
-    var user;
-    var posts;
-    var startNum;
-    var totalNum;
-
-    user = _getUser(req,res);
+    var user = _getUser(req,res);
     if (!user) {
         return;
     }
 
-    startNum = req.params.reqStartNum;
-    totalNum = req.params.reqTotalNum;
+    var startNum;
+    var totalNum;
 
-    posts = blogBot.getPosts(user, startNum, totalNum);
+    try {
+        startNum = req.params.reqStartNum;
+        totalNum = req.params.reqTotalNum;
+    }
+    catch(e) {
+        log.error(e);
+        log.error(req);
+        return res.status(400).send(e); //400 Bad Request
+    }
+
+    var posts = blogBot.getPosts(user, startNum, totalNum);
 
     //log.info(posts);
     res.send({"posts":posts});
 });
 
 router.get('/replies/:providerName/:blogID/:postID', function (req, res) {
-    "use strict";
-    var user;
-    var providerName;
-    var postID;
-    var blogID;
-
-    user = _getUser(req,res);
+    var user = _getUser(req,res);
     if (!user) {
         return;
     }
 
-    providerName = req.params.providerName;
-    blogID = req.params.blogID;
-    postID = req.params.postID;
+    var providerName;
+    var postID;
+    var blogID;
+    try {
+        providerName = req.params.providerName;
+        blogID = req.params.blogID;
+        postID = req.params.postID;
+    }
+    catch(e) {
+        log.error(e);
+        log.error(req);
+        return res.status(400).send(e);
+    }
 
-    blogBot.getRepliesByInfo(user, providerName, blogID, postID, function (sendData) {
+    blogBot.getRepliesByInfo(user, providerName, blogID, postID, function(err, sendData) {
+        if (err) {
+            log.error(err);
+            return res.status(err.statusCode).send(err);
+        }
         log.debug(sendData);
         res.send(sendData);
     });
 });
 
 router.get('/histories', function (req, res) {
-    "use strict";
     var user;
     var histories;
 
@@ -100,44 +107,45 @@ router.get('/histories', function (req, res) {
 
 router.route('/groups')
     .get(function (req, res) {
-        "use strict";
-        var user;
-        var groups;
-
-        user = _getUser(req,res);
+        var user = _getUser(req,res);
         if (!user) {
             return;
         }
 
-        groups = blogBot.getGroups(user);
+        var groups = blogBot.getGroups(user);
         res.send({"groups":groups});
     })
     .put(function (req, res) {
-        "use strict";
-        var user;
-        var groups;
-
-        user = _getUser(req,res);
+        var user = _getUser(req,res);
         if (!user) {
             return;
         }
 
-        groups = req.body.groups;
+        var groups = req.body.groups;
         blogBot.setGroups(user, groups);
         res.send("Success");
     });
 
 router.post('/group', function (req, res) {
-    "use strict";
-
-    var user;
-
-    user = _getUser(req,res);
+    var user = _getUser(req,res);
     if (!user) {
         return;
     }
 
-    blogBot.addGroup(user, req.body.group, req.body.groupInfo);
+    var group;
+    var groupInfo;
+
+    try {
+        group = req.body.group;
+        groupInfo = req.body.groupInfo;
+    }
+    catch(e) {
+        log.error(e);
+        log.error(req.body);
+        return res.status(400).send(e);
+    }
+
+    blogBot.addGroup(user, group, groupInfo);
     res.send("Success");
 });
 

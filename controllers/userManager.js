@@ -212,19 +212,16 @@ UserMgr._findProviderByUserId = function (userId, providerName, providerId, call
     meta.providerName = providerName;
 
     UserDb.findById(userId, function (err, user) {
-        var provider;
-        var errMsg;
-
         if (err || !user) {
             log.error("Fail to find user", meta);
             return callback(err);
         }
 
-        provider = user.findProvider(providerName, providerId);
+        var provider = user.findProvider(providerName, providerId);
         if (!provider) {
-            errMsg = "Fail to find provider";
-            log.error(errMsg, meta);
-            return callback(errMsg);
+            var error = new Error("Fail to find provider");
+            log.error(error, meta);
+            return callback(error);
         }
 
         callback(null, user, provider);
