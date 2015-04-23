@@ -510,15 +510,20 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         options.tags = req.body.tags;
     }
 
-    //it's for link post
-    if (req.body.description) {
-        options.description = req.body.description;
-    }
-
     var postType = req.query.postType;
     if (!postType) {
         log.notice("postType is undefined, so it set to text", meta);
         postType = "post";
+    }
+
+    if (req.body.description) {
+        //it's for link post
+        if (postType === "link") {
+            options.description = req.body.description;
+        }
+        else {
+            options.body += req.body.description;
+        }
     }
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
@@ -548,7 +553,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return res.status(500).send(error);
         }
 
-        postFunc(blog_id, options, function (error, response) {
+        postFunc.call(client, blog_id, options, function (error, response) {
             if (error) {
                 log.error(error, meta);
                 return res.status(400).send(error);
