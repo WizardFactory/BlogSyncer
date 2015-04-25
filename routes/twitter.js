@@ -133,13 +133,12 @@ router.get('/bot_bloglist', function (req, res) {
                 return;
             }
 
-            var result;
             var blog_id;
             var blog_title;
             var blog_url;
 
             try{
-                result = JSON.parse(body);
+                var result = JSON.parse(body);
                 blog_id = result.id;
                 blog_title = result.name;
                 blog_url = result.url;
@@ -150,12 +149,12 @@ router.get('/bot_bloglist', function (req, res) {
                 res.status(500).send(e);
             }
 
-            var send_data = {};
-            send_data.provider = provider;
-            send_data.blogs = [];
-            send_data.blogs.push({"blog_id":blog_id, "blog_title":blog_title, "blog_url":blog_url});
+            var botBlogList = {};
+            botBlogList.provider = provider;
+            botBlogList.blogs = [];
+            botBlogList.blogs.push({"blog_id": blog_id, "blog_title": blog_title, "blog_url": blog_url});
 
-            res.send(send_data);
+            res.send(botBlogList);
         });
     });
 });
@@ -188,14 +187,13 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return;
             }
 
-            var result;
-            var send_data = {};
+            var botPostCount = {};
 
             try {
-                result = JSON.parse(body);
-                send_data.provider_name = TWITTER_PROVIDER;
-                send_data.blog_id = result.id;
-                send_data.post_count = result.statuses_count;
+                var result = JSON.parse(body);
+                botPostCount.provider_name = TWITTER_PROVIDER;
+                botPostCount.blog_id = result.id;
+                botPostCount.post_count = result.statuses_count;
             }
             catch(e) {
                 log.error(e, meta);
@@ -204,10 +202,35 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return;
             }
 
-            res.send(send_data);
+            res.send(botPostCount);
         });
     });
 });
+
+function _convertBotPosts(providerName, blogId) {
+    return {"provider_name": providerName, "blog_id": blogId, "posts": []};
+}
+
+function _convertBotPost(raw_post) {
+    var botPost = {};
+    botPost.title = raw_post.text;
+    botPost.modified = raw_post.created_at;
+
+    //you have to use id_str NOT id
+    botPost.id = raw_post.id_str;
+
+    //twitter didn't have url
+    botPost.categories = [];
+    botPost.tags = [];
+
+    //twitter didn't have content
+    botPost.content = raw_post.text;
+    botPost.replies = [];
+    botPost.replies.push({"retweet_count": raw_post.retweet_count});
+    botPost.replies.push({"like_count": raw_post.favorite_count});
+
+    return botPost;
+}
 
 router.get('/bot_posts/:blog_id', function (req, res) {
     var userId = userMgr._getUserId(req, res);
@@ -221,7 +244,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var blog_id = req.params.blog_id;
     var last_id = req.query.offset;
     var after = req.query.after;
-    //log.debug("provider_id : " + provider_id, meta);
 
     userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
         if (err) {
@@ -270,14 +292,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return;
             }
 
-            var send_data = {};
-            var i;
-
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
-
-            for (i = 0; i < result.length; i+=1) {
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            for (var i = 0; i < result.length; i += 1) {
                 var raw_post = result[i];
                 if (after) {
                     var post_date = new Date(raw_post.created_at);
@@ -289,16 +305,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     }
                 }
 
-                var send_post = {};
-                send_post.title = raw_post.text;
-                send_post.modified = raw_post.created_at;
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.url;
-                send_post.categories = [];
-                send_post.tags = [];
-                send_post.content = raw_post.content;
+                var send_post = _convertBotPost(raw_post);
 
-                log.debug(send_post);
+                //log.debug(send_post);
 
                 send_data.posts.push(send_post);
 
@@ -336,39 +345,33 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta);
 
-    var provider_id = req.query.providerid;
     var blog_id = req.params.blog_id;
     var post_id = req.params.post_id;
-    var last_id = req.query.offset;
-    var after = req.query.after;
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, null, function (err, user, provider) {
         if (err) {
             log.error(err);
             res.status(500).send(err);
             return;
         }
 
-        // use count(1) with user_timeline for retweet and like counting
-        var count = 1;
-
-        var api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId +
-            "&count=" + count + "&max_id=" + post_id;
-
+        var api_url = TWITTER_API_URL + "/statuses/show/" + post_id + ".json";
         //log.debug(api_url, meta);
 
         objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
 
-            if(error) {
+            if (error) {
                 log.error(error, meta);
                 log.error(response, meta);
                 res.status(error.statusCode).send(error);
                 return;
             }
 
-            var result;
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            var send_post;
             try {
-                result = JSON.parse(body);
+                var result = JSON.parse(body);
+                send_post = _convertBotPost(result);
             }
             catch (e) {
                 log.error(e, meta);
@@ -376,66 +379,8 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 res.status(500).send(e);
                 return;
             }
-
-            //log.debug(result, meta);
-
-            if(!result.length) {
-                error = new Error("result is empty !!!");
-                log.error (error, meta);
-                res.status(500).send(error);
-                return;
-            }
-
-            var send_data = {};
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
-
-            for (var i = 0; i < result.length; i+=1) {
-                var raw_post = result[i];
-                if (after) {
-                    var post_date = new Date(raw_post.created_at);
-                    var after_date = new Date(after);
-
-                    if (post_date < after_date) {
-                        //log.debug('post is before', meta);
-                        continue;
-                    }
-                }
-
-                var send_post = {};
-                send_post.title = raw_post.text;
-                send_post.modified = raw_post.created_at;
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.url;
-                send_post.categories = [];
-                send_post.tags = [];
-                send_post.content = raw_post.content;
-                send_post.replies = [];
-                send_post.replies.push({"retweet_count":raw_post.retweet_count});
-                send_post.replies.push({"like_count":raw_post.favorite_count});
-
-                //log.debug(send_post, meta);
-
-                send_data.posts.push(send_post);
-
-                send_data.stopReculsive = false;
-            }
-
+            send_data.posts.push(send_post);
             send_data.post_count = send_data.posts.length;
-
-            if(!(send_data.posts[i-1])) {
-                error = new Error("posts is undefined !!!");
-                log.error(error, meta);
-                res.status(500).send(error);
-                return;
-            }
-
-            if( (last_id === send_data.posts[i-1].id.toString()) &&
-                (result.length === 1) ) {
-                log.debug("stop Recursive!!!!!", meta);
-                send_data.stopReculsive = true;
-            }
 
             res.send(send_data);
         });
@@ -485,35 +430,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return;
             }
 
-            //add post info
-            var send_data = {};
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
 
             var send_post = {};
             var raw_post = body;
 
             try {
-                send_post.title = raw_post.title;
-                send_post.modified = raw_post.modified;
-                send_post.id = raw_post.ID;
-                send_post.url = raw_post.URL;
-                send_post.categories = [];
-                send_post.tags = [];
-                var j=0;
-                if (raw_post.categories) {
-                    var category_arr = Object.keys(raw_post.categories);
-                    for (j=0; j<category_arr.length; j+=1) {
-                        send_post.categories.push(category_arr[j]);
-                    }
-                }
-                if (raw_post.tags) {
-                    var tag_arr = Object.keys(raw_post.tags);
-                    for (j=0; j<tag_arr.length; j+=1) {
-                        send_post.tags.push(tag_arr[j]);
-                    }
-                }
+                send_post = _convertBotPost(raw_post);
             }
             catch (e) {
                 log.error(e, meta);
