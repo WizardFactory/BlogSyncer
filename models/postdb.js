@@ -185,7 +185,7 @@ postSchema.methods.findPostByTitle = function(title) {
  * @param {string} postId
  * @returns {boolean}
  */
-postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postId) {
+postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId) {
     "use strict";
     var foundIt = false;
     var i;
@@ -194,7 +194,7 @@ postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postI
     var meta = {};
 
     meta.cName = "postSchema";
-    meta.fName = "findPostByPostIdOfBlog";
+    meta.fName = "isPostByPostIdOfBlog";
     meta.providerName = providerName;
     meta.blogId = blogId;
     meta.postId = postId;

@@ -57,7 +57,7 @@ describe('postDb', function () {
         });
         it('find post by post id of blog', function () {
             var found = false;
-            found = postDb.findPostByPostIdOfBlog(testPostInfo.infos[0].provider_name,
+            found = postDb.isPostByPostIdOfBlog(testPostInfo.infos[0].provider_name,
                         testPostInfo.infos[0].blog_id, testPostInfo.infos[0].post_id);
             assert.equal(found, true, "Fail to find post by post id of blog");
         });
