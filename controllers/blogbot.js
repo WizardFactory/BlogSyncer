@@ -171,7 +171,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<rcvPosts.posts.length;i+=1) {
         newPost = rcvPosts.posts[i];
-        if (postDb.findPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString())) {
+        if (postDb.isPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString())) {
             log.debug("This post was already saved - provider=" +
                     rcvPosts.provider_name + " blog=" + rcvPosts.blog_id + " post=" + newPost.id, meta);
             continue;
@@ -834,22 +834,30 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
 
     //TODO: change from title to id
     for (i=0; i<rcvPosts.posts.length; i+=1) {
+        var rcvPost = rcvPosts.posts[i];
 
-        BlogBot._makeTitle(rcvPosts.posts[i]);
+        //check there is post
+        if (postDb.isPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost.id.toString())) {
+            log.notice("This post was already saved - provider=" + rcvPosts.provider_name + " blog=" +
+                    rcvPosts.blog_id + " post=" + rcvPost.id, meta);
+            continue;
+        }
+
+        BlogBot._makeTitle(rcvPost);
 
         //log.debug(" " + rcvPosts.posts[i], meta);
         //if there is same title in postdb, add new in post object what has same title.
-        if (rcvPosts.posts[i].title) {
-            post = postDb.findPostByTitle(rcvPosts.posts[i].title);
+        if (rcvPost.title) {
+            post = postDb.findPostByTitle(rcvPost.title);
 
             //log.debug(rcvPosts.provider_name + rcvPosts.blog_id + rcvPosts.posts[i], meta);
             if (post) {
-                postDb.addPostInfo(post, rcvPosts.provider_name, rcvPosts.blog_id, rcvPosts.posts[i]);
+                postDb.addPostInfo(post, rcvPosts.provider_name, rcvPosts.blog_id, rcvPost);
                 continue;
             }
         }
 
-        postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, rcvPosts.posts[i]);
+        postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost);
     }
 
     postDb.save(function (err) {
