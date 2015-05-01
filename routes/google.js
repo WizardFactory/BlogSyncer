@@ -161,7 +161,7 @@ router.get('/bot_bloglist', function (req, res) {
                     _updateAccessToken(user, provider);
                 }
                 log.error(err, meta);
-                log.status(err.statusCode).send(err);
+                return res.status(err.statusCode).send(err);
             }
 
             var sendData = {};
@@ -296,7 +296,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         }
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            if(err) {
+            if (err) {
                 if (err.statusCode === 401) {
                     //update access token from refresh token;
                     _updateAccessToken(user, provider);
