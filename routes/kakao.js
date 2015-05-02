@@ -29,18 +29,19 @@ passport.use(new KakaoStrategy({
         callbackURL: svcConfig.svcURL + "/kakao/authorized",
         passReqToCallback : true
     },
-    function(req, accessToken, refreshToken, profile, done) {
+    function(req, accessToken, refreshToken, params, profile, done) {
         var meta = {"cName": KAKAO_PROVIDER, "fName":"passport.use"};
 
         //log.debug("accessToken:" + accessToken, meta);
         //log.debug("refreshToken:" + refreshToken, meta);
+        //log.debug("params:"+JSON.stringify(params), meta);
         //log.debug("profile:" + JSON.stringify(profile), meta);
-
         var provider = {
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
             "providerId": profile.id.toString(),
+            "tokenExpireTime": userMgr.makeTokenExpireTime(params.expires_in),
             "displayName": profile.username
         };
 
@@ -597,10 +598,54 @@ function _requestPost(url, accessToken, data, callback) {
         headers: {
             "authorization": "Bearer " + accessToken
         },
+        json: true,
         form: data
     }, function (error, response, body) {
         callback(error, response, body);
     });
 }
+
+function _updateAccessToken(user, provider, callback) {
+    var url = "https://kauth.kakao.com" + "/oauth/token";
+    var data = {
+        grant_type: 'refresh_token',
+        client_id: clientConfig.clientID,
+        refresh_token: provider.refreshToken
+    };
+
+    _requestPost(url, provider.accessToken, data, function (error, response, body) {
+        if (error) {
+            log.error(error);
+            return callback(error);
+        }
+        log.info(body);
+
+        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token, body.expires_in);
+        return callback(null, newProvider);
+    });
+}
+
+router.post('/bot_posts/updateToken', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta) ;
+
+    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+        if (err) {
+            log.error(err, meta);
+            return res.status(500).send(err);
+        }
+        _updateAccessToken(user, provider, function (err, data) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
+            res.send(data);
+        });
+    });
+});
 
 module.exports = router;
