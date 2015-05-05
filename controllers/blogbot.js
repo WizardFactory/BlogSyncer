@@ -3,6 +3,8 @@
  * Created by aleckim on 2014. 8. 13..
  */
 
+"use strict";
+
 var request = require('./requestEx');
 
 var userMgr = require('./userManager');
@@ -32,7 +34,6 @@ BlogBot.users = [];
  * @private
  */
 BlogBot._findDbByUser = function (user, dbName) {
-    "use strict";
     var meta = {};
 
     meta.cName = this.name;
@@ -69,7 +70,6 @@ BlogBot._findDbByUser = function (user, dbName) {
  * @private
  */
 BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
-    "use strict";
     var groupDb;
     var blogId;
     var providerName;
@@ -148,7 +148,6 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
  * @private
  */
 BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
-    "use strict";
     var postDb;
     var i;
     var newPost;
@@ -216,7 +215,6 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
  * @private
  */
 BlogBot._getAndPush = function(user) {
-    "use strict";
     var blogDb;
     var postDb;
     var groupDb;
@@ -269,11 +267,62 @@ BlogBot._getAndPush = function(user) {
     postDb.lastUpdateTime = new Date();
 };
 
+BlogBot._updateProviderInfo = function (user, provider) {
+    for (var i=0; i<this.users.length; i+=1) {
+        if (this.users[i].user._id !== user._id) {
+            continue;
+        }
+        for (var j=0; j<this.users[i].user.providers.length; j+=1) {
+            if (this.users[i].user.providers[j].providerName !== provider.providerName) {
+                continue;
+            }
+            this.users[i].user.providers[j] = provider;
+        }
+    }
+};
+
+BlogBot._updateAccessToken = function (user) {
+    var meta = {};
+    meta.cName = this.name;
+    meta.fName = "_updateAccessToken";
+    meta.userId = user._id.toString();
+
+    //check sign up time for update token
+    for (var j=0; j<user.providers.length; j+=1) {
+        var provider = user.providers[j];
+        if (!provider.tokenExpireTime) {
+            continue;
+        }
+
+        var limitTime = provider.tokenExpireTime;
+        var currentTime = new Date();
+        currentTime.setMinutes(currentTime.getMinutes()+10);
+        if (limitTime > currentTime) {
+            continue;
+        }
+
+        log.debug("provider="+provider.providerName+" limitTime="+limitTime.toString(), meta);
+
+        var url = "http://www.justwapps.com/"+provider.providerName + "/bot_posts/updateToken";
+        url += "?";
+        url += "userid=" + user._id;
+        request.postEx(url, null, function (err, response, body) {
+            if (err)  {
+                log.error(err, meta);
+                //BlogBot._addHistory(user, post, err.statusCode);
+                return;
+            }
+            log.debug(body, meta);
+            //you can't direct update though provider
+            BlogBot._updateProviderInfo(user, JSON.parse(body));
+        });
+    }
+};
+
 /**
  *
  */
 BlogBot.task = function() {
-    "use strict";
     var i;
     var user;
     var meta = {};
@@ -284,6 +333,7 @@ BlogBot.task = function() {
     for (i=0; i<this.users.length; i+=1)  {
         user = this.users[i].user;
         BlogBot._getAndPush(user);
+        BlogBot._updateAccessToken(user);
     }
 };
 
@@ -291,7 +341,6 @@ BlogBot.task = function() {
  *
  */
 BlogBot.load = function () {
-    "use strict";
     var meta = {};
 
     meta.cName = this.name;
@@ -316,7 +365,6 @@ BlogBot.load = function () {
  * @param {User} user
  */
 BlogBot.start = function (user) {
-    "use strict";
     var userInfo;
     var newSiteDb;
     var newGroupDb;
@@ -430,7 +478,6 @@ BlogBot.start = function (user) {
  * @returns {boolean}
  */
 BlogBot.isStarted = function (user) {
-    "use strict";
     var i;
     var meta = {};
 
@@ -454,7 +501,6 @@ BlogBot.isStarted = function (user) {
  * @param {User} user
  */
 BlogBot.stop = function (user) {
-    "use strict";
     var i;
     var meta = {};
 
@@ -479,7 +525,6 @@ BlogBot.stop = function (user) {
  * @param {User} delUser
  */
 BlogBot.combineUser = function (user, delUser) {
-    "use strict";
     var userInfo;
     var delUserInfo;
     var i, j, isAdded;
@@ -586,7 +631,6 @@ BlogBot.combineUser = function (user, delUser) {
  * @private
  */
 BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
-    "use strict";
     var provider;
     var blogs;
     var blogDb;
@@ -658,7 +702,6 @@ BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
  * @param {User} user
  */
 BlogBot.findOrCreate = function (user) {
-    "use strict";
     var i;
     var p;
     var meta={};
@@ -688,7 +731,6 @@ BlogBot.findOrCreate = function (user) {
  * @returns {Object|*}
  */
 BlogBot.getSites = function (user) {
-    "use strict";
     var meta={};
 
     meta.cName = this.name;
@@ -705,7 +747,6 @@ BlogBot.getSites = function (user) {
  * @param group
  */
 BlogBot.addGroup = function(user, group, groupInfo) {
-    "use strict";
     var groupDb;
     var meta={};
 
@@ -734,7 +775,6 @@ BlogBot.addGroup = function(user, group, groupInfo) {
  * @param groups
  */
 BlogBot.setGroups = function(user, groups) {
-    "use strict";
     var groupDb;
     var meta={};
 
@@ -757,7 +797,6 @@ BlogBot.setGroups = function(user, groups) {
  * @returns {groupSchema.groups|*|groups|Array}
  */
 BlogBot.getGroups = function(user) {
-    "use strict";
     var groupDb = BlogBot._findDbByUser(user, "group");
     return groupDb.groups;
 };
@@ -770,7 +809,6 @@ BlogBot.getGroups = function(user) {
  * @private
  */
 BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, oPostInfo) {
-    "use strict";
     var postDb;
     var post;
     var meta={};
@@ -813,7 +851,6 @@ BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, oPostInfo) {
  * @private
  */
 BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
-    "use strict";
     var postDb;
     var i;
     var post;
@@ -877,7 +914,6 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
  * @private
  */
 BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callback) {
-    "use strict";
     var index;
     var newOpts;
     var meta = {};
@@ -973,7 +1009,6 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
  * @private
  */
 BlogBot._cbAddPostsFromNewBlog = function(user, rcvPostCount) {
-    "use strict";
     var providerName;
     var blogId;
     var postCount;
@@ -1044,7 +1079,6 @@ BlogBot._cbAddPostsFromNewBlog = function(user, rcvPostCount) {
  * @private
  */
 BlogBot._requestGetBlogList = function(user, providerName, providerId, callback) {
-    "use strict";
     var url;
     var meta={};
 
@@ -1091,7 +1125,6 @@ BlogBot._requestGetBlogList = function(user, providerName, providerId, callback)
  * @private
  */
 BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
-    "use strict";
     var url;
     var meta={};
 
@@ -1137,7 +1170,6 @@ BlogBot._requestGetPostCount = function(user, providerName, blogId, callback) {
  * @private
  */
 BlogBot._requestGetPosts = function(user, providerName, blogId, options, callback) {
-    "use strict";
     var url;
     var meta={};
 
@@ -1199,7 +1231,6 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
  * @returns {Array}
  */
 BlogBot.getHistories = function (user) {
-    "use strict";
     var historyDb;
     var meta={};
 
@@ -1226,7 +1257,6 @@ BlogBot.getHistories = function (user) {
  * @private
  */
 BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
-    "use strict";
     var history;
     var historyDb;
     var src;
@@ -1273,7 +1303,6 @@ BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
  * @Todo error 와 error message 전달 필요
  */
 BlogBot._makeTitle = function (post) {
-    "use strict";
     var indexNewLine;
 
     if (post.title) {
@@ -1329,7 +1358,6 @@ BlogBot._makeTitle = function (post) {
  * @private
  */
 BlogBot._requestPostContent = function (user, postType, post, providerName, blogId, callback) {
-    "use strict";
     var meta={};
 
     meta.cName = this.name;
@@ -1387,7 +1415,6 @@ BlogBot._requestPostContent = function (user, postType, post, providerName, blog
  * @private
  */
 BlogBot._getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
-    "use strict";
 
     var parsePostDb;
     var rangeStartNum = reqStartNum;
@@ -1418,7 +1445,6 @@ BlogBot._getParsedPostDb = function (postDb, reqStartNum, reqTotalCnt) {
  * @returns {*|Array}
  */
 BlogBot.getPosts = function (user, startNum, totalNum) {
-    "use strict";
     var postDb;
     var parsedPostDb;
     var meta={};
@@ -1448,7 +1474,6 @@ BlogBot.getPosts = function (user, startNum, totalNum) {
  * @param {functions} callback
  */
 BlogBot.getReplies = function (user, postID, callback) {
-    "use strict";
     var postDb;
     var post;
     var i;
@@ -1500,7 +1525,6 @@ BlogBot.getReplies = function (user, postID, callback) {
  * @param {function} callback
  */
 BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callback) {
-    "use strict";
     var meta={};
 
     meta.cName = this.name;

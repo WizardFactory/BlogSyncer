@@ -31,12 +31,13 @@ passport.use(new GoogleStrategy({
         callbackURL: svcConfig.svcURL + "/google/authorized",
         passReqToCallback : true
     },
-    function(req, accessToken, refreshToken, profile, done) {
+    function(req, accessToken, refreshToken, params, profile, done) {
         var meta = {"cName": GOOGLE_PROVIDER, "fName":"passport.use" };
 
-//        log.debug("accessToken:" + accessToken, meta);
-//        log.debug("refreshToken:" + refreshToken, meta);
-//        log.debug("profile:" + JSON.stringify(profile), meta);
+        log.debug("accessToken:" + accessToken, meta);
+        log.debug("refreshToken:" + refreshToken, meta);
+        log.debug("params:"+JSON.stringify(params), meta);
+        log.debug("profile:" + JSON.stringify(profile), meta);
 
         //It's not correct information. but I confirmed by /blogger/v3/users/self"
         var providerId = "g"+profile.id;
@@ -46,6 +47,7 @@ passport.use(new GoogleStrategy({
             "accessToken": accessToken,
             "refreshToken": refreshToken,
             "providerId": providerId.toString(),
+            "tokenExpireTime": userMgr.makeTokenExpireTime(params.expires_in),
             "displayName": profile.displayName
         };
 
@@ -120,10 +122,6 @@ router.get('/info', function (req, res) {
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -156,12 +154,8 @@ router.get('/bot_bloglist', function (req, res) {
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
-                log.status(err.statusCode).send(err);
+                return res.status(err.statusCode).send(err);
             }
 
             var sendData = {};
@@ -214,10 +208,6 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -296,11 +286,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         }
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            if(err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
+            if (err) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -374,10 +360,6 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -445,10 +427,6 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -517,10 +495,6 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             body: newPost
         }, function (err, response, body) {
             if (err) {
-                if (err.statusCode === 401) {
-                    //update access token from refresh token;
-                    _updateAccessToken(user, provider);
-                }
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
@@ -586,39 +560,48 @@ function _requestGet(url, accessToken, callback) {
  * @private
  * @bug 401에러 발생한 요청사항은 무시되어버림.
  */
-function _updateAccessToken(user, provider) {
-    var meta = {};
-    meta.cName = GOOGLE_PROVIDER;
-    meta.fName = "_updateAccessToken";
-    meta.userId = user._id;
-
+function _updateAccessToken(user, provider, callback) {
     var url =  GOOGLE_API_URL + "/oauth2/v3/token";
-
-    var bodyInfo = {};
-    bodyInfo.client_id = clientConfig.clientID;
-    bodyInfo.client_secret = clientConfig.clientSecret;
-    bodyInfo.refresh_token = provider.refreshToken;
-    bodyInfo.grant_type = 'refresh_token';
-
-    log.debug(" ", meta);
-
     request.postEx(url, {
         json: true,
-        form: bodyInfo
+        form: {"client_id": clientConfig.clientID,
+            "client_secret": clientConfig.clientSecret,
+            "refresh_token": provider.refreshToken,
+            "grant_type": 'refresh_token'
+        }
     }, function (err, response, body) {
         if (err) {
-            log.error(err, meta);
-            return;
+            log.error(err);
+            return callback(err);
         }
 
-        log.info(body, meta);
-        provider.accessToken = body.access_token;
-        user.save (function(err) {
-            if (err) {
-                log.error("Fail to save user info", meta);
-            }
-        });
+        log.info(body);
+        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token, body.expires_in);
+        return callback(null, newProvider);
     });
 }
+
+router.post('/bot_posts/updateToken', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName":GOOGLE_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta) ;
+
+    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+        if (err) {
+            log.error(err, meta);
+            return res.status(500).send(err);
+        }
+        _updateAccessToken(user, provider, function (err, data) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
+            res.send(data);
+        });
+    });
+});
 
 module.exports = router;
