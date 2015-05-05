@@ -362,7 +362,12 @@ function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
                 log.debug('Fail to get type ' + raw_post.type);
                 break;
         }
+
         send_post.replies = [];
+        if (raw_post.note_count !== undefined) {
+            send_post.replies.push({"notes": raw_post.note_count});
+        }
+
         posts.push(send_post);
     }
 }
@@ -450,7 +455,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             token_secret: provider.tokenSecret
         });
 
-        var options = {id: post_id};
+        var options = {id: post_id, reblog_info: true, notes_info: true};
 
         client.posts(blog_id, options, function (error, response) {
             var send_data = {};
