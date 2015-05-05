@@ -923,7 +923,6 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
     meta.userId = user._id.toString();
 
     BlogBot._requestGetPosts(user, providerName, blogId, options, function (err, user, rcvPosts) {
-        log.debug("rcvPosts", meta);
         if (err) {
             log.error(err, meta);
             return callback(err);
@@ -943,62 +942,41 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
         newOpts = {};
 
         if(providerName === "twitter") {
-            if (rcvPosts.stopReculsive === false) {
-                newOpts.offset = rcvPosts.posts[index].id;
-                log.debug("[Twitter] get posts", meta);
-                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
-            }
-            else {
-                log.info("[Twitter] Stop recursive call functions", meta);
+            if (rcvPosts.stopReculsive) {
+                log.info(providerName+": Stop recursive call functions", meta);
                 return;
             }
+            newOpts.offset = rcvPosts.posts[index].id;
+            log.debug(providerName+": get posts", meta);
         }
-        else if(providerName === "facebook") {
-            if (rcvPosts.nextPageToken) {
-                newOpts.nextPageToken = rcvPosts.nextPageToken;
-                log.debug("[facebook] nextPageToken: ", newOpts.nextPageToken);
-                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
-            }
-            else {
-                log.info("[facebook] Stop recursive call functions");
+        else if(providerName === "kakao") {
+            if (!rcvPosts.posts.length) {
+                log.info(providerName+": Stop recursive call functions", meta);
                 return;
             }
+            newOpts.offset = rcvPosts.posts[index].id;
+            log.debug(providerName + ": get posts", meta);
+        }
+        else if(providerName === "facebook" || providerName === "google") {
+            if (!rcvPosts.nextPageToken) {
+                log.info(providerName+"-"+rcvPosts.blog_id+": Stop recursive call functions", meta);
+                return;
+            }
+
+            if (providerName === "google" && options.offset) {
+                newOpts.offset = options.offset;
+            }
+
+            newOpts.nextPageToken = rcvPosts.nextPageToken;
+            log.debug(providerName+": nextPageToken: "+newOpts.nextPageToken, meta);
+
         }
         else {
-            if (rcvPosts.posts.length) {
-                if (options.offset) {
-                    newOpts.offset = options.offset;
-                }
-                else {
-                    //for kakao
-                    newOpts.offset = rcvPosts.posts[index].id;
-                }
-                //for google
-                if (rcvPosts.nextPageToken) {
-                    newOpts.nextPageToken = rcvPosts.nextPageToken;
-                }
-                if (options.nextPageToken) {
-                    if (!rcvPosts.nextPageToken) {
-                        //it's last page.
-                        return;
-                    }
-                }
-
-                log.debug("kakao/google/facebook get posts", meta);
-                BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
-            }
-            else {
-                if (rcvPosts.posts.length !== 0) {
-                    newOpts.offset = rcvPosts.posts[index].id;
-                    log.debug("get posts", meta);
-                    BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
-                }
-                else {
-                    log.info("Stop recursive call functions", meta);
-                    return;
-                }
-            }
+           log.error(providerName+": we didn't have this case!!", meta);
+            return;
         }
+
+        BlogBot._recursiveGetPosts(user, providerName, blogId, newOpts, callback);
     });
 };
 
