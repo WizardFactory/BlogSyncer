@@ -73,7 +73,7 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     }
 
     if (newGroups.length === 0) {
-        log.warning("Fail to find group", meta);
+        log.verbose("Fail to find group", meta);
     }
 
     return newGroups;

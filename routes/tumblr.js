@@ -517,7 +517,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var postType = req.query.postType;
     if (!postType) {
-        log.notice("postType is undefined, so it set to text", meta);
+        log.verbose("postType is undefined, so it set to text", meta);
         postType = "post";
     }
 
@@ -607,7 +607,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     log.info("+", meta);
 
     var err = new Error("This api is not supported");
-    log.notice(err, meta);
+    log.warn(err, meta);
     res.status(404).send(err);
 });
 

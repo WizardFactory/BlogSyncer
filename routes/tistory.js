@@ -18,6 +18,10 @@ var TistoryStrategy = require('passport-tistory').Strategy;
 var TISTORY_API_URL = "https://www.tistory.com/apis";
 var TISTORY_PROVIDER = "tistory";
 
+
+var Entities = require('html-entities').AllHtmlEntities;
+var entities = new Entities();
+
 passport.serializeUser(function(user, done) {
     done(null, user);
 });
@@ -421,7 +425,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                     return res.status(err.statusCode).send(err);
                 }
 
-                //log.debug(data, meta);
+                //log.debug(body, meta);
 
                 var send_data = {};
                 send_data.provider_name = TISTORY_PROVIDER;
@@ -431,7 +435,6 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 try {
                     var item = JSON.parse(body).tistory.item;
                     var raw_post = item;
-
                     var send_post = {};
                     send_post.title = raw_post.title;
                     send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
@@ -440,7 +443,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                     send_post.categories = [];
                     send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
 
-                    send_post.content = raw_post.content;
+                    send_post.content = entities.decode(raw_post.content);
                     send_post.replies = [];
                     send_post.replies.push({"comment_count": raw_post.comments});
                     send_post.replies.push({"trackback_count": raw_post.trackbacks});
