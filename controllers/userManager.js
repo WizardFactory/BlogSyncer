@@ -2,6 +2,8 @@
  * Created by skywlrl on 14. 12. 28..
  */
 
+"use strict";
+
 var UserDb = require('../models/userdb');
 
 /**
@@ -19,7 +21,6 @@ function UserMgr() {
  * @private
  */
 UserMgr._updateOrCreateUser = function (req, provider, callback) {
-    "use strict";
     var meta = {};
 
     meta.cName = "UserMgr";
@@ -104,6 +105,7 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
                             return callback(err);
                         }
                         // if there is no provider, add to user
+                        provider.signUpTime = new Date();
                         reqUser.providers.push(provider);
                         reqUser.save(function(err) {
                             if (err) {
@@ -115,6 +117,7 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
                 }
                 else {
                     // if there is no provider, create new user
+                    provider.signUpTime = new Date();
                     newUser = new UserDb();
                     newUser.providers = [];
                     newUser.providers.push(provider);
@@ -138,7 +141,6 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
  * @private
  */
 UserMgr._combineUser = function (user, delUser, callback) {
-    "use strict";
     var meta = {};
 
     meta.cName = "UserMgr";
@@ -168,7 +170,6 @@ UserMgr._combineUser = function (user, delUser, callback) {
  * @private
  */
 UserMgr._getUserId = function (req, res) {
-    "use strict";
     var userId;
     var errorMsg;
     var meta = {};
@@ -203,7 +204,6 @@ UserMgr._getUserId = function (req, res) {
  * @private
  */
 UserMgr._findProviderByUserId = function (userId, providerName, providerId, callback) {
-    "use strict";
     var meta = {};
 
     meta.cName = "UserMgr";
@@ -212,19 +212,16 @@ UserMgr._findProviderByUserId = function (userId, providerName, providerId, call
     meta.providerName = providerName;
 
     UserDb.findById(userId, function (err, user) {
-        var provider;
-        var errMsg;
-
         if (err || !user) {
             log.error("Fail to find user", meta);
             return callback(err);
         }
 
-        provider = user.findProvider(providerName, providerId);
+        var provider = user.findProvider(providerName, providerId);
         if (!provider) {
-            errMsg = "Fail to find provider";
-            log.error(errMsg, meta);
-            return callback(errMsg);
+            var error = new Error("Fail to find provider");
+            log.error(error, meta);
+            return callback(error);
         }
 
         callback(null, user, provider);
@@ -240,7 +237,6 @@ UserMgr._findProviderByUserId = function (userId, providerName, providerId, call
  * @private
  */
 UserMgr._findUsers = function (callback) {
-    "use strict";
     var meta = {};
 
     meta.cName = "UserMgr";
@@ -255,5 +251,40 @@ UserMgr._findUsers = function (callback) {
         return callback(null, users);
     });
 };
+
+UserMgr.makeTokenExpireTime = function (expires_in) {
+    var expireDate;
+    if (expires_in) {
+        expireDate = new Date();
+        expireDate.setSeconds(expireDate.getSeconds()+expires_in);
+    }
+
+    return expireDate;
+};
+
+UserMgr.updateAccessToken = function (user, provider, accessToken, refreshToken, expires_in) {
+    var meta = {};
+    meta.cName = "UserMgr";
+    meta.fName = "updateAccessToken";
+    meta.providerName = provider.providerName;
+    meta.providerId = provider.providerId;
+
+    provider.accessToken = accessToken;
+    if (refreshToken) {
+        provider.refreshToken = refreshToken;
+    }
+    provider.tokenExpireTime = UserMgr.makeTokenExpireTime(expires_in);
+
+    user.save (function(err) {
+        if (err) {
+            log.error("Fail to save user info", meta);
+        }
+    });
+
+    return provider;
+};
+
+
+
 
 module.exports = UserMgr;

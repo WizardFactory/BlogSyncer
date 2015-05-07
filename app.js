@@ -37,13 +37,13 @@ var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
 
-var Logger = require('./routes/log');
+var Logger = require('./controllers/log');
 global.log  = new Logger(__dirname + "/debug.log");
 
 var svcConfig = require('./models/svcConfig.json');
 
 var app = express();
-var blogBot = require('./routes/blogbot');
+var blogBot = require('./controllers/blogbot');
 
 var connectInfo;
 

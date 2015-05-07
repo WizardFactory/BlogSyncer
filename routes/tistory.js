@@ -2,13 +2,15 @@
  * Created by aleckim on 2014. 7. 20.
  */
 
+"use strict";
+
 var router = require('express').Router();
 var passport = require('passport');
-var request = require('request');
+var request = require('../controllers/requestEx');
 var url = require('url');
 
-var blogBot = require('./blogbot');
-var userMgr = require('./userManager');
+var blogBot = require('./../controllers/blogbot');
+var userMgr = require('./../controllers/userManager');
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.tistory;
@@ -17,12 +19,10 @@ var TISTORY_API_URL = "https://www.tistory.com/apis";
 var TISTORY_PROVIDER = "tistory";
 
 passport.serializeUser(function(user, done) {
-    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
-    "use strict";
     done(null, obj);
 });
 
@@ -33,7 +33,6 @@ passport.use(new TistoryStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-        "use strict";
 //       log.debug("accessToken:" + accessToken);
 //       log.debug("refreshToken:" + refreshToken);
 //       log.debug("profile:" + JSON.stringify(profile));
@@ -84,7 +83,6 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('tistory', { failureRedirect: '/#signin' }),
     function(req, res) {
-        "use strict";
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
@@ -92,32 +90,25 @@ router.get('/authorized',
 );
 
 router.get('/info', function (req, res) {
-    "use strict";
     var userId = userMgr._getUserId(req, res);
-
     if (!userId) {
         return;
     }
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        api_url = TISTORY_API_URL+"/blog/info?access_token="+ provider.accessToken+"&output=json";
+        var api_url = TISTORY_API_URL+"/blog/info?access_token="+ provider.accessToken+"&output=json";
 
         log.debug(api_url);
 
-        request.get(api_url, function (err, response, body) {
-            var hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+        request.getEx(api_url, null, function (err, response, body) {
+            if (err) {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
             log.debug(body);
             res.send(body);
@@ -126,101 +117,88 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/post/list/:simpleName', function (req, res) {
-    "use strict";
     var userId = userMgr._getUserId(req, res);
-
     if (!userId) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var blog_name;
+    var blog_name = req.params.simpleName;
 
+    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        blog_name = req.params.simpleName;
-        api_url = TISTORY_API_URL+"/post/list?access_token="+ provider.accessToken;
+        var api_url = TISTORY_API_URL+"/post/list?access_token="+ provider.accessToken;
         api_url = api_url + "&targetUrl=" + blog_name;
         api_url = api_url + "&output=json";
 
         log.debug(api_url);
 
-        request.get(api_url, function (err, response, body) {
-            var hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+        request.getEx(api_url, null, function (err, response, body) {
+            if (err) {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
-            //log.debug(body);
+
+            log.debug(body);
             res.send(body);
         });
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    "use strict";
     var userId = userMgr._getUserId(req, res);
-    var providerId;
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    providerId = req.query.providerid;
+    var providerId = req.query.providerid;
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, providerId, function (err, user, provider) {
-        var api_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        api_url = TISTORY_API_URL + "/blog/info?access_token=" + provider.accessToken + "&output=json";
+        var api_url = TISTORY_API_URL + "/blog/info?access_token=" + provider.accessToken + "&output=json";
+        log.debug(api_url, meta);
 
-        log.debug(api_url);
-        request.get(api_url, function (err, response, body) {
-            var hasError;
-            var send_data;
-            var item;
-            var i;
-            var hostname;
-            var target_url;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+        request.getEx(api_url, null, function (err, response, body) {
+            if (err)  {
+                log.error(err, meta);
+                return res.send(500).send(err);
             }
-            //log.debug(body);
 
-            send_data = {};
+            var send_data = {};
             send_data.provider = provider;
-            //log.debug(p);
-
             send_data.blogs = [];
 
-            item = JSON.parse(body).tistory.item;
-            log.debug('item length=' + item.length);
+            try {
+                var item = JSON.parse(body).tistory.item;
+                log.debug('item length=' + item.length, meta);
 
-            for (i = 0; i < item.length; i+=1) {
-                hostname = url.parse(item[i].url).hostname;
-                if (hostname.indexOf('tistory.com') > -1) {
-                    target_url = hostname.split('.')[0];
+                for (var i = 0; i < item.length; i+=1) {
+                    var hostname = url.parse(item[i].url).hostname;
+                    var target_url;
+                    if (hostname.indexOf('tistory.com') > -1) {
+                        target_url = hostname.split('.')[0];
+                    }
+                    else {
+                        target_url = hostname;
+                    }
+                    log.debug('target_url=', target_url, meta);
+                    //tistory api had used targetUrl instead of blogId;
+                    send_data.blogs.push({"blog_id": target_url, "blog_title": item[i].title, "blog_url": item[i].url});
                 }
-                else {
-                    target_url = hostname;
-                }
-                log.debug('target_url=', target_url);
-                //tistory api had used targetUrl instead of blogId;
-                send_data.blogs.push({"blog_id": target_url, "blog_title": item[i].title, "blog_url": item[i].url});
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
             }
 
             res.send(send_data);
@@ -229,67 +207,62 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    "use strict";
     var userId = userMgr._getUserId(req, res);
-
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var target_url = req.params.blog_id;
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var target_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        target_url = req.params.blog_id;
-        api_url = TISTORY_API_URL + "/blog/info?";
+        var api_url = TISTORY_API_URL + "/blog/info?";
         api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&output=json";
 
-        log.debug(api_url);
+        log.debug(api_url, meta);
 
-        request.get(api_url, function (err, response, body) {
-            var hasError;
-            var item;
-            var i;
-            var hostname;
-            var target_host;
-            var send_data;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
-            }
-            //log.debug(data);
-            item = JSON.parse(body).tistory.item;
-            log.debug('item length=' + item.length);
-
-            for (i = 0; i < item.length; i+=1) {
-                hostname = url.parse(item[i].url).hostname;
-                target_host = hostname.split('.')[0];
-                if (target_host === target_url) {
-                    break;
-                }
+        request.getEx(api_url, null, function (err, response, body) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(500).send(err);
             }
 
-            send_data = {};
+            var send_data = {};
             send_data.provider_name = TISTORY_PROVIDER;
 
-            if (i === item.length) {
-                log.debug('Fail to find blog=' + target_url);
-                send_data.blog_id = target_url;
-                send_data.post_count = 0;
+            try {
+                var item = JSON.parse(body).tistory.item;
+                log.debug('item length=' + item.length, meta);
+
+                for (var i = 0; i < item.length; i+=1) {
+                    var hostname = url.parse(item[i].url).hostname;
+                    var target_host = hostname.split('.')[0];
+                    if (target_host === target_url) {
+                        break;
+                    }
+                }
+
+                if (i === item.length) {
+                    log.debug('Fail to find blog=' + target_url, meta);
+                    send_data.blog_id = target_url;
+                    send_data.post_count = 0;
+                }
+                else {
+                    send_data.blog_id = target_url;
+                    send_data.post_count = item[i].statistics.post;
+                }
             }
-            else {
-                send_data.blog_id = target_url;
-                send_data.post_count = item[i].statistics.post;
+            catch(e)  {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
             }
 
             res.send(send_data);
@@ -298,125 +271,112 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var target_url = req.params.blog_id;
+    var offset = req.query.offset;
+    var after = req.query.after;
+
+    var count;
+    var page;
+    if (offset) {
+        count = offset.split("-")[1];
+        page = offset.split("-")[0] / count + 1; //start from 1
+    }
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var target_url;
-        var offset;
-        var after;
-        var count;
-        var page;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        target_url = req.params.blog_id;
-        offset = req.query.offset;
-        after = req.query.after;
+        var api_url = TISTORY_API_URL + "/post/list?";
+        api_url = api_url + "access_token=" + provider.accessToken;
+        api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
+        if (offset) {
+            api_url += "&page=" + page;
+            api_url += "&count=" + count;
+        }
+        if (after) {
+            if (!offset) {
+                api_url += "&count=" + 30;
+            }
+            api_url += "&sort=date";
+        }
+        api_url += "&output=json";
 
-        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
-            if (offset) {
-                count = offset.split("-")[1];
-                page = offset.split("-")[0] / count + 1; //start from 1
+        //log.debug(api_url, meta);
+
+        _getCategoryIds(target_url, provider.accessToken, request.getEx, function(err, category) {
+            if (err) {
+               log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            api_url = TISTORY_API_URL + "/post/list?";
-            api_url = api_url + "access_token=" + provider.accessToken;
-            api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
-            if (offset) {
-                api_url += "&page=" + page;
-                api_url += "&count=" + count;
-            }
-            if (after) {
-                if (!offset) {
-                    api_url += "&count=" + 30;
+            request.getEx(api_url, null, function (err, response, body) {
+                if (err) {
+                    log.error(err, meta);
+                    return res.status(err.statusCode).send(err);
                 }
-                api_url += "&sort=date";
-            }
-            api_url += "&output=json";
 
-            //log.debug(api_url);
-
-            request.get(api_url, function (err, response, body) {
-                var hasError;
-                var item;
-                var send_data;
-                var recv_post_count;
-                var i;
-                var raw_post;
-                var post_date;
-                var after_date;
-                var send_post;
-
-                hasError = _checkError(err, response, body);
-                if (hasError) {
-                    if (response.statusCode) {
-                        res.statusCode = response.statusCode;
-                    }
-                    else {
-                        log.error(" userId=" + userId + " You have to set detail error!!");
-                        res.statusCode = 400;
-                    }
-                    res.send(hasError);
-                    return;
-                }
-                //log.debug(body);
-                item = JSON.parse(body).tistory.item;
-
-                send_data = {};
+                var send_data = {};
                 send_data.provider_name = TISTORY_PROVIDER;
                 send_data.blog_id = target_url;
                 send_data.post_count = 0;
                 send_data.posts = [];
 
-                recv_post_count = 0;
-                if (item.totalCount === 1) {
-                    recv_post_count = item.totalCount;
-                }
-                else {
-                    recv_post_count = item.posts.post.length;
-                }
-                //log.debug('tistory target_url='+target_url+' posts='+recv_post_count);
+                try {
+                    var item = JSON.parse(body).tistory.item;
 
-                for (i = 0; i < recv_post_count; i += 1) {
-                    raw_post = {};
-                    if (recv_post_count === 1) {
-                        raw_post = item.posts.post;
+                    var recv_post_count = 0;
+                    if (item.totalCount === 1) {
+                        recv_post_count = item.totalCount;
                     }
                     else {
-                        raw_post = item.posts.post[i];
+                        recv_post_count = item.posts.post.length;
                     }
-                    post_date = new Date(raw_post.date);
-                    if (after) {
-                        after_date = new Date(after);
-                        if (post_date < after_date) {
-                            //log.debug('post(' + raw_post.id + ') is before');
-                            continue;
+                    //log.debug('tistory target_url='+target_url+' posts='+recv_post_count, meta);
+
+                    for (var i = 0; i < recv_post_count; i += 1) {
+                        var raw_post = {};
+                        if (recv_post_count === 1) {
+                            raw_post = item.posts.post;
                         }
                         else {
-                            log.debug("add post(" + raw_post.id + ")");
+                            raw_post = item.posts.post[i];
                         }
-                    }
+                        var post_date = new Date(raw_post.date);
+                        if (after) {
+                            var after_date = new Date(after);
+                            if (post_date < after_date) {
+                                //log.debug('post(' + raw_post.id + ') is before');
+                                continue;
+                            }
+                            else {
+                                log.debug("add post(" + raw_post.id + ")");
+                            }
+                        }
 
-                    send_post = {};
-                    send_post.title = raw_post.title;
-                    send_post.modified = raw_post.date;
-                    send_post.id = raw_post.id;
-                    send_post.url = raw_post.postUrl;
-                    send_post.categories = [];
-                    send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
-                    send_data.posts.push(send_post);
-                    send_data.post_count += 1;
+                        var send_post = {};
+                        send_post.title = raw_post.title;
+                        send_post.modified = raw_post.date;
+                        send_post.id = raw_post.id;
+                        send_post.url = raw_post.postUrl;
+                        send_post.categories = [];
+                        send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
+                        send_data.posts.push(send_post);
+                        send_data.post_count += 1;
+                    }
+                }
+                catch(e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.status(500).send(e);
                 }
                 res.send(send_data);
             });
@@ -425,73 +385,73 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug(req.url);
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var target_url = req.params.blog_id;
+    var post_id = req.params.post_id;
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var target_url;
-        var post_id;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        target_url = req.params.blog_id;
-        post_id = req.params.post_id;
+        _getCategoryIds(target_url, provider.accessToken, request.getEx, function(err, category) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
 
-        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
-            api_url = TISTORY_API_URL + "/post/read?";
+            var api_url = TISTORY_API_URL + "/post/read?";
             api_url = api_url + "access_token=" + provider.accessToken;
             api_url += "&targetUrl=" + target_url; //조회할 티스토리 주소
             api_url += "&postId=" + post_id;
             api_url += "&output=json";
 
-            log.debug(api_url);
-            request.get(api_url, function (err, response, body) {
-                var hasError;
-                var item;
-                var send_data;
-                var raw_post;
-                var send_post;
+            log.debug(api_url, meta);
 
-                hasError = _checkError(err, response, body);
-                if (hasError) {
-                    res.statusCode = response.statusCode;
-                    res.send(hasError);
-                    return;
+            request.getEx(api_url, null, function (err, response, body) {
+                if (err) {
+                    log.error(err, meta);
+                    return res.status(err.statusCode).send(err);
                 }
-                //log.debug(data);
-                item = JSON.parse(body).tistory.item;
 
-                send_data = {};
+                //log.debug(data, meta);
+
+                var send_data = {};
                 send_data.provider_name = TISTORY_PROVIDER;
                 send_data.blog_id = target_url;
                 send_data.posts = [];
 
-                raw_post = item;
+                try {
+                    var item = JSON.parse(body).tistory.item;
+                    var raw_post = item;
 
-                send_post = {};
-                send_post.title = raw_post.title;
-                send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.postUrl;
-                send_post.categories = [];
-                send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
+                    var send_post = {};
+                    send_post.title = raw_post.title;
+                    send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
+                    send_post.id = raw_post.id;
+                    send_post.url = raw_post.postUrl;
+                    send_post.categories = [];
+                    send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
 
-                send_post.content = raw_post.content;
-                send_post.replies = [];
-                send_post.replies.push({"comment_count": raw_post.comments});
-                send_post.replies.push({"trackback_count": raw_post.trackbacks});
-                send_data.posts.push(send_post);
+                    send_post.content = raw_post.content;
+                    send_post.replies = [];
+                    send_post.replies.push({"comment_count": raw_post.comments});
+                    send_post.replies.push({"trackback_count": raw_post.trackbacks});
+                    send_data.posts.push(send_post);
+                }
+                catch(e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.status(500).send(e);
+                }
+
                 res.send(send_data);
             });
         });
@@ -499,92 +459,96 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    "use strict";
-    //log.debug(req.url);
     var userId = userMgr._getUserId(req, res);
-
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var target_url = req.params.blog_id;
+    var api_url = TISTORY_API_URL + "/post/write";
+
+    var new_post = {};
+    new_post.targetUrl = target_url;
+    new_post.visibility = 3; //3:발행
+
+    if (req.body.title) {
+        new_post.title = req.body.title;
+    }
+    else {
+        var error =  new Error("Fail to get title");
+        log.error(error, meta);
+        return res.status(400).send(error);
+    }
+
+    if (req.body.content) {
+        new_post.content = req.body.content;
+    }
+    if (req.body.tags) {
+        new_post.tag = req.body.tags;
+    }
+
+    var categoryName;
+    if (req.body.categories) {
+        categoryName =  req.body.categories[0];
+    }
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var target_url;
-        var new_post;
-        var category_id;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        target_url = req.params.blog_id;
+        new_post.access_token = provider.accessToken;
 
-        _getCategoryIds(target_url, provider.accessToken, request.get, function(category) {
-            api_url = TISTORY_API_URL + "/post/write";
-            new_post = {};
-            new_post.access_token = provider.accessToken;
-            new_post.targetUrl = target_url;
-            new_post.visibility = 3; //3:발행
-
-            //change catgory name to id
-            if (req.body.title) {
-                new_post.title = req.body.title;
+        _getCategoryIds(target_url, provider.accessToken, request.getEx, function(err, category) {
+            if (err)  {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
-            else {
-                log.error("Fail to get title");
-                res.send("Fail to get title");
-                return;
-            }
-
-            if (req.body.content) {
-                new_post.content = req.body.content;
-            }
-            if (req.body.tags) {
-                new_post.tag = req.body.tags;
-            }
-
-            category_id = 0;
 
             //get category_id from name
-            if (category_id) {
-                new_post.category_id = category_id;
+            if (categoryName) {
+                new_post.category_id = _getCategoryIdByName(category, categoryName);
+                //todo create category
+                //if(!new_post.category_id) {
+                //
+                //}
             }
             new_post.output = "json";
 
-            request.post(api_url, {
+            request.postEx(api_url, {
                 form: new_post
             }, function (err, response, body) {
-                var hasError;
-                var item;
-                var send_data;
-                var send_post;
-
-                hasError = _checkError(err, response, body);
-                if (hasError) {
-                    res.statusCode = response.statusCode;
-                    res.send(hasError);
-                    return;
+                if (err)  {
+                    log.error(err);
+                    return res.status(err.statusCode).send(err);
                 }
 
-                //log.debug(body);
-                item = JSON.parse(body).tistory;
-
-                send_data = {};
+                var send_data = {};
                 send_data.provider_name = TISTORY_PROVIDER;
                 send_data.blog_id = target_url;
                 send_data.posts = [];
 
-                send_post = {};
-                send_post.title = new_post.title;
-                //todo: get date
-                send_post.modified = new Date();
-                send_post.id = item.postId;
-                send_post.url = item.url;
-                send_post.categories = [];
-                send_post.categories.push(_getCategoryNameById(category, new_post.categoryId));
-                send_data.posts.push(send_post);
+                try {
+                    var item = JSON.parse(body).tistory;
+
+                    var send_post = {};
+                    send_post.title = new_post.title;
+                    //todo: get date
+                    send_post.modified = new Date();
+                    send_post.id = item.postId;
+                    send_post.url = item.url;
+                    send_post.categories = [];
+                    send_post.categories.push(_getCategoryNameById(category, new_post.categoryId));
+                    send_data.posts.push(send_post);
+                }
+                catch(e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.status(500).send(e);
+                }
 
                 //log.debug(send_data);
                 res.send(send_data);
@@ -594,87 +558,64 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var targetURL = req.params.blogID;
+    var postID = req.params.postID;
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
-        var api_url;
-        var targetURL;
-        var postID;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        targetURL = req.params.blogID;
-        postID = req.params.postID;
-        api_url = TISTORY_API_URL + "/comment/list?";
+        var api_url = TISTORY_API_URL + "/comment/list?";
         api_url = api_url + "access_token=" + provider.accessToken;
         api_url += "&targetUrl=" + targetURL; //조회할 티스토리 주소
         api_url += "&postId=" + postID;
         api_url += "&output=json";
 
-        log.debug(api_url);
+        log.debug(api_url, meta);
 
-        request.get(api_url, function (err, response, body) {
-            var hasError;
-            var item;
-            var send;
-            var i;
-            var comment;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+        request.getEx(api_url, null, function (err, response, body) {
+            if (err)  {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
+
             //log.debug(body);
-            item = JSON.parse(body).tistory.item;
-            send = {};
+            var send = {};
             send.providerName = provider.providerName;
             send.blogID = targetURL;
             send.postID = postID;
-            send.found = item.totalCount;
-            send.comments = [];
-            for (i = 0; i < item.totalCount; i+=1) {
-                comment = {};
-                comment.date = item.comments.comment[i].date;
-                comment.URL = item.url;
-                comment.content = item.comments.comment[i].comment;
-                send.comments.push(comment);
+
+            try {
+                var item = JSON.parse(body).tistory.item;
+                send.found = item.totalCount;
+                send.comments = [];
+                for (var i = 0; i < item.totalCount; i+=1) {
+                    var comment = {};
+                    comment.date = item.comments.comment[i].date;
+                    comment.URL = item.url;
+                    comment.content = item.comments.comment[i].comment;
+                    send.comments.push(comment);
+                }
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
             }
 
             res.send(send);
         });
     });
 });
-
-function _checkError(err, response, body) {
-    "use strict";
-    var bodyErr;
-    var errStr;
-
-    if (err) {
-        log.error(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        bodyErr = body.meta ? body.meta.msg : body.error;
-        errStr = 'tistory API error: ' + response.statusCode + ' ' + bodyErr;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
 
 /**
  * 이 함수처럼, request.get과 callback을 분리해서 unit test가능한 구조로 변경할 필요가 있음.
@@ -685,7 +626,6 @@ function _checkError(err, response, body) {
  * @private
  */
 function _getCategoryIds(target_api_url, accessToken, get, cb) {
-    "use strict";
     var api_url;
     var category;
 
@@ -696,14 +636,25 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
 
     log.debug("url="+api_url);
 
-    get(api_url, function (err, response, body) {
+    get(api_url, null, function (err, response, body) {
         if (err) {
-            log.error("Fail to request get");
+            log.error(err);
+            cb(err);
         }
 //        log.debug(body);
-        category = JSON.parse(body).tistory.item.categories.category;
+        try {
+            category = JSON.parse(body).tistory.item.categories.category;
+        }
+        catch (e) {
+            e.statusCode = 500;
+            e.routerMessage = "Fail to get category info";
+            log.error(e);
+            category = [];
+            cb(e);
+        }
+
 //        log.debug(category);
-        cb(category);
+        cb(null, category);
     });
 }
 
@@ -715,7 +666,6 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
  * @private
  */
 function _getCategoryNameById(category, categoryId) {
-    "use strict";
     var len;
 
     if (!category) {
@@ -730,9 +680,30 @@ function _getCategoryNameById(category, categoryId) {
     }
 }
 
+/***
+ *
+ * @param category
+ * @param categoryName
+ * @returns {*}
+ * @private
+ */
+function _getCategoryIdByName(category, categoryName) {
+    var len;
+
+    if (!category) {
+        return categoryName;
+    }
+
+    len = category.length;
+    for (var i=0; i<len; i+=1)  {
+        if (category[i].name === categoryName) {
+            return category[i].id;
+        }
+    }
+}
+
 /* It's only for test */
 //router.get('/bot_category/:blog_id', function(req, res) {
-//    "use strict";
 //    var userId = _getUserId(req, res);
 //    UserDb.findById(userId, function (err, user) {
 //        var target_url;
