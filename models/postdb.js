@@ -201,6 +201,9 @@ postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId)
 
     for (i = 0; i<this.posts.length; i+=1) {
         infos = this.posts[i].infos;
+        if (infos === null) {
+            continue;
+        }
         for (j = 0; j<infos.length; j+=1) {
            if (infos[j].provider_name === providerName &&
                     infos[j].blog_id === blogId &&
