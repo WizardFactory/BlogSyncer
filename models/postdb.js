@@ -234,7 +234,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     meta.blogId = blogId;
     meta.newPostId = newPost.id;
 
-    log.debug(" ", meta);
+    log.debug("+", meta);
 
     totalCount = this.posts.length;
     log.debug("Total=" + totalCount, meta);
@@ -251,7 +251,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.type = newPost.type;
     }
     else {
-        log.debug("Type is undefined", meta);
+        log.verbose("Type is undefined", meta);
         post.type = 'text';
     }
 
@@ -259,7 +259,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.categories = newPost.categories;
     }
     else {
-        log.debug("Categories is undefined", meta);
+        log.verbose("Categories is undefined", meta);
         post.categories = [];
     }
 
@@ -267,7 +267,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.tags = newPost.tags;
     }
     else {
-        log.debug("Tags is undefined", meta);
+        log.verbose("Tags is undefined", meta);
         post.tags = [];
     }
 

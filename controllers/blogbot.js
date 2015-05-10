@@ -492,7 +492,7 @@ BlogBot.isStarted = function (user) {
         }
     }
 
-    log.warning("Fail to find user in blogBot", meta);
+    log.warn("Fail to find user in blogBot", meta);
     return false;
 };
 
@@ -650,7 +650,7 @@ BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
     }
     blogs = recvBlogs.blogs;
 
-    log.info(provider, meta);
+    log.debug(provider, meta);
     log.info(blogs, meta);
 
     blogDb = BlogBot._findDbByUser(user, "blog");
@@ -875,7 +875,7 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
 
         //check there is post
         if (postDb.isPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost.id.toString())) {
-            log.notice("This post was already saved - provider=" + rcvPosts.provider_name + " blog=" +
+            log.verbose("This post was already saved - provider=" + rcvPosts.provider_name + " blog=" +
                     rcvPosts.blog_id + " post=" + rcvPost.id, meta);
             continue;
         }

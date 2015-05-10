@@ -57,7 +57,7 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
         }
     }
 
-    log.notice("Fail to find site", meta);
+    log.verbose("Fail to find site", meta);
 };
 
 /**
