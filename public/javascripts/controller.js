@@ -703,16 +703,42 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
     init();
 });
 
-bs.controller('signinCtrl', function ($scope, $http, Data) {
+bs.controller('signinCtrl', function ($scope, $http, Data, Site) {
     "use strict";
 
-    $scope.user = Data.getUser();
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
-    if ($scope.user._id) {
-        $scope.title = 'Your accounts';
+    function init() {
+        $scope.user = Data.getUser();
+        $scope.sites = Site.getSiteList();
+        if (!$scope.sites) {
+            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+                if (err) {
+                    window.alert(err);
+                }
+                $scope.sites = rcvSites;
+            });
+        }
+
+        $scope.getBlogTitle = function(provider) {
+            if (!$scope.sites) {
+                return;
+            }
+
+            for (var i = 0; i < $scope.sites.length; i += 1) {
+                if ($scope.sites[i].provider.providerId === provider.providerId) {
+                    return "(" + $scope.sites[i].blog.blog_title + ")";
+                }
+            }
+        };
+
+        if ($scope.user._id) {
+            $scope.title = 'Your accounts';
+        }
+        else {
+            $scope.title = 'Please sign in';
+        }
     }
-    else {
-        $scope.title = 'Please sign in';
-    }
+
+    init();
 });
