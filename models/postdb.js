@@ -70,10 +70,16 @@ postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId
     var i;
     var j;
     var infos;
+    var meta = {};
 
-    for (i = 0; i<this.posts.length; i++) {
+    meta.cName = "postSchema";
+    meta.fName = "getPostByPostIdOfBlog";
+    meta.providerName = providerName;
+    meta.blogId = blogId;
+
+    for (i = 0; i<this.posts.length; i+=1) {
         infos = this.posts[i].infos;
-        for (j = 0; j<infos.length; j++) {
+        for (j = 0; j<infos.length; j+=1) {
             if (infos[j].provider_name === providerName &&
                 infos[j].blog_id === blogId &&
                 infos[j].post_id === postId) {
@@ -82,7 +88,7 @@ postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId
         }
     }
 
-    log.debug('[getPostByPostIdOfBlog] Fail to find post id=' + postId);
+    log.error('Fail to find providerName='+providerName+' blogId='+blogId+ ' post id=' + postId, meta);
 };
 
 /**
@@ -101,9 +107,15 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
 
     meta.cName = "postSchema";
     meta.fName = "addPostInfo";
-    meta.postId = post._id;
     meta.providerName = providerName;
     meta.blogId = blogId;
+
+    if (!post) {
+        log.error("Post is undefined", meta);
+        return;
+    }
+
+    meta.postId = post._id;
     meta.newPostId = newPost.id;
 
     postInfo = {};
@@ -173,7 +185,7 @@ postSchema.methods.findPostByTitle = function(title) {
  * @param {string} postId
  * @returns {boolean}
  */
-postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postId) {
+postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId) {
     "use strict";
     var foundIt = false;
     var i;
@@ -182,7 +194,7 @@ postSchema.methods.findPostByPostIdOfBlog = function(providerName, blogId, postI
     var meta = {};
 
     meta.cName = "postSchema";
-    meta.fName = "findPostByPostIdOfBlog";
+    meta.fName = "isPostByPostIdOfBlog";
     meta.providerName = providerName;
     meta.blogId = blogId;
     meta.postId = postId;
@@ -222,7 +234,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     meta.blogId = blogId;
     meta.newPostId = newPost.id;
 
-    log.debug(" ", meta);
+    log.debug("+", meta);
 
     totalCount = this.posts.length;
     log.debug("Total=" + totalCount, meta);
@@ -239,7 +251,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.type = newPost.type;
     }
     else {
-        log.debug("Type is undefined", meta);
+        log.verbose("Type is undefined", meta);
         post.type = 'text';
     }
 
@@ -247,7 +259,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.categories = newPost.categories;
     }
     else {
-        log.debug("Categories is undefined", meta);
+        log.verbose("Categories is undefined", meta);
         post.categories = [];
     }
 
@@ -255,7 +267,7 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
         post.tags = newPost.tags;
     }
     else {
-        log.debug("Tags is undefined", meta);
+        log.verbose("Tags is undefined", meta);
         post.tags = [];
     }
 

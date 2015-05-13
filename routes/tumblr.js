@@ -2,11 +2,13 @@
  * Created by aleckim on 2014. 7. 5..
  */
 
+"use strict";
+
 var router = require('express').Router();
 var passport = require('passport');
 
-var blogBot = require('./blogbot');
-var userMgr = require('./userManager');
+var blogBot = require('./../controllers/blogbot');
+var userMgr = require('./../controllers/userManager');
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.tumblr;
@@ -15,12 +17,10 @@ var tumblr = require('tumblr.js');
 var TUMBLR_PROVIDER = "tumblr";
 
 passport.serializeUser(function(user, done) {
-    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
-    "use strict";
     done(null, obj);
 });
 
@@ -31,14 +31,12 @@ passport.use(new TumblrStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
-        "use strict";
-        var provider;
 
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
 
-        provider= {
+        var provider= {
             "providerName":profile.provider,
             "token":token,
             "tokenSecret":tokenSecret,
@@ -48,7 +46,7 @@ passport.use(new TumblrStrategy({
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
-                log.error("Fail to get user ");
+                log.error("Fail to get user");
                 return done(err);
             }
 
@@ -84,7 +82,6 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('tumblr', { failureRedirect: '/#signin' }),
     function(req, res) {
-        "use strict";
 
         // Successful authentication, redirect home.
         log.debug('Successful!');
@@ -93,66 +90,55 @@ router.get('/authorized',
 );
 
 router.get('/info', function (req, res) {
-    "use strict";
-    var userId;
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
             token_secret: provider.tokenSecret
         });
 
-        client.userInfo(function(error, data) {
+        client.userInfo(function(error, response, body) {
             if (error) {
-
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
-                return;
+                log.error(error, meta);
+                return res.status(404).send(error);
             }
-            log.debug(data);
-            res.send(data);
+
+            log.debug(body, meta);
+            return res.send(body);
         });
     });
 });
 
 router.get('/posts/:blogName', function (req, res) {
-    "use strict";
-    var userId;
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blogName = req.params.blogName;
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-        var blogName;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        blogName = req.params.blogName;
-
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
@@ -161,42 +147,32 @@ router.get('/posts/:blogName', function (req, res) {
 
         client.posts(blogName, function (error, response) {
             if (error) {
-
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
-                return;
+                log.error(error, meta);
+                return res.status(400).send(error);
             }
-            log.debug(response);
+            log.debug(response, meta);
             res.send(response);
         });
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    "use strict";
-    var userId;
-    var providerId;
-
-    log.debug(req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    providerId = req.query.providerid;
+    var providerId = req.query.providerid;
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, providerId, function (err, user, provider) {
-        var client;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
@@ -204,27 +180,29 @@ router.get('/bot_bloglist', function (req, res) {
         });
 
         client.userInfo(function (error, response) {
-            var send_data;
-            var blogs;
-            var i;
-
             if (error) {
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
-                return;
+                log.error(error, meta);
+                return res.status(400).send(error);
             }
-            //log.debug(response);
+            //log.debug(response, meta);
 
-            send_data = {};
+            var send_data = {};
             send_data.provider = provider;
             send_data.blogs = [];
 
-            blogs = response.user.blogs;
-            log.debug('blogs length=' + blogs.length);
+            try {
+                var blogs = response.user.blogs;
+                log.debug('blogs length=' + blogs.length, meta);
 
-            for (i = 0; i < blogs.length; i+=1) {
-                send_data.blogs.push({"blog_id": blogs[i].name, "blog_title": blogs[i].title, "blog_url": blogs[i].url});
+                for (var i = 0; i < blogs.length; i+=1) {
+                    send_data.blogs.push({"blog_id": blogs[i].name, "blog_title": blogs[i].title,
+                                            "blog_url": blogs[i].url});
+                }
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(response, meta);
+                return res.status(500).send(e);
             }
 
             res.send(send_data);
@@ -233,29 +211,22 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug("tumblr: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blog_id = req.params.blog_id;
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-        var blog_id;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        blog_id = req.params.blog_id;
-
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
@@ -264,17 +235,21 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
         client.blogInfo(blog_id, function(error, response) {
             if (error) {
-                //throw new Error(error);
-                log.error(error);
-                res.statusCode = 400;
-                res.send(error);
+                log.error(error, meta);
+                res.status(400).send(error);
                 return;
             }
-            //log.debug(response);
             var send_data = {};
             send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.blog_id = response.blog.name;
-            send_data.post_count = response.blog.posts;
+            try {
+                send_data.blog_id = response.blog.name;
+                send_data.post_count = response.blog.posts;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(response, meta);
+                return res.status(500).send(e);
+            }
 
             res.send(send_data);
         });
@@ -290,36 +265,30 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
  * @private
  */
 function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
-    "use strict";
-    var i;
-    var raw_post;
-    var post_date;
-    var after_date;
-    var send_post;
-    var j;
 
-    for (i = 0; i<raw_posts.length; i+=1) {
-        raw_post = raw_posts[i];
+    for (var i = 0; i<raw_posts.length; i+=1) {
+        var raw_post = raw_posts[i];
 
-        post_date = new Date(raw_post.date);
-        after_date = new Date(after);
+        var post_date = new Date(raw_post.date);
+        var after_date = new Date(after);
         if (post_date < after_date) {
             //log.debug('post(' + raw_post.id + ') is before');
             continue;
         }
 
-        send_post = {};
+        var send_post = {};
         send_post.title = raw_post.title;
         send_post.modified = raw_post.date;
         send_post.id = raw_post.id;
         send_post.url = raw_post.post_url;
+
         //tumblr does not support categories
 //            send_post.categories = [];
 //            for (var j=0;j<raw_post.categories.length;j++) {
 //                send_post.categories.push(raw_post.categories[j]);
 //            }
         send_post.tags = [];
-        for (j=0; j<raw_post.tags.length; j+=1) {
+        for (var j=0; j<raw_post.tags.length; j+=1) {
             send_post.tags.push(raw_post.tags[j]);
         }
 //            log.debug('tags-send');
@@ -352,7 +321,7 @@ function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
             case "link":
                 send_post.title = raw_post.title;
                 if (is_body) {
-                    send_post.content = "url : raw_post.url"+" description : " + raw_post.description;
+                    send_post.content = "url : "+raw_post.url+" description : " + raw_post.description;
                 }
                 break;
             case "chat":
@@ -393,122 +362,124 @@ function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
                 log.debug('Fail to get type ' + raw_post.type);
                 break;
         }
+
         send_post.replies = [];
+        if (raw_post.note_count !== undefined) {
+            send_post.replies.push({"notes": raw_post.note_count});
+        }
+
         posts.push(send_post);
     }
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug("tumblr: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blog_id = req.params.blog_id;
+    var offset = req.query.offset;
+    var after = req.query.after;
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-        var options;
-
-        var blog_id = req.params.blog_id;
-        var offset = req.query.offset;
-        var after = req.query.after;
-        var start_index;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(400).send(err);
         }
 
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
             token_secret: provider.tokenSecret
         });
 
+        var options;
         if (offset) {
-            start_index = offset.split("-")[0];
-            log.debug('offset=' + start_index);
+            var start_index = offset.split("-")[0];
+            log.debug('offset=' + start_index, meta);
             options = {offset: start_index};
         }
 
         client.posts(blog_id, options, function (error, response) {
-            var send_data = {};
-
             if (error) {
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
+                log.error(error, meta);
+                res.status(400).send(error);
                 return;
             }
-            //log.debug(response);
 
+            var send_data = {};
             send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.blog_id = response.blog.name;
             send_data.post_count = 0;
             send_data.posts = [];
-            _pushPostsFromTumblr(send_data.posts, response.posts, false, after);
-            send_data.post_count = send_data.posts.length;
+            try{
+                send_data.blog_id = response.blog.name;
+                _pushPostsFromTumblr(send_data.posts, response.posts, false, after);
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(response, meta);
+                return res.status(400).send(e);
+            }
 
+            send_data.post_count = send_data.posts.length;
             res.send(send_data);
         });
     });
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug("tumblr: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blog_id = req.params.blog_id;
+    var post_id = req.params.post_id;
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-        var blog_id = req.params.blog_id;
-        var post_id = req.params.post_id;
-        var options;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
             token_secret: provider.tokenSecret
         });
 
-        options = {id: post_id};
+        var options = {id: post_id, reblog_info: true, notes_info: true};
 
         client.posts(blog_id, options, function (error, response) {
             var send_data = {};
 
             if (error) {
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
+                log.error(error, meta);
+                res.status(400).send(error);
                 return;
             }
             //log.debug(response);
 
             send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.blog_id = response.blog.name;
             send_data.post_count = 0;
             send_data.posts = [];
 
-            _pushPostsFromTumblr(send_data.posts, response.posts, true, 0);
+            try {
+                send_data.blog_id = response.blog.name;
+                _pushPostsFromTumblr(send_data.posts, response.posts, true, 0);
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(response, meta);
+                return res.status(500).send(e);
+            }
             send_data.post_count = send_data.posts.length;
 
             res.send(send_data);
@@ -517,85 +488,109 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug("tumblr: "+ req.url + ' : this is called by bot');
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blog_id = req.params.blog_id;
+    var options = {};
+
+    if (req.body.content) {
+        options.body = req.body.content;
+    }
+    else {
+        var error = new Error("Fail to get content");
+        log.error(error, meta);
+        return res.status(400).send(error);
+    }
+
+    if (req.body.title) {
+        options.title = req.body.title;
+    }
+
+    if (req.body.tags) {
+        options.tags = req.body.tags;
+    }
+
+    var postType = req.query.postType;
+    if (!postType) {
+        log.verbose("postType is undefined, so it set to text", meta);
+        postType = "post";
+    }
+
+    if (req.body.description) {
+        //it's for link post
+        if (postType === "link") {
+            options.description = req.body.description;
+        }
+        else {
+            options.body += req.body.description;
+        }
+    }
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
-        var client;
-        var blog_id;
-        var options;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        blog_id = req.params.blog_id;
-        options = {};
-
-        client = tumblr.createClient({
+        var client = tumblr.createClient({
             consumer_key: clientConfig.clientID,
             consumer_secret: clientConfig.clientSecret,
             token: provider.token,
             token_secret: provider.tokenSecret
         });
 
-        if (req.body.content) {
-            options.body = req.body.content;
+        var postFunc;
+        if (postType === "post") {
+            postFunc = client.text;
+        }
+        else if (postType === "link") {
+            postFunc = client.link;
         }
         else {
-            log.debug("Fail to get content");
-            res.send("Fail to get content");
-            return;
+            //need to refactoring make a error object;
+            var error = new Error("postType was undefined");
+            log.error(error, meta);
+            return res.status(500).send(error);
         }
 
-        if (req.body.title) {
-            options.title = req.body.title;
-        }
-
-        if (req.body.tags) {
-            options.tags = req.body.tags;
-        }
-
-        client.text(blog_id, options, function (error, response) {
-            var options;
-
+        postFunc.call(client, blog_id, options, function (error, response) {
             if (error) {
-                //throw new Error(error);
-                res.statusCode = 400;
-                res.send(error);
-                return;
+                log.error(error, meta);
+                return res.status(400).send(error);
             }
-            log.debug(response);
-            options = response;
+
+            //log.debug(response, meta);
+
+            var options = response;
 
             client.posts(blog_id, options, function (error, response) {
-                var send_data;
-
                 if (error) {
-                    //throw new Error(error);
-                    res.statusCode = 400;
-                    res.send(error);
+                    log.error(error, meta);
+                    res.status(400).send(error);
                     return;
                 }
                 //log.debug(response);
 
-                send_data = {};
+                var send_data = {};
                 send_data.provider_name = TUMBLR_PROVIDER;
-                send_data.blog_id = response.blog.name;
                 send_data.post_count = 0;
                 send_data.posts = [];
 
-                _pushPostsFromTumblr(send_data.posts, response.posts, false, 0);
-                send_data.post_count = send_data.posts.length;
+                try {
+                    send_data.blog_id = response.blog.name;
+                    _pushPostsFromTumblr(send_data.posts, response.posts, false, 0);
+                    send_data.post_count = send_data.posts.length;
+                }
+                catch(e) {
+                    log.error(e, meta);
+                    log.error(response, meta);
+                    return res.status(500).send(e);
+                }
 
                 res.send(send_data);
             });
@@ -603,27 +598,17 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     });
 });
 
-//router.get('/bot_comments/:blogID/:postID', function (req, res) {
-//    log.debug(req.url);
-//    var userID = _getUserId(req);
-//    if (userID == 0) {
-//        var errorMsg = 'You have to login first!';
-//        log.debug(errorMsg);
-//        res.send(errorMsg);
-//        res.redirect("/#/signin");
-//        return;
-//    }
-//
-//    var blog_id = req.params.blog_id;
-//    var post_id = req.params.post_id;
-//
-//    var p = userdb.findProvider(userID, "tumblr");
-//    var client = tumblr.createClient({
-//        consumer_key: clientConfig.clientID,
-//        consumer_secret: clientConfig.clientSecret,
-//        token: p.token,
-//        token_secret: p.tokenSecret
-//    });
-//});
+router.get('/bot_comments/:blogID/:postID', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var err = new Error("This api is not supported");
+    log.warn(err, meta);
+    res.status(404).send(err);
+});
 
  module.exports = router;

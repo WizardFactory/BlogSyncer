@@ -2,13 +2,15 @@
  * Created by aleckim on 2014. 7. 19..
  */
 
+"use strict";
+
 var router = require('express').Router();
 var passport = require('passport');
-var request = require('request');
+//var request = require('../controllers/requestEx');
 var url = require('url');
 
-var blogBot = require('./blogbot');
-var userMgr = require('./userManager');
+var blogBot = require('./../controllers/blogbot');
+var userMgr = require('./../controllers/userManager');
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.twitter;
@@ -27,12 +29,10 @@ var objOAuth = new OAuth("https://api.twitter.com/oauth/request_token",
     "HMAC-SHA1");
 
 passport.serializeUser(function(user, done) {
-    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
-    "use strict";
     done(null, obj);
 });
 
@@ -43,7 +43,6 @@ passport.use(new TwitterStrategy({
         passReqToCallback : true
     },
     function(req, token, tokenSecret, profile, done) {
-        "use strict";
 //        log.debug("token:" + token); // 인증 이후 auth token을 출력할 것이다.
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
@@ -94,7 +93,6 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('twitter', { failureRedirect: '/#signin' }),
     function(req, res) {
-        "use strict";
         // Successful authentication, redirect home.
         log.debug('Successful!');
         res.redirect('/#');
@@ -102,190 +100,200 @@ router.get('/authorized',
 );
 
 router.get('/bot_bloglist', function (req, res) {
-    "use strict";
-    log.debug("Twitter : "+ req.url + ' : this is called by bot');
-    var errorMsg;
     var userId = userMgr._getUserId(req, res);
-    var providerId;
     if (!userId) {
         return;
     }
+    var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    providerId = req.query.providerid;
-
+    var providerId = req.query.providerid;
     if (providerId === false) {
-        errorMsg = 'User:'+userId+' did not have blog!';
-        log.debug(errorMsg);
-        res.send(errorMsg);
+        var error = new Error('User:'+userId+' did not have blog!');
+        log.error(error, meta);
+        res.status(500).send(error);
         res.redirect("/#/signin");
         return;
     }
 
     userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
-        var api_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            res.status(500).send(err);
+            return;
         }
 
-        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
-        // instantiate Twit module
-        //var twitter = new Twit(twitConfig);
-        //var twit = new twitter(twitConfig);
+        var api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
 
-        //userTimeline(p, req, res);
-
-        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, data) {
-            var result;
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
             if(error) {
-                result = {error: error};
-                res.send(result);
+                log.error(error, meta);
+                log.error(response, meta);
+                res.status(error.statusCode).send(error);
                 return;
-            } else {
-                result = JSON.parse(data);
             }
 
-            log.debug(result);
+            var blog_id;
+            var blog_title;
+            var blog_url;
 
-            var blog_id = result.id;
-            var blog_title = result.name;
-            var blog_url = result.url;
-            var send_data = {};
+            try{
+                var result = JSON.parse(body);
+                blog_id = result.id;
+                blog_title = result.name;
+                blog_url = result.url;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                res.status(500).send(e);
+            }
 
-            send_data.provider = provider;
-            send_data.blogs = [];
-            send_data.blogs.push({"blog_id":blog_id, "blog_title":blog_title, "blog_url":blog_url});
+            var botBlogList = {};
+            botBlogList.provider = provider;
+            botBlogList.blogs = [];
+            botBlogList.blogs.push({"blog_id": blog_id, "blog_title": blog_title, "blog_url": blog_url});
 
-            res.send(send_data);
+            res.send(botBlogList);
         });
     });
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    "use strict";
-    log.debug("Twitter: "+ req.url + ' : this is called by bot');
-
     var userId = userMgr._getUserId(req, res);
-    var providerId;
     if (!userId) {
         return;
     }
+    var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    providerId = req.query.providerid;
+    var providerId = req.query.providerid;
 
     userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
-        var api_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
-        }
+            log.error(err, meta);
+            res.status(500).send(err);
+            return;
+       }
 
-        api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
+        var api_url = TWITTER_API_URL + "/users/show.json?screen_name=" + provider.providerId;
+        log.debug(api_url, meta);
 
-        log.debug(api_url);
-        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, data) {
-            var result;
-            var send_data = {};
-
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
             if(error) {
-                result = {error: error};
-                res.send(result);
+                log.error(error, meta);
+                log.error(response, meta);
+                res.status(error.statusCode).send(error);
                 return;
-            } else {
-                result = JSON.parse(data);
             }
 
-            log.debug(result);
+            var botPostCount = {};
 
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = result.id;
-            send_data.post_count = result.statuses_count;
+            try {
+                var result = JSON.parse(body);
+                botPostCount.provider_name = TWITTER_PROVIDER;
+                botPostCount.blog_id = result.id;
+                botPostCount.post_count = result.statuses_count;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                res.status(500).send(e);
+                return;
+            }
 
-            log.debug(result.statuses_count);
-
-            res.send(send_data);
+            res.send(botPostCount);
         });
     });
 });
 
+function _convertBotPosts(providerName, blogId) {
+    return {"provider_name": providerName, "blog_id": blogId, "posts": []};
+}
+
+function _convertBotPost(raw_post) {
+    var botPost = {};
+    botPost.title = raw_post.text;
+    botPost.modified = raw_post.created_at;
+
+    //you have to use id_str NOT id
+    botPost.id = raw_post.id_str;
+
+    //twitter didn't have url
+    botPost.categories = [];
+    botPost.tags = [];
+
+    //twitter didn't have content
+    botPost.content = raw_post.text;
+    botPost.replies = [];
+    botPost.replies.push({"retweet_count": raw_post.retweet_count});
+    botPost.replies.push({"like_count": raw_post.favorite_count});
+
+    return botPost;
+}
+
 router.get('/bot_posts/:blog_id', function (req, res) {
-    "use strict";
-    var meta = {};
     var userId = userMgr._getUserId(req, res);
-
-    meta.cName = "twitter";
-    meta.fName = "/bot_posts/:blog_id";
-    meta.userId = userId;
-    //meta.providerName = providerName;
-
-    var provider_id;
-    var blogId;
     if (!userId) {
         return;
     }
+    var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    provider_id = req.query.providerid;
-    //log.debug("provider_id : " + provider_id, meta);
-    blogId = req.params.blog_id;
+    var provider_id = req.query.providerid;
+    var blog_id = req.params.blog_id;
+    var last_id = req.query.offset;
+    var after = req.query.after;
 
     userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
-        var blog_id = req.params.blog_id;
-        var last_id = req.query.offset;
-        var after = req.query.after;
-        // https://dev.twitter.com/rest/public/timelines
-        // use max_id for twit offset in twitter
-        var lastCnt = 0;
-        var count = 0;
-        var api_url;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            res.status(500).send(err);
+            return;
         }
 
-        count = 20;
-        log.debug(provider, meta );
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId + "&count=" + count;
-        //api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider_id + "&count=" + count;
+        log.debug(provider, meta);
 
+        var count = 20;
+        var api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId +
+                            "&count=" + count;
         if (last_id) {
             api_url += "&";
             api_url += "max_id=" + last_id;
         }
 
-        log.debug(api_url);
+        log.debug(api_url, meta);
 
-        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, response, body) {
-            var result = [];
-            var resultVal;
-
-            var hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.send(hasError);
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
+            if(error) {
+                log.error(error, meta);
+                log.error(response, meta);
+                res.status(error.statusCode).send(error);
                 return;
             }
 
-            result = JSON.parse(response);
-            //log.debug(result);
+            var result;
+            try {
+                result = JSON.parse(body);
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                res.status(500).send(e);
+                return;
+            }
+            log.debug(result);
 
             if(!result.length) {
-                log.debug("result is empty !!!");
+                error = new Error("result is empty!");
+                log.error(error, meta);
+                log.error(result, meta);
+                res.status(500).send(error);
                 return;
             }
 
-            var send_data = {};
-            var i = 0;
-
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
-
-            for (i = 0; i < result.length; i++) {
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            for (var i = 0; i < result.length; i += 1) {
                 var raw_post = result[i];
                 if (after) {
                     var post_date = new Date(raw_post.created_at);
@@ -297,16 +305,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     }
                 }
 
-                var send_post = {};
-                send_post.title = raw_post.text;
-                send_post.modified = raw_post.created_at;
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.url;
-                send_post.categories = [];
-                send_post.tags = [];
-                send_post.content = raw_post.content;
+                var send_post = _convertBotPost(raw_post);
 
-                log.debug(send_post);
+                //log.debug(send_post);
 
                 send_data.posts.push(send_post);
 
@@ -318,13 +319,15 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             if(!after)
             {
                 if(!(send_data.posts[i-1])) {
-                    log.debug("posts is undefined !!!");
+                    error = new Error("posts in undefined !!");
+                    log.error(error, meta);
+                    res.status(500).send(error);
                     return;
                 }
 
-                if( (last_id == send_data.posts[i-1].id) &&
-                    (result.length == 1) ) {
-                    log.debug("stop Reculsive!!!!!");
+                if( (last_id === send_data.posts[i-1].id.toString()) &&
+                    (result.length === 1) ) {
+                    log.debug("stop Recursive!!!!!", meta);
                     send_data.stopReculsive = true;
                 }
             }
@@ -335,111 +338,49 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    "use strict";
-    log.debug("Twitter : "+ req.url + ' : this is called by bot');
-    var userId;
-    var logStr;
-    logStr = "/bot_posts/:blog_id/:post_id";
-
-    userId = userMgr._getUserId(req, res);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    var provider_id = req.query.providerid;
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
-        var blog_id = req.params.blog_id;
-        var post_id = req.params.post_id;
-        var last_id = req.query.offset;
-        var after = req.query.after;
-        // https://dev.twitter.com/rest/public/timelines
-        // use max_id for twit offset in twitter
-        var lastCnt = 0;
-        var count = 0;
-        var api_url;
+    var blog_id = req.params.blog_id;
+    var post_id = req.params.post_id;
 
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, null, function (err, user, provider) {
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            res.status(500).send(err);
+            return;
         }
 
-        // use count(1) with user_timeline for retweet and like counting
-        count = 1;
+        var api_url = TWITTER_API_URL + "/statuses/show/" + post_id + ".json";
+        //log.debug(api_url, meta);
 
-        api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId +
-            "&count=" + count + "&max_id=" + post_id;
+        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
 
-        //log.debug(api_url);
-
-        objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, response, body) {
-            var result = [];
-            var resultVal;
-
-            var hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.send(hasError);
+            if (error) {
+                log.error(error, meta);
+                log.error(response, meta);
+                res.status(error.statusCode).send(error);
                 return;
             }
 
-            result = JSON.parse(response);
-            //log.debug(result);
-
-            if(!result.length) {
-                log.debug("result is empty !!!");
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            var send_post;
+            try {
+                var result = JSON.parse(body);
+                send_post = _convertBotPost(result);
+            }
+            catch (e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                res.status(500).send(e);
                 return;
             }
-
-            var send_data = {};
-            var i = 0;
-
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
-
-            for (i = 0; i < result.length; i++) {
-                var raw_post = result[i];
-                if (after) {
-                    var post_date = new Date(raw_post.created_at);
-                    var after_date = new Date(after);
-
-                    if (post_date < after_date) {
-                        //log.debug('post is before');
-                        continue;
-                    }
-                }
-
-                var send_post = {};
-                send_post.title = raw_post.text;
-                send_post.modified = raw_post.created_at;
-                send_post.id = raw_post.id;
-                send_post.url = raw_post.url;
-                send_post.categories = [];
-                send_post.tags = [];
-                send_post.content = raw_post.content;
-                send_post.replies = [];
-                send_post.replies.push({"retweet_count":raw_post.retweet_count});
-                send_post.replies.push({"like_count":raw_post.favorite_count});
-
-                //log.debug(send_post);
-
-                send_data.posts.push(send_post);
-
-                send_data.stopReculsive = false;
-            }
-
+            send_data.posts.push(send_post);
             send_data.post_count = send_data.posts.length;
-
-            if(!(send_data.posts[i-1])) {
-                log.debug("posts is undefined !!!");
-                return;
-            }
-
-            if( (last_id == send_data.posts[i-1].id) &&
-                (result.length == 1) ) {
-                log.debug("stop Reculsive!!!!!");
-                send_data.stopReculsive = true;
-            }
 
             res.send(send_data);
         });
@@ -447,7 +388,6 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 function _makeNewPost(body) {
-    "use strict";
     var newPost = {};
 
     newPost.content = "";
@@ -465,120 +405,52 @@ function _makeNewPost(body) {
 }
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    "use strict";
-    var blogId;
-    var meta = {};
     var userId = userMgr._getUserId(req, res);
-    var provider_id;
-
-    meta.cName = "twitter";
-    meta.fName = "/bot_posts/:blog_id";
-    meta.userId = userId;
-    meta.providerName = TWITTER_PROVIDER;
-
-    log.debug(req.url, meta);
-
     if (!userId) {
         return;
     }
+    var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    blogId = req.params.blog_id;
-    provider_id = req.query.providerid;
+    var provider_id = req.query.providerid;
+    var blog_id = req.params.blog_id;
+    var newPost = _makeNewPost(req.body);
+    var encodedPost = encodeURIComponent(newPost.content);
 
     userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
-        var newPost = _makeNewPost(req.body);
-        var encodedPost = encodeURIComponent(newPost.content);
 
         //log.debug(encodedPost, meta);
 
-        var provider_id = req.query.providerid;
-        var blog_id = req.params.blog_id;
         var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
-
-        //log.debug(logStr + api_url);
-
-        objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, response, body) {
-
-            var hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.send(hasError);
+        objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, body, response) {
+            if(error) {
+                log.error(error, meta);
+                log.error(response, meta);
+                res.status(error.statusCode).send(error);
                 return;
             }
-            //add post info
-            var send_data = {};
-            send_data.provider_name = TWITTER_PROVIDER;
-            send_data.blog_id = blog_id;
-            send_data.posts = [];
+
+            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+
             var send_post = {};
             var raw_post = body;
-            send_post.title = raw_post.title;
-            send_post.modified = raw_post.modified;
-            send_post.id = raw_post.ID;
-            send_post.url = raw_post.URL;
-            send_post.categories = [];
-            send_post.tags = [];
-            var j=0;
-            if (raw_post.categories) {
-                var category_arr = Object.keys(raw_post.categories);
-                for (j=0; j<category_arr.length; j++) {
-                    send_post.categories.push(category_arr[j]);
-                }
-//                log.debug('category-raw');
-//                log.debug(category_arr);
-//                log.debug('category-send');
-//                log.debug(send_post.categories);
+
+            try {
+                send_post = _convertBotPost(raw_post);
             }
-            if (raw_post.tags) {
-                var tag_arr = Object.keys(raw_post.tags);
-                for (j=0; j<tag_arr.length; j++) {
-                    send_post.tags.push(tag_arr[j]);
-                }
-//                log.debug('tag-raw');
-//                log.debug(tag_arr);
-//                log.debug('tags-send');
-//                log.debug(send_post.tags);
+            catch (e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                res.status(500).send(e);
+                return;
             }
-            //send_post.content = raw_post.content;
+
             send_data.posts.push(send_post);
             log.debug(send_data, meta);
             res.send(send_data);
         });
     });
 });
-
-router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    "use strict";
-    log.debug("[bot_comments]" + req.url );
-    log.debug("twitter is not comments feature !!!!");
-
-    return;
-});
-
-function _checkError(err, response, body) {
-    "use strict";
-    if (err) {
-        log.debug(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        var errData = body.meta ? body.meta.msg : body.error;
-        var errStr = 'API error: ' + response.statusCode + ' ' + errData;
-        log.debug(errStr);
-        return new Error(errStr);
-    }
-}
-
-function _requestGet(url, accessToken, callback) {
-    "use strict";
-    request.get(url, {
-        json: true,
-        headers: {
-            "authorization": "Bearer " + accessToken
-        }
-    }, function (err, response, body) {
-        callback(err, response, body);
-    });
-}
 
 module.exports = router;
 

@@ -57,7 +57,7 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
         }
     }
 
-    log.error("Fail to find site", meta);
+    log.verbose("Fail to find site", meta);
 };
 
 /**
@@ -82,7 +82,7 @@ siteSchema.methods.findBlogFromSite = function(site, blogId) {
         }
     }
 
-    log.error("Fail to find blog", meta);
+    log.debug("Fail to find blog", meta);
 };
 
 // create the model for users and expose it to our app

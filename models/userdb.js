@@ -11,7 +11,9 @@ var userSchema = mongoose.Schema({
                 accessToken : String,
                 refreshToken : String,
                 token : String,
-                tokenSecret : String}]
+                tokenSecret : String,
+                tokenExpireTime : Date,
+                signUpTime: Date}]
 });
 
 /**

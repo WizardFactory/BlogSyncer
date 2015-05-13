@@ -1,13 +1,14 @@
 /**
  * Created by aleckim on 2014. 7. 19..
  */
+"use strict";
 
 var router = require('express').Router();
 var passport = require('passport');
-var request = require('request');
+var request = require('../controllers/requestEx');
 
-var blogBot = require('./blogbot');
-var userMgr = require('./userManager');
+var blogBot = require('./../controllers/blogbot');
+var userMgr = require('./../controllers/userManager');
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.kakao;
@@ -16,12 +17,10 @@ var KAKAO_API_URL = "https://kapi.kakao.com";
 var KAKAO_PROVIDER = "kakao";
 
 passport.serializeUser(function(user, done) {
-    "use strict";
     done(null, user);
 });
 
 passport.deserializeUser(function(obj, done) {
-    "use strict";
     done(null, obj);
 });
 
@@ -30,23 +29,19 @@ passport.use(new KakaoStrategy({
         callbackURL: svcConfig.svcURL + "/kakao/authorized",
         passReqToCallback : true
     },
-    function(req, accessToken, refreshToken, profile, done) {
-        "use strict";
-        var provider;
-        var meta = {};
-
-        meta.cName = "kakao";
-        meta.fName = "passport.use";
+    function(req, accessToken, refreshToken, params, profile, done) {
+        var meta = {"cName": KAKAO_PROVIDER, "fName":"passport.use"};
 
         //log.debug("accessToken:" + accessToken, meta);
         //log.debug("refreshToken:" + refreshToken, meta);
+        //log.debug("params:"+JSON.stringify(params), meta);
         //log.debug("profile:" + JSON.stringify(profile), meta);
-
-        provider = {
+        var provider = {
             "providerName": profile.provider,
             "accessToken": accessToken,
             "refreshToken": refreshToken,
             "providerId": profile.id.toString(),
+            "tokenExpireTime": userMgr.makeTokenExpireTime(params.expires_in),
             "displayName": profile.username
         };
 
@@ -88,11 +83,7 @@ router.get('/authorize',
 router.get('/authorized',
     passport.authenticate('kakao', { failureRedirect: '/#signin' }),
     function(req, res) {
-        "use strict";
-        var meta = {};
-
-        meta.cName = "kakao";
-        meta.fName = "/authorized";
+        var meta = {"cName":KAKAO_PROVIDER, "url":req.url};
 
         // Successful authentication, redirect home.
         log.debug("Successful!", meta);
@@ -101,23 +92,18 @@ router.get('/authorized',
 );
 
 router.get('/me', function (req, res) {
-    "use strict";
-
-    var userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        apiUrl = KAKAO_API_URL + "/v1/user/me";
+        var apiUrl = KAKAO_API_URL + "/v1/user/me";
 
         log.debug(apiUrl);
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
@@ -128,72 +114,65 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/mystories', function (req, res) {
-    "use strict";
-    var userId;
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
 
-        apiUrl = KAKAO_API_URL + "/v1/api/story/mystories";
+        var apiUrl = KAKAO_API_URL + "/v1/api/story/mystories";
 
         log.debug(apiUrl);
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            //log.debug(body);
+            log.debug(body);
             res.send(body);
         });
     });
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    "use strict";
-    var userId;
-    var providerId;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
-    providerId = req.query.providerid;
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var providerId = req.query.providerid;
+    var apiUrl = KAKAO_API_URL + "/v1/user/me";
+    log.debug(apiUrl, meta);
+
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, providerId, function (err, user, provider) {
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        apiUrl = KAKAO_API_URL + "/v1/user/me";
-
-        log.debug(apiUrl);
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            var hasError;
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
+
             var nickName;
             var blogUrl;
             var sendData;
 
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            try {
+                nickName = body.properties.nickname;
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
             }
 
-            nickName = body.properties.nickname;
             blogUrl = "stroy.kakao.com/" + nickName;
             sendData = {};
             sendData.provider = provider;
@@ -210,21 +189,16 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-    var blogId;
-    var sendData;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
     //kakao did not support post_count.
-    blogId = req.params.blog_id;
-    sendData = {};
+    var blogId = req.params.blog_id;
+    var sendData = {};
     sendData.provider_name = KAKAO_PROVIDER;
     sendData.blog_id = blogId;
     sendData.post_count = -1;
@@ -233,143 +207,117 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
  });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blogId = req.params.blog_id;
+    var lastId = req.query.offset;
+    var after = req.query.after;
+    var apiUrl = KAKAO_API_URL + "/v1/api/story/mystories";
+    if (lastId) {
+        apiUrl += "?";
+        apiUrl += "last_id=" + lastId;
+    }
+    log.debug(apiUrl, meta);
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var blogId;
-        var lastId;
-        var after;
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
-
-        blogId = req.params.blog_id;
-        lastId = req.query.offset;
-        after = req.query.after;
-        apiUrl = KAKAO_API_URL + "/v1/api/story/mystories";
-        if (lastId) {
-            apiUrl += "?";
-            apiUrl += "last_id=" + lastId;
-        }
-
-        log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            var hasError;
-            var sendData;
-            var i;
-            var rawPost;
-            var postDate;
-            var afterDate;
-            var sendPost;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            sendData = {};
+            var sendData = {};
             sendData.provider_name = KAKAO_PROVIDER;
             sendData.blog_id = blogId;
             sendData.posts = [];
 
-            for (i = 0; i < body.length; i+=1) {
-                rawPost = body[i];
-                if (after) {
-                    postDate = new Date(rawPost.created_at);
-                    afterDate = new Date(after);
+            try {
+                for (var i = 0; i < body.length; i+=1) {
+                    var rawPost = body[i];
+                    if (after) {
+                        var postDate = new Date(rawPost.created_at);
+                        var afterDate = new Date(after);
 
-                    if (postDate < afterDate) {
-                        //log.debug('post is before');
-                        continue;
+                        if (postDate < afterDate) {
+                            //log.debug('post is before', meta);
+                            continue;
+                        }
                     }
+
+                    var sendPost = {};
+                    //send_post.title;
+                    sendPost.modified = rawPost.created_at;
+                    sendPost.id = rawPost.id;
+                    sendPost.url = rawPost.url;
+                    sendPost.categories = [];
+                    sendPost.tags = [];
+                    sendPost.content = rawPost.content;
+
+                    sendData.posts.push(sendPost);
                 }
-
-                sendPost = {};
-                //send_post.title;
-                sendPost.modified = rawPost.created_at;
-                sendPost.id = rawPost.id;
-                sendPost.url = rawPost.url;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                sendPost.content = rawPost.content;
-
-                sendData.posts.push(sendPost);
             }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
+
             sendData.post_count = sendData.posts.length;
+
             res.send(sendData);
         });
     });
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blogId = req.params.blog_id;
+    var postId = req.params.post_id;
+    var apiUrl = KAKAO_API_URL + "/v1/api/story/mystory";
+    if (postId) {
+        apiUrl += "?";
+        apiUrl += "id=" + postId;
+    }
+    log.debug(apiUrl, meta);
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var blogId;
-        var postId;
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.statusCode(500).send(err);
         }
-
-        blogId = req.params.blog_id;
-        postId = req.params.post_id;
-        apiUrl = KAKAO_API_URL + "/v1/api/story/mystory";
-        if (postId) {
-            apiUrl += "?";
-            apiUrl += "id=" + postId;
-        }
-        log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            var hasError;
-            var sendData;
-            var rawPost;
-            var sendPost;
-
-            //log.debug(body);
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            sendData = {};
+            //log.debug(body, meta);
+
+            var sendData = {};
             sendData.provider_name = KAKAO_PROVIDER;
             sendData.blog_id = blogId;
             sendData.post_count = 1;
             sendData.posts = [];
-
-            {
-                rawPost = body;
-                sendPost = {};
+            try {
+                var rawPost = body;
+                var sendPost = {};
                 //send_post.title;
                 sendPost.modified = rawPost.created_at;
                 sendPost.id = rawPost.id;
@@ -383,14 +331,18 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 sendPost.replies.push({"like_count": rawPost.like_count});
                 sendData.posts.push(sendPost);
             }
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
 
-            res.send(sendData);
+            return res.send(sendData);
         });
     });
 });
 
 function _convertToURL(postId) {
-    "use strict";
     var indexOfDot;
     var str;
 
@@ -404,7 +356,6 @@ function _convertToURL(postId) {
 }
 
 function _makeNewPost(body) {
-    "use strict";
     var newPost = {};
 
     newPost.content = "";
@@ -412,6 +363,7 @@ function _makeNewPost(body) {
     if (body.title) {
         newPost.content += body.title +'\n';
     }
+
     if (body.content) {
         newPost.content += body.content;
     }
@@ -421,201 +373,279 @@ function _makeNewPost(body) {
     return newPost;
 }
 
-router.post('/bot_posts/new/:blog_id', function (req, res) {
-    "use strict";
-    var userId;
+function _postText(accessToken, rcvPost, callback) {
+
     var newPost;
+    newPost = _makeNewPost(rcvPost);
+    return callback(undefined, newPost);
+}
 
-    log.debug(req.url);
+function _postLink(accessToken, rcvPost, callback) {
+    var meta={};
+    meta.cName = KAKAO_PROVIDER;
+    meta.fName = "_postLink";
 
-    userId = userMgr._getUserId(req);
+    var linkInfoUrl;
+    linkInfoUrl = KAKAO_API_URL + "/v1/api/story/linkinfo";
+    linkInfoUrl += "?";
+    linkInfoUrl += "url=" + rcvPost.url;
+    log.debug(linkInfoUrl, meta);
+
+    _requestGet(linkInfoUrl, accessToken, function (err, response, body) {
+        if (err) {
+            log.error(err, meta);
+            return callback(err);
+        }
+
+        //log.debug(body, meta);
+
+        var newPost = {};
+        try {
+            newPost.link_info = JSON.stringify(body);
+        }
+        catch(e) {
+            log.error(e, meta);
+            log.error(body, meta);
+            return callback(e);
+        }
+
+        if (rcvPost.title) {
+            newPost.content = rcvPost.title;
+        }
+        else if (rcvPost.content) {
+            newPost.content = rcvPost.content;
+        }
+        else {
+            newPost.content = " ";
+        }
+
+        log.debug(newPost, meta);
+
+        return callback(undefined, newPost);
+    });
+}
+
+function _responsePostResult(blogId, content, body, callback) {
+
+    var sendData = {};
+      sendData.provider_name = KAKAO_PROVIDER;
+      sendData.blog_id = blogId;
+      sendData.posts = [];
+
+    var sendPost = {};
+      sendPost.modified = new Date();
+
+    var rawPost;
+    try {
+        if (typeof(body) === "string") {
+            rawPost = JSON.parse(body);
+        }
+        else if (typeof(body) === "object") {
+            rawPost = body;
+        }
+        sendPost.id = rawPost.id;
+    }
+    catch(e) {
+        log.error(e);
+        log.error(body);
+        return callback(e);
+    }
+
+    sendPost.url = "https://story.kakao.com" + "/" + _convertToURL(sendPost.id);
+    sendPost.categories = [];
+    sendPost.tags = [];
+    sendPost.content = content;
+    sendData.posts.push(sendPost);
+
+    log.debug(sendData);
+
+    callback (undefined, sendData);
+}
+
+router.post('/bot_posts/new/:blog_id', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
 
-    newPost = _makeNewPost(req.body);
+    var blogId = req.params.blog_id;
+    var postType = req.query.postType;
+    if (!postType) {
+        log.error("postType is undefined, so it set to text", meta);
+        postType = "post";
+    }
+
+    var rcvPost= req.body;
+    var apiUrl = KAKAO_API_URL + "/v1/api/story/post/note";
+    log.debug(apiUrl, meta);
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var blogId;
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err, meta);
+            return res.status(500).send(err);
         }
 
-        blogId = req.params.blog_id;
-        apiUrl = KAKAO_API_URL + "/v1/api/story/post/note";
-        log.debug(apiUrl);
+        var postFunc;
+        if (postType === "post") {
+            postFunc = _postText;
+        }
+        else if (postType === "link") {
+            postFunc = _postLink;
+        }
+        else {
+            //need to refactoring make a error object;
+            err = new Error("postType was undefined");
+            log.error(err, meta);
+            return res.status(500).send(err);
+        }
 
-        _requestPost(apiUrl, provider.accessToken, newPost, function (err, response, body) {
-            var hasError;
-            var sendData;
-            var sendPost;
-            var rawPost;
-            var errMsg;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+        postFunc(provider.accessToken, rcvPost, function(err, postData) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
             }
 
-            //log.debug(data);
+            _requestPost(apiUrl, provider.accessToken, postData, function(err, response, body) {
+                if (err) {
+                    log.error(err, meta);
+                    return res.status(err.statusCode).send(err);
+                }
 
-            //add post info
-            sendData = {};
-            sendData.provider_name = KAKAO_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.posts = [];
+                _responsePostResult(blogId, rcvPost.content, body, function(err, sendData) {
+                    if (err) {
+                        log.error(err, meta);
+                        return res.status(500).send(err);
+                    }
 
-            sendPost = {};
-            if (typeof(body) === "string") {
-                rawPost = JSON.parse(body);
-            }
-            else if (typeof(body) === "object") {
-                rawPost = body;
-            }
-
-            sendPost.modified = new Date();
-
-            if (!rawPost) {
-                errMsg = "Fail to post";
-                log.debug(errMsg);
-                res.send(errMsg);
-                return;
-            }
-
-            sendPost.id = rawPost.id;
-            sendPost.url = "https://story.kakao.com" + "/" + _convertToURL(rawPost.id);
-            sendPost.categories = [];
-            sendPost.tags = [];
-            sendPost.content = newPost.content;
-
-            sendData.posts.push(sendPost);
-            log.debug(sendData);
-            res.send(sendData);
+                    return res.send(sendData);
+                });
+            });
         });
     });
 });
 
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    "use strict";
-    var userId;
-
-    log.debug(req.url);
-
-    userId = userMgr._getUserId(req);
+    var userId = userMgr._getUserId(req, res);
     if (!userId) {
         return;
     }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    var blogId = req.params.blogID;
+    var postId = req.params.postID;
+    var apiUrl = KAKAO_API_URL+"/v1/api/story/mystory";
+    if (postId) {
+        apiUrl += "?";
+        apiUrl += "id=" + postId;
+    }
+    log.debug(apiUrl, meta);
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
-        var blogId;
-        var postId;
-        var apiUrl;
-
         if (err) {
-            log.error("Fail to find provider");
-            log.error(err.toString());
-            return res.send(err);
+            log.error(err);
+            return res.status(500).send(err);
         }
-
-        blogId = req.params.blogID;
-        postId = req.params.postID;
-        apiUrl = KAKAO_API_URL+"/v1/api/story/mystory";
-
-        if (postId) {
-            apiUrl += "?";
-            apiUrl += "id=" + postId;
-        }
-
-        log.debug(apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
-            var hasError;
-            var send;
-            var i;
-            var comment;
-
-            hasError = _checkError(err, response, body);
-            if (hasError) {
-                res.statusCode = response.statusCode;
-                res.send(hasError);
-                return;
+            if (err) {
+                log.error(err);
+                return res.status(err.statusCode).send(err);
             }
-            log.debug(body);
 
-            send = {};
+            var send = {};
             send.providerName = KAKAO_PROVIDER;
             send.blogID = blogId;
             send.postID = postId;
-            send.found = body.comment_count;
             send.comments = [];
 
-            for (i = 0; i < body.comment_count; i+=1) {
-                comment = {};
-                comment.URL = body.url;
-                comment.content = body.comments[i].text;
-                send.comments.push(comment);
+            try {
+                for (var i = 0; i < body.comment_count; i+=1) {
+                    var comment = {};
+                    comment.URL = body.url;
+                    comment.content = body.comments[i].text;
+                    send.comments.push(comment);
+                }
+                send.found = body.comment_count;
             }
-            res.send(send);
+            catch(e) {
+                log.error(e, meta);
+                log.error(body, meta);
+                return res.status(500).send(e);
+            }
+
+            return res.send(send);
         });
     });
 });
 
-function _checkError(err, response, body) {
-    "use strict";
-    var errStr;
-    var meta = {};
-
-    meta.cName = "kakao";
-    meta.fName = "_checkError";
-
-    if (err) {
-        log.debug(err);
-        return err;
-    }
-    if (response.statusCode >= 400) {
-        errStr = "API error: " + response.statusCode;
-        if (body.error) {
-            if (body.error.message) {
-                errStr += " " + body.error.message;
-            }
-        }
-        log.error(body, meta);
-        log.error(errStr, meta);
-        return new Error(errStr);
-    }
-}
-
 function _requestGet(url, accessToken, callback) {
-    "use strict";
-
-    request.get(url, {
+    request.getEx(url, {
         json: true,
         headers: {
             "authorization": "Bearer " + accessToken
         }
-    }, function (err, response, body) {
-        callback(err, response, body);
+    }, function (error, response, body) {
+        callback(error, response, body);
     });
 }
 
 function _requestPost(url, accessToken, data, callback) {
-    "use strict";
-
-    request.post(url, {
+    request.postEx(url, {
         headers: {
             "authorization": "Bearer " + accessToken
         },
+        json: true,
         form: data
-    }, function (err, response, body) {
-        callback(err, response, body);
+    }, function (error, response, body) {
+        callback(error, response, body);
     });
 }
+
+function _updateAccessToken(user, provider, callback) {
+    var url = "https://kauth.kakao.com" + "/oauth/token";
+    var data = {
+        grant_type: 'refresh_token',
+        client_id: clientConfig.clientID,
+        refresh_token: provider.refreshToken
+    };
+
+    _requestPost(url, provider.accessToken, data, function (error, response, body) {
+        if (error) {
+            log.error(error);
+            return callback(error);
+        }
+        log.info(body);
+
+        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token, body.expires_in);
+        return callback(null, newProvider);
+    });
+}
+
+router.post('/bot_posts/updateToken', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta) ;
+
+    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+        if (err) {
+            log.error(err, meta);
+            return res.status(500).send(err);
+        }
+        _updateAccessToken(user, provider, function (err, data) {
+            if (err) {
+                log.error(err, meta);
+                return res.status(err.statusCode).send(err);
+            }
+            res.send(data);
+        });
+    });
+});
 
 module.exports = router;
