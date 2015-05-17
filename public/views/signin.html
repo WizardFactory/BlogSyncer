@@ -6,6 +6,7 @@
         <a class="btn btn-default btn-blog" ng-repeat="provider in user.providers">
             <img class="icon-blog" ng-src="views/imgs/{{provider.providerName}}.png"/>
             &nbsp;&nbsp;{{provider.providerName}} : {{provider.displayName}}
+            <span ng-if="provider.providerName === 'Wordpress'" ng-bind="getBlogTitle(provider)"></span>
         </a>
     </div>
     <div class="content-box" ng-if="user._id">
