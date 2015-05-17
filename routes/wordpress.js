@@ -11,6 +11,10 @@ var request = require('../controllers/requestEx');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.Wordpress;
@@ -34,7 +38,6 @@ passport.use(new wordpressStrategy({
     },
     function(req, accessToken, refreshToken, profile, done) {
         var providerId;
-        var provider;
 //        log.debug("accessToken:" + accessToken);
 //        log.debug("refreshToken:" + refreshToken);
 //        log.debug("profile:"+JSON.stringify(profile));
@@ -48,13 +51,9 @@ passport.use(new wordpressStrategy({
             providerId = profile._json.primary_blog;
         }
 
-        provider = {
-            "providerName":profile.provider,
-            "accessToken":accessToken,
-            "refreshToken":refreshToken,
-            "providerId":providerId.toString(), //it is not user id(it's blog_id)
-            "displayName":profile.displayName
-        };
+        //it is not user id(it's blog_id)
+        var provider = new botFormat.ProviderOauth2(profile.provider, providerId.toString(), profile.displayName,
+            accessToken, refreshToken);
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -155,14 +154,11 @@ router.get('/bot_bloglist', function (req, res) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
-            var blogId;
-            var blogTitle;
-            var blogUrl;
 
+            var botBlogList = new botFormat.BotBlogList(provider);
             try {
-                blogId = body.ID.toString();
-                blogTitle = body.name;
-                blogUrl = body.URL;
+                var botBlog = new botFormat.BotBlog(body.ID.toString(), body.name, body.URL);
+                botBlogList.blogs.push(botBlog);
             }
             catch(e) {
                 log.error(e, meta);
@@ -170,18 +166,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.statusCode(500).send(e);
             }
 
-            var sendData = {};
-
-            sendData.provider = provider;
-            sendData.blogs = [];
-            sendData.blogs.push({"blog_id":blogId, "blog_title":blogTitle, "blog_url":blogUrl});
-
-            /*
-             { "provider":object, "blogs":
-             [ {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-             {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
-             */
-            res.send(sendData);
+            res.send(botBlogList);
         });
     });
 });
@@ -207,23 +192,46 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
-            log.debug("post count=" + body.post_count, meta);
 
-            var sendData = {};
+            var botPostCount = {};
             try {
-                sendData.provider_name = WORDPRESS_PROVIDER;
-                sendData.blog_id = body.ID.toString();
-                sendData.post_count = body.post_count;
+                log.debug("post count=" + body.post_count, meta);
+                botPostCount = new botFormat.BotPostCount(WORDPRESS_PROVIDER, body.ID.toString(), body.post_count);
             }
             catch(e) {
                 log.error(e, meta);
                 log.error(body, meta);
                 return res.status(500).send(e);
             }
-            res.send(sendData);
+            res.send(botPostCount);
         });
     });
  });
+
+
+function _convertBotCategoreis(wpCategories) {
+    var categories = [];
+    if (wpCategories) {
+        var categoryArr = Object.keys(wpCategories);
+        for (var j=0; j<categoryArr.length; j+=1) {
+            categories.push(categoryArr[j]);
+        }
+    }
+
+    return categories;
+}
+
+function _convertBotTags(wpTags) {
+    var tags = [];
+    if (wpTags) {
+        var tagArr = Object.keys(wpTags);
+        for (var h=0; h<tagArr.length; h+=1) {
+            tags.push(tagArr[h]);
+        }
+    }
+
+    return tags;
+}
 
 router.get('/bot_posts/:blog_id', function (req, res) {
     var userId = userMgr._getUserId(req, res);
@@ -266,43 +274,24 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = WORDPRESS_PROVIDER;
-            sendData.blog_id = blogId;
+            var botPostList = new botFormat.BotPostList(WORDPRESS_PROVIDER, blogId);
 
             try {
-                sendData.post_count = body.posts.length;
-                sendData.posts = [];
 
                 for (var i = 0; i<body.posts.length; i+=1) {
                     var rawPost = body.posts[i];
+
                     var postDate = new Date(rawPost.modified);
                     var afterDate = new Date(after);
                     if (postDate < afterDate) {
-                        //log.debug('post is before');
+                        log.debug('post is before', meta);
                         continue;
                     }
-                    var sendPost = {};
-                    sendPost.title = rawPost.title;
-                    sendPost.modified = rawPost.modified;
-                    sendPost.id = rawPost.ID.toString();
-                    sendPost.url = rawPost.URL;
-                    sendPost.categories = [];
-                    sendPost.tags = [];
 
-                    if (rawPost.categories) {
-                        var categoryArr = Object.keys(rawPost.categories);
-                        for (var j=0; j<categoryArr.length; j+=1) {
-                            sendPost.categories.push(categoryArr[j]);
-                        }
-                    }
-                    if (rawPost.tags) {
-                        var tagArr = Object.keys(rawPost.tags);
-                        for (var h=0; h<tagArr.length; h+=1) {
-                            sendPost.tags.push(tagArr[h]);
-                        }
-                    }
-                    sendData.posts.push(sendPost);
+                    var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), " ", rawPost.modified, rawPost.URL,
+                                rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags));
+
+                    botPostList.posts.push(botPost);
                 }
             }
             catch(e) {
@@ -311,7 +300,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -344,37 +333,19 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             }
 
             //log.debug(data);
-            var sendData = {};
-            sendData.provider_name = WORDPRESS_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(WORDPRESS_PROVIDER, blogId);
 
             try {
                 var rawPost = body;
-                var sendPost = {};
-                sendPost.title = rawPost.title;
-                sendPost.modified = rawPost.modified;
-                sendPost.id = rawPost.ID;
-                sendPost.url = rawPost.URL;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                if (rawPost.categories) {
-                    var categoryArr = Object.keys(rawPost.categories);
-                    for (var j = 0; j < categoryArr.length; j += 1) {
-                        sendPost.categories.push(categoryArr[j]);
-                    }
-                }
-                if (rawPost.tags) {
-                    var tagArr = Object.keys(rawPost.tags);
-                    for (var h = 0; h < tagArr.length; h += 1) {
-                        sendPost.tags.push(tagArr[h]);
-                    }
-                }
-                sendPost.content = rawPost.content;
-                sendPost.replies = [];
-                sendPost.replies.push({"comment_count": rawPost.comment_count});
-                sendPost.replies.push({"like_count": rawPost.like_count});
-                sendData.posts.push(sendPost);
+
+                var replies = [];
+                replies.push({"comment": rawPost.comment_count});
+                replies.push({"like": rawPost.like_count});
+
+                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
+                    rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags), replies);
+
+                botPostList.posts.push(botPost);
             }
             catch(e) {
                 log.error(e, meta);
@@ -382,7 +353,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -396,6 +367,20 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     log.info("+", meta);
 
     var blogId = req.params.blog_id;
+    var botPost = req.body;
+    var newPost = {};
+
+    if(botPost.title) {
+        newPost.title = botPost.title;
+    }
+    if (botPost.tags) {
+       newPost.tags = botPost.tags;
+    }
+    if (botPost.categories) {
+        newPost.categories= botPost.categories;
+    }
+
+    newPost.content = bC.convertBotPostToTextContent(botPost);
 
     userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId +"/posts/new";
@@ -406,7 +391,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             headers: {
                 "authorization": "Bearer " + provider.accessToken
             },
-            form: req.body
+            form: newPost
         }, function (err, response, body) {
             if(err) {
                 log.error(err, meta);
@@ -414,33 +399,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
 
             //add post info
-            var sendData = {};
-            sendData.provider_name = WORDPRESS_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(WORDPRESS_PROVIDER, blogId);
 
             try {
                 var rawPost = body;
-                var sendPost = {};
-                sendPost.title = rawPost.title;
-                sendPost.modified = rawPost.modified;
-                sendPost.id = rawPost.ID;
-                sendPost.url = rawPost.URL;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                if (rawPost.categories) {
-                    var categoryArr = Object.keys(rawPost.categories);
-                    for (var j=0; j<categoryArr.length; j+=1) {
-                        sendPost.categories.push(categoryArr[j]);
-                    }
-                }
-                if (rawPost.tags) {
-                    var tagArr = Object.keys(rawPost.tags);
-                    for (var h=0; h<tagArr.length; h+=1) {
-                        sendPost.tags.push(tagArr[h]);
-                    }
-                }
-                sendData.posts.push(sendPost);
+                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
+                    rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags));
+
+                botPostList.posts.push(botPost);
             }
             catch(e) {
                 log.error(e, meta);
@@ -449,7 +415,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
 
             //log.debug(sendData);
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -484,20 +450,13 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.providerName = provider.providerName;
-            sendData.blogID = blogId;
-            sendData.postID = postId;
+            var botCommentList = new botFormat.BotCommentList(provider.providerName, blogId, postId);
 
             try {
-                sendData.found = body.found;
-                sendData.comments = [];
                 for(var i=0; i<body.found; i+=1) {
-                    var comment = {};
-                    comment.date = body.comments[i].date;
-                    comment.URL = body.comments[i].short_URL;
-                    comment.content = body.comments[i].content;
-                    sendData.comments.push(comment);
+                    var raw = body.comments[i];
+                    var botComment = new botFormat.BotComment(raw.content, raw.short_URL, raw.date);
+                    botCommentList.comments.push(botComment);
                 }
             }
             catch (e) {
@@ -506,7 +465,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botCommentList);
         });
     });
 });

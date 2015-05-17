@@ -2,24 +2,16 @@
  * Created by aleckim on 14. 11. 15..
  */
 
+'use strict';
+
 var assert  = require('assert');
 var History = require('../models/historydb');
+var tD = require('./test_data');
 if (!global.log) {
     global.log = require('winston');
 }
 
-var d = new Date();
-
-var testHistory = {
-    tryTime: d,
-    status: "200",
-    src: {
-        title: "XXXXX", id: "ASDFED", url: "DJDJDJD"
-    },
-    dst: {
-        id: "DFCddd",  url: "e83ed0"
-    }
-};
+var testHistory = tD.testHistory;
 
 describe('historyDb', function () {
     describe('Function', function () {

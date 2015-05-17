@@ -10,6 +10,10 @@ var request = require('../controllers/requestEx');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+//var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.facebook;
@@ -36,13 +40,8 @@ passport.use(new FacebookStrategy({
 //        log.debug("refreshToken:" + refreshToken);
 //        log.debug("profile:" + JSON.stringify(profile));
 
-        var provider = {
-            "providerName": profile.provider,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-            "providerId": profile.id.toString(),
-            "displayName": profile.displayName
-        };
+        var provider = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.displayName,
+            accessToken, refreshToken);
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -152,17 +151,17 @@ router.get('/bot_bloglist', function (req, res) {
 
             //log.debug(body, meta);
 
-            var sendData = {};
-            sendData.provider = provider;
-            sendData.blogs = [];
+            var botBlogList = new botFormat.BotBlogList(provider);
 
             log.debug("pageId: "+provider.providerId+", pageName: feed, pageLink: https://www.facebook.com", meta);
 
             //user can have unique url for people or pages on facebook
-            sendData.blogs.push({"blog_id":provider.providerId, "blog_title":"feed", "blog_url":"https://www.facebook.com"});
+            var botBlog;
+            botBlog = new botFormat.BotBlog(provider.providerId, "feed", "https://www.facebook.com");
+            botBlogList.blogs.push(botBlog);
 
             try {
-                for (var i = 0; i  < body.data.length; i+=1) {
+                for (var i = 0; i < body.data.length; i+=1) {
                     var item = body.data[i];
                     var pageId = item.id;
                     var pageName = item.name;
@@ -182,7 +181,9 @@ router.get('/bot_bloglist', function (req, res) {
                      });
                      */
                     log.debug("pageId: "+pageId+", pageName: "+pageName+", pageLink: "+pageLink);
-                    sendData.blogs.push({"blog_id":pageId, "blog_title":pageName, "blog_url":pageLink});
+
+                    botBlog = new botFormat.BotBlog(pageId, pageName, pageLink);
+                    botBlogList.blogs.push(botBlog);
                 }
             }
             catch(e) {
@@ -191,7 +192,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botBlogList);
         });
     });
 });
@@ -205,13 +206,8 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     log.info("+", meta);
 
     //facebook did not support post_count.
-    var blog_id = req.params.blog_id;
-    var send_data = {};
-    send_data.provider_name = FACEBOOK_PROVIDER;
-    send_data.blog_id = blog_id;
-    send_data.post_count = -1;
-
-    res.send(send_data);
+    var botPostCount = new botFormat.BotPostCount(FACEBOOK_PROVIDER, req.params.blog_id, -1);
+    res.send(botPostCount);
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
@@ -257,35 +253,22 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = FACEBOOK_PROVIDER;
-            sendData.blog_id = blogId;
+            var botPostList = new botFormat.BotPostList(FACEBOOK_PROVIDER, blogId);
 
             try {
-                if (body.data) {
-                    sendData.post_count = body.data.length;
-                }
-                else {
-                    sendData.post_count = 0;
+                if (body.data.length === 25 && body.paging) {
+                    botPostList.nextPageToken = body.paging.next;
                 }
 
-                if (sendData.post_count === 25 && body.paging) {
-                    sendData.nextPageToken = body.paging.next;
-                }
+                botPostList.posts = [];
 
-                sendData.posts = [];
-
-                for (var i = 0; i<sendData.post_count; i+=1) {
-                    var item = body.data[i];
-                    var sendPost = {};
-                    if (item.message) {
-                        sendPost.title = item.message;
-                        sendPost.modified = item.updated_time;
-                        sendPost.id = item.id;
-                        sendPost.url = item.link;
-                        sendPost.categories = [];
-                        sendPost.tags = [];
-                        sendData.posts.push(sendPost);
+                for (var i = 0; i<body.data.length; i+=1) {
+                    var rawPost = body.data[i];
+                    var botPost = {};
+                    if (rawPost.message) {
+                        botPost = new botFormat.BotTextPost(rawPost.id, ' ', rawPost.updated_time, rawPost.link, '', [],
+                                    []);
+                        botPostList.posts.push(botPost);
                     }
                 }
             }
@@ -295,7 +278,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -328,11 +311,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = FACEBOOK_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.posts = [];
-
+            var botPostList = new botFormat.BotPostList(FACEBOOK_PROVIDER, blogId);
             var rawPost = body;
 
             try {
@@ -346,18 +325,13 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                     like_count = rawPost.likes.data.length;
                 }
 
-                var sendPost = {};
-                sendPost.title = rawPost.message;
-                sendPost.modified = rawPost.updated_time;
-                sendPost.id = rawPost.id;
-                sendPost.url = rawPost.link;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                sendPost.content = rawPost.message;
-                sendPost.replies = [];
-                sendPost.replies.push({"comment_count":comment_count});
-                sendPost.replies.push({"like_count":like_count});
-                sendData.posts.push(sendPost);
+                var replies = [];
+                replies.push({"comment":comment_count});
+                replies.push({"like":like_count});
+
+                var botPost = new botFormat.BotTextPost(rawPost.id, rawPost.message, rawPost.updated_time, rawPost.link,
+                            '', [], [], replies);
+                botPostList.posts.push(botPost);
             }
             catch(e) {
                 log.error(e, meta);
@@ -365,9 +339,32 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
+});
+
+router.post('/bot_posts/new/:blog_id', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName": FACEBOOK_PROVIDER, "userId": userId, "url": req.url};
+    log.info("+", meta);
+
+    return res.status(404).send('This API has not supported yet');
+});
+
+
+router.get('/bot_comments/:blogID/:postID', function (req, res) {
+    var userId = userMgr._getUserId(req, res);
+    if (!userId) {
+        return;
+    }
+    var meta = {"cName":FACEBOOK_PROVIDER, "userId":userId, "url":req.url};
+    log.info("+", meta);
+
+    return res.status(404).send('This API has not supported yet');
 });
 
 function _requestGet(url, accessToken, callback) {

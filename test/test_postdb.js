@@ -2,31 +2,16 @@
  * Created by aleckim on 14. 11. 15..
  */
 
+'use strict';
+
 var assert  = require('assert');
 var Post = require('../models/postdb');
+var tD = require('./test_data');
 if (!global.log) {
     global.log = require('winston');
 }
 
-var d = new Date();
-
-var testPostInfo;
-testPostInfo = {
-    title: "wwwwddd",
-    type: "text",
-    categories: ["aaa", "bbbb"],
-    tags: ["xxx"],
-    infos: [
-        {
-            provider_name: "SDSDFDS",
-            blog_id: "wesdsfe",
-            post_id: "2333243",
-            url: "wzd.fac.com",
-            modified: d
-        }
-    ]
-};
-
+var testPostInfo = tD.testPostInfo;
 
 describe('postDb', function () {
     describe('Function', function () {
@@ -56,7 +41,7 @@ describe('postDb', function () {
             assert.equal(post.title, testPostInfo.title, "Fail to find post by title");
         });
         it('find post by post id of blog', function () {
-            var found = false;
+            var found;
             found = postDb.isPostByPostIdOfBlog(testPostInfo.infos[0].provider_name,
                         testPostInfo.infos[0].blog_id, testPostInfo.infos[0].post_id);
             assert.equal(found, true, "Fail to find post by post id of blog");
