@@ -7,7 +7,7 @@ var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap'])
 bs.factory('Data', function () {
     "use strict";
 
-    var user= {};
+    var user = {};
     var providerType = ["facebook", "google", "kakao", "tistory", "tumblr", "twitter", "Wordpress"];
     var postType = [
         ["post","post","post","post","post","post","post"],
@@ -28,9 +28,14 @@ bs.factory('Data', function () {
             user = usr;
         },
         getPostType: function (fromProvider, toProvider) {
-            var from = providerType.indexOf(fromProvider);
-            var to = providerType.indexOf(toProvider);
-            return postType[from][to];
+            if (typeof(fromProvider) === 'number' && typeof(toProvider) === 'number') {
+                return postType[fromProvider][toProvider];
+            }
+            else {
+                var from = providerType.indexOf(fromProvider);
+                var to = providerType.indexOf(toProvider);
+                return postType[from][to];
+            }
         }
 //        getChildPort: function() {
 //           console.log('getChildPort port='+port);

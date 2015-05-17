@@ -81,9 +81,11 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
     $scope.groups = [];
     $scope.group = null;
     $scope.groupInfo = null;
+    $scope.groupInfoType = 'polygons'; //'table' or 'polygons'
     $scope.sites = [];
     $scope.selected = [];
     $scope.info = "";
+    var graph, paper, circles, links, selectCircle;
 
     $scope.onClickButton = function(button) {
         if (button === 'Delete') {
@@ -92,8 +94,10 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                 $scope.button[1] = '';
             }
         } else if (button === 'Detail Setting') {
-            $scope.button[0] = '';
-            $scope.button[1] = 'Confirm';
+            if ($scope.groups.length > 0) {
+                $scope.button[0] = '';
+                $scope.button[1] = 'Confirm';
+            }
         } else if (button === 'Confirm') {
             if ($scope.button[0] === '') {
                 updateDetailSetting();
@@ -123,13 +127,14 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             for (var i = 0; i < count; i += 1) {
                 $scope.groupInfo[i] = new Array(count);
                 for (var j = 0; j < count; j += 1) {
-
                     //if group didn't have groupinfo, postType is set to post. It's for legacy groupDb
                     if (!$scope.groups[group_index].groupInfo[index]) {
                         if (i === j) {
                             $scope.groupInfo[i][j] = {"syncEnable": 'none', "postType": 'none'};
                         } else {
-                            $scope.groupInfo[i][j] = {"syncEnable": 'true', "postType": 'post'};
+                            var fromProvider = group[i].provider.providerName;
+                            var toProvider = group[j].provider.providerName;
+                            $scope.groupInfo[i][j] = {"syncEnable": 'true', "postType": Data.getPostType(fromProvider, toProvider)};
                         }
                     }
                     else {
@@ -138,6 +143,8 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                     index += 1;
                 }
             }
+
+            drawDetailSetting();
         } else if ($scope.button[0] === 'Confirm' && $scope.button[1] === '') {
             $scope.groups.splice(group_index, 1);
             if ($scope.groups.length === 0) {
@@ -196,6 +203,14 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             updateBlogGroup();
             $scope.group = null;
             $scope.groupInfo = null;
+
+            if ($scope.groupInfoType === 'polygons') {
+                $('#paper').hide();
+                graph.clear();
+                circles = [];
+                links = [];
+                selectCircle = null;
+            }
         }
     }
 
@@ -264,6 +279,225 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             });
     }
 
+    function drawDetailSetting() {
+        if ($scope.groupInfoType !== 'polygons') {
+            return;
+        }
+
+        $('#paper').show();
+        function circle(x, y, label) {
+            var cell = new joint.shapes.basic.Circle({
+                position: {x: x, y: y},
+                size: {width: 50, height: 50},
+                attrs: {
+                    circle: {'stroke-width': 3},
+                    text : {text: label || '', 'font-weight': '800', 'font-size': '12'}
+                }
+            });
+
+            graph.addCell(cell);
+            return cell;
+        }
+
+        function link(source, target) {
+            var cell = new joint.dia.Link({
+                source: {id: source.id},
+                target: {id: target.id},
+                vertices: [],
+                smooth: false,
+                attrs: {
+                    '.marker-source': {d: 'M 10 0 L 0 5 L 10 10 z', fill: 'transparent'},
+                    '.marker-target': {d: 'M 10 0 L 0 5 L 10 10 z', fill: 'transparent'},
+                    '.marker-arrowheads': {display: 'none'},
+                    '.marker-vertices': {display: 'none'},
+                    '.link-tools': {display: 'none'},
+                    '.labels': {visibility:'collapse'}
+                }
+            });
+            graph.addCell(cell);
+            return cell;
+        }
+
+        var size = 200;
+        var centerX = 225;
+        var centerY = 225;
+        var i, j, x, y;
+        var count = $scope.group.length;
+
+        for (i = 1; i <= count;i += 1) {
+            x = centerX + size * Math.cos(i * 2 * Math.PI / count + Math.PI / 2);
+            y = centerY - size * Math.sin(i * 2 * Math.PI / count + Math.PI / 2);
+            circles.push(circle(x, y, $scope.group[i-1].blog.blog_title));
+        }
+        for (i = 0; i < count; i += 1) {
+            for (j = 0; j < count; j += 1) {
+                if (i < j) {
+                    var element = link(circles[i], circles[j]);
+                    setArrowheads(element, $scope.groupInfo[j][i], $scope.groupInfo[i][j]);
+                    links.push(element);
+                }
+            }
+        }
+    }
+
+    function setArrowheads(element, sourceInfo, targetInfo, selectedMarker) {
+        var sourceFill = 'transparent';
+        var targetFill = 'transparent';
+        var connectionStroke = 'black';
+
+        if (sourceInfo !== null && sourceInfo.syncEnable === 'true') {
+            if (selectedMarker === 'target') {
+                sourceFill = 'pink';
+            }
+            else {
+                sourceFill = 'red';
+            }
+        }
+        if (targetInfo !== null && targetInfo.syncEnable === 'true') {
+            if (selectedMarker === 'source') {
+                targetFill = 'pink';
+            }
+            else {
+                targetFill = 'red';
+            }
+        }
+
+        if (selectedMarker === 'none') {
+            connectionStroke = 'lightgray';
+        }
+        else if (selectedMarker === 'source') {
+            if (sourceInfo.syncEnable === 'true') {
+                connectionStroke = 'red';
+            }
+            element.toFront();
+        }
+        else if (selectedMarker === 'target') {
+            if (targetInfo.syncEnable === 'true') {
+                connectionStroke = 'red';
+            }
+            element.toFront();
+        }
+
+        element.attr({
+            '.marker-source': {stroke: connectionStroke, fill: sourceFill},
+            '.marker-target': {stroke: connectionStroke, fill: targetFill},
+            '.connection': {stroke: connectionStroke}
+        });
+    }
+
+    function initDetailSetting() {
+        if ($scope.groupInfoType !== 'polygons') {
+            return;
+        }
+
+        graph = new joint.dia.Graph();
+        paper = new joint.dia.Paper({
+            el: $('#paper'),
+            width: 500,
+            height: 500,
+            gridSize: 1,
+            model: graph,
+            interactive: false
+        });
+        circles = [];
+        links = [];
+        selectCircle = null;
+
+        paper.on('cell:pointerup', function(cellView, evt, x, y) {
+            var i, j, k;
+            var count = $scope.group.length;
+            var circle, link, info;
+
+            var normalCircle = function (element) {
+                element.attr({
+                    circle: {fill: 'transparent'}
+                });
+            };
+            var selectedCircle = function (element) {
+                element.attr({
+                    circle: {fill: 'lightyellow'}
+                });
+            };
+
+            if (cellView.model instanceof joint.dia.Link) {
+                link = cellView.model;
+                if (selectCircle !== null &&
+                    ((selectCircle.id === link.get('source').id) || (selectCircle.id === link.get('target').id))) {
+                    for (k = 0; k < count; k += 1) {
+                        circle = circles[k];
+                        if (circle.id === link.get('source').id) {
+                            i = k;
+                        }
+                        else if (circle.id === link.get('target').id) {
+                            j = k;
+                        }
+                    }
+
+                    if (selectCircle.id === link.get('source').id) {
+                        info = $scope.groupInfo[i][j];
+                        if (info.syncEnable === 'false') {
+                            info.syncEnable = 'true';
+                        } else if (info.syncEnable === 'true') {
+                            info.syncEnable = 'false';
+                        }
+                        setArrowheads(link, $scope.groupInfo[j][i], info, 'target');
+                    }
+                    else {
+                        info = $scope.groupInfo[j][i];
+                        if (info.syncEnable === 'false') {
+                            info.syncEnable = 'true';
+                        } else if (info.syncEnable === 'true') {
+                            info.syncEnable = 'false';
+                        }
+                        setArrowheads(link, info, $scope.groupInfo[i][j], 'source');
+                    }
+                }
+            }
+            else if (cellView.model instanceof joint.shapes.basic.Circle) {
+                for (i = 0; i < count; i += 1) {
+                    circle = circles[i];
+                    if (circle.id === cellView.model.id) {
+                        if (selectCircle !== null && circle.id === selectCircle.id) {
+                            normalCircle(circle);
+                            selectCircle = null;
+                        }
+                        else {
+                            selectedCircle(circle);
+                            selectCircle = circle;
+                        }
+                    }
+                    else {
+                        normalCircle(circle);
+                    }
+                }
+
+                k = 0;
+                for (i = 0; i < count; i += 1) {
+                    for (j = 0; j < count; j += 1) {
+                        if (i < j) {
+                            link = links[k];
+                            k += 1;
+                            if (selectCircle !== null) {
+                                if (link.get('source').id === selectCircle.id) {
+                                    setArrowheads(link, $scope.groupInfo[j][i], $scope.groupInfo[i][j], 'target');
+                                }
+                            else if (link.get('target').id === selectCircle.id) {
+                                    setArrowheads(link, $scope.groupInfo[j][i], $scope.groupInfo[i][j], 'source');
+                                }
+                                else {
+                                    setArrowheads(link, null, null, 'none');
+                                }
+                            }
+                            else {
+                                setArrowheads(link, $scope.groupInfo[j][i], $scope.groupInfo[i][j]);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function init() {
         var user = $scope.user;
         if (!user._id) {
@@ -292,6 +526,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             });
 
         disselectAllBlog();
+        initDetailSetting();
     }
 
     init();
@@ -468,16 +703,42 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
     init();
 });
 
-bs.controller('signinCtrl', function ($scope, $http, Data) {
+bs.controller('signinCtrl', function ($scope, $http, Data, Site) {
     "use strict";
 
-    $scope.user = Data.getUser();
     $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
 
-    if ($scope.user._id) {
-        $scope.title = 'Your accounts';
+    function init() {
+        $scope.user = Data.getUser();
+        $scope.sites = Site.getSiteList();
+        if (!$scope.sites) {
+            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+                if (err) {
+                    window.alert(err);
+                }
+                $scope.sites = rcvSites;
+            });
+        }
+
+        $scope.getBlogTitle = function(provider) {
+            if (!$scope.sites) {
+                return;
+            }
+
+            for (var i = 0; i < $scope.sites.length; i += 1) {
+                if ($scope.sites[i].provider.providerId === provider.providerId) {
+                    return "(" + $scope.sites[i].blog.blog_title + ")";
+                }
+            }
+        };
+
+        if ($scope.user._id) {
+            $scope.title = 'Your accounts';
+        }
+        else {
+            $scope.title = 'Please sign in';
+        }
     }
-    else {
-        $scope.title = 'Please sign in';
-    }
+
+    init();
 });

@@ -8,34 +8,35 @@
         <div style="clear: both;"></div>
     </div>
     <div class="content-inner-box hero-unit" ng-repeat="group in groups track by $index" ng-show="groupInfo===null">
-        <img class="icon-delete" src="https://cdn4.iconfinder.com/data/icons/miu/22/circle_close_delete_-128.png"
-             ng-show="button[0]==='Confirm'" ng-click="onClickGroup($index);"/>
-        <img class="icon-check" src="https://cdn4.iconfinder.com/data/icons/miu/22/circle_edit_pen_pencil_-128.png"
-             ng-show="button[1]==='Confirm'" ng-click="onClickGroup($index);"/>
+        <span class="icon-delete glyphicon glyphicon-remove-circle" aria-hidden="false" ng-show="button[0]==='Confirm'" ng-click="onClickGroup($index);"></span>
+        <span class="icon-check glyphicon  glyphicon-ok-circle" aria-hidden="false" ng-show="button[1]==='Confirm'" ng-click="onClickGroup($index);"></span>
         <p class="btn btn-default btn-blog" ng-repeat="site in group.group">
             <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
             &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
         </p>
     </div>
-    <div ng-show="groupInfo!==null">
+    <div id="paper"></div>
+    <div class="content-box" ng-show="groupInfo!==null && groupInfoType==='table'">
         <table border="1">
             <tr>
                 <td>From/To</td>
                 <td ng-repeat="site in group track by $index">
-                    {{site.provider.providerName}}
+                    <img class="icon-blog-small" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
                     <br>
                     {{site.blog.blog_title}}
                 </td>
             </tr>
             <tr ng-repeat="infos in groupInfo track by $index"  ng-init="fromIndex = $index">
                 <td>
-                    {{group[$index].provider.providerName}}
+                    <img class="icon-blog-small" ng-src="views/imgs/{{group[$index].provider.providerName}}.png"/>
                     <br>
                     {{group[$index].blog.blog_title}}
                 </td>
                 <td ng-repeat="info in infos" ng-click="onClickGroupInfo(fromIndex, $index);"
                     ng-class="{'sync-true': info.syncEnable == 'true', 'sync-false': info.syncEnable == 'false', 'sync-none': info.syncEnable == 'none'}">
-                    {{info.syncEnable}} : {{info.postType}}
+                    <span ng-if="info.syncEnable == 'false'">Off</span>
+                    <span ng-if="info.syncEnable == 'none'">None</span>
+                    <span ng-if="info.syncEnable == 'true'">On</span>
                 </td>
             </tr>
         </table>
@@ -44,7 +45,10 @@
         <a href="" ng-click="onClickButton(button[2]);">{{button[2]}}</a>
         <a href="" class="btn-right" ng-click="onClickButton(button[3]);" ng-if="button[2]==='Register'">{{button[3]}}</a>
         <br>
-        <span class="error-msg" ng-show="info!==''">{{info}}</span>
+        <span class="error-msg" ng-show="info!==''">
+            <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+            {{info}}
+        </span>
     </div>
     <div class="content-box" ng-if="button[2]==='Register'">
         <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === 'selected'}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">

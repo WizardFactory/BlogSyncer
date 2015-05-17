@@ -91,6 +91,7 @@
         //require.js
         "define",
         "log",
-        "bs"
+        "bs",
+        "joint"
     ]
 }

@@ -46,6 +46,10 @@ body {
     width: 30px;
     height: 30px;
 }
+.icon-blog-small {
+    width: 15px;
+    height: 15px;
+}
 .icon-delete, .icon-check {
     width: 16px;
     height: 16px;
@@ -58,11 +62,14 @@ body {
     color: #ff0000;
 }
 .sync-true {
-    background-color: #fc8c84;
+    color: red;
 }
 .sync-false {
-    background-color: skyblue;
+    color: blue;
 }
 .sync-none {
-    background-color: #777777;
+    background-color: lightgray;
+}
+table {
+    text-align: center
 }
