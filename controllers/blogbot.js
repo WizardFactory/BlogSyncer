@@ -108,22 +108,22 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
                 continue;
             }
 
-            //TODO: get postType from db
             log.info('postId='+post.id+' to provider='+provider.providerName+' blog='+targetBlog.blog_id, meta);
 
             var syncInfo = groupDb.getSyncInfoByBlogInfo(i, providerName, blogId, provider.providerName,
                 targetBlog.blog_id);
-            var postType = "post";
+            //var postType = "post";
 
             if (syncInfo) {
                 if (syncInfo.syncEnable !== 'true') {
                     continue;
                 }
-                postType = syncInfo.postType;
+                //postType is decided by system(depend type of source post
+                //postType = syncInfo.postType;
             }
 
             //syncInfo.postType에 따라 post 처리
-            BlogBot._requestPostContent(user, postType, post, provider.providerName, targetBlog.blog_id,
+            BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
                 function(err, user, newPosts) {
                     if(err) {
                         log.error("Fail to post content", meta);
@@ -176,7 +176,6 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
             continue;
         }
 
-        BlogBot._makeTitle(newPost);
         postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, newPost);
         postDbIsUpdated = true;
         //get only one post for send to dstBlog
@@ -186,9 +185,6 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
                     log.error(err, meta);
                     return;
                 }
-
-                /* post 새로 가지고 오기 때문에 title도 새로 만들어야 함. by dhkim2 */
-                BlogBot._makeTitle(rcvPosts.posts[0]);
 
                 BlogBot._cbSendPostToBlogs(user, rcvPosts);
             }
@@ -527,7 +523,6 @@ BlogBot.stop = function (user) {
 BlogBot.combineUser = function (user, delUser) {
     var userInfo;
     var delUserInfo;
-    var i, j, isAdded;
     var meta = {};
 
     meta.cName = this.name;
@@ -586,40 +581,43 @@ BlogBot.combineUser = function (user, delUser) {
         });
     }
 
-    if (delUserInfo.postDb) {
-        if (!userInfo.postDb) {
-            userInfo.postDb = new PostDb();
-            userInfo.postDb.userId = user._id;
-            userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
-            userInfo.postDb.posts = userInfo.postDb.posts.concat(delUserInfo.postDb.posts);
-        }
-        else {
-            if (userInfo.postDb.lastUpdateTime.getTime() > delUserInfo.postDb.lastUpdateTime.getTime()) {
-                userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
-            }
-
-            for (i = delUserInfo.postDb.posts.length - 1; i >= 0; i -= 1) {
-                isAdded = false;
-                for (j = userInfo.postDb.posts.length - 1; j >= 0; j -= 1) {
-                    if (userInfo.postDb.posts[j].title === delUserInfo.postDb.posts[i].title) {
-                        userInfo.postDb.posts[j].infos = userInfo.postDb.posts[j].infos.concat(delUserInfo.postDb.posts[i].infos);
-                        isAdded = true;
-                        break;
-                    }
-                }
-                if (isAdded === false) {
-                    userInfo.postDb.posts.push(delUserInfo.postDb.posts[i]);
-                }
-            }
-        }
-
-        delUserInfo.postDb.remove();
-        userInfo.postDb.save(function (err) {
-            if (err) {
-                log.error(err, meta);
-            }
-        });
-    }
+    //it will activation when collectfeedback milestone
+    //var i, j, isAdded;
+    //if (delUserInfo.postDb) {
+    //    if (!userInfo.postDb) {
+    //        userInfo.postDb = new PostDb();
+    //        userInfo.postDb.userId = user._id;
+    //        userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
+    //        userInfo.postDb.posts = userInfo.postDb.posts.concat(delUserInfo.postDb.posts);
+    //    }
+    //    else {
+    //        if (userInfo.postDb.lastUpdateTime.getTime() > delUserInfo.postDb.lastUpdateTime.getTime()) {
+    //            userInfo.postDb.lastUpdateTime = delUserInfo.postDb.lastUpdateTime;
+    //        }
+    //
+    //        for (i = delUserInfo.postDb.posts.length - 1; i >= 0; i -= 1) {
+    //            isAdded = false;
+    //            for (j = userInfo.postDb.posts.length - 1; j >= 0; j -= 1) {
+    //                //title is not key any more.
+    //                if (userInfo.postDb.posts[j].title === delUserInfo.postDb.posts[i].title) {
+    //                    userInfo.postDb.posts[j].infos = userInfo.postDb.posts[j].infos.concat(delUserInfo.postDb.posts[i].infos);
+    //                    isAdded = true;
+    //                    break;
+    //                }
+    //            }
+    //            if (isAdded === false) {
+    //                userInfo.postDb.posts.push(delUserInfo.postDb.posts[i]);
+    //            }
+    //        }
+    //    }
+    //
+    //    delUserInfo.postDb.remove();
+    //    userInfo.postDb.save(function (err) {
+    //        if (err) {
+    //            log.error(err, meta);
+    //        }
+    //    });
+    //}
 
     BlogBot.stop(delUser);
 };
@@ -745,6 +743,7 @@ BlogBot.getSites = function (user) {
  *
  * @param user
  * @param group
+ * @param groupInfo
  */
 BlogBot.addGroup = function(user, group, groupInfo) {
     var groupDb;
@@ -865,7 +864,7 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
         return;
     }
 
-    log.debug(" ", meta);
+    log.debug("+ posts="+rcvPosts.posts.length, meta);
 
     postDb = BlogBot._findDbByUser(user, "post");
 
@@ -880,19 +879,18 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
             continue;
         }
 
-        BlogBot._makeTitle(rcvPost);
-
         //log.debug(" " + rcvPosts.posts[i], meta);
         //if there is same title in postdb, add new in post object what has same title.
-        if (rcvPost.title) {
-            post = postDb.findPostByTitle(rcvPost.title);
-
-            //log.debug(rcvPosts.provider_name + rcvPosts.blog_id + rcvPosts.posts[i], meta);
-            if (post) {
-                postDb.addPostInfo(post, rcvPosts.provider_name, rcvPosts.blog_id, rcvPost);
-                continue;
-            }
-        }
+        //we need check by new item. we will do when collect feedback milestone
+        //if (rcvPost.title) {
+        //    post = postDb.findPostByTitle(rcvPost.title);
+        //
+        //    //log.debug(rcvPosts.provider_name + rcvPosts.blog_id + rcvPosts.posts[i], meta);
+        //    if (post) {
+        //        postDb.addPostInfo(post, rcvPosts.provider_name, rcvPosts.blog_id, rcvPost);
+        //        continue;
+        //    }
+        //}
 
         postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost);
     }
@@ -1276,66 +1274,14 @@ BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
 
 /**
  *
- * @param post
- * @private
- * @Todo error 와 error message 전달 필요
- */
-BlogBot._makeTitle = function (post) {
-    var indexNewLine;
-
-    if (post.title) {
-        if (post.title.length > 0) {
-            return;
-        }
-    }
-
-    if (post.content && post.content.length > 0) {
-
-        indexNewLine= post.content.indexOf("\n");
-        if (indexNewLine > 0) {
-            if (indexNewLine < 30) {
-                post.title = post.content.substr(0, indexNewLine);
-            }
-            else {
-                post.title = post.content.substr(0, 27);
-            }
-        }
-        else if (post.content.length < 30) {
-           post.title = post.content;
-        }
-        else {
-            post.title = post.content.substr(0,27);
-        }
-
-        return;
-    }
-
-    if (post.url) {
-        post.title = post.url;
-        log.debug("The name was copied from url");
-        return;
-    }
-
-    if (post.id) {
-        post.title = post.id;
-        log.debug("The name was copied from id");
-        return;
-    }
-
-    log.error("Fail to make title!!!");
-};
-
-/**
- *
  * @param user
- * @param postType
  * @param post
  * @param providerName
  * @param blogId
  * @param callback
  * @private
  */
-BlogBot._requestPostContent = function (user, postType, post, providerName, blogId, callback) {
+BlogBot._requestPostContent = function (user, post, providerName, blogId, callback) {
     var meta={};
 
     meta.cName = this.name;
@@ -1347,8 +1293,8 @@ BlogBot._requestPostContent = function (user, postType, post, providerName, blog
     url += "/"+encodeURIComponent(blogId);
     url += "?";
     url += "userid=" + user._id;
-    url += "&";
-    url += "postType=" + postType;
+    //url += "&";
+    //url += "postType=" + postType;
 
     var opt = { form: post };
 

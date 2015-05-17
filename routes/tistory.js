@@ -11,6 +11,10 @@ var url = require('url');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.tistory;
@@ -41,13 +45,8 @@ passport.use(new TistoryStrategy({
 //       log.debug("refreshToken:" + refreshToken);
 //       log.debug("profile:" + JSON.stringify(profile));
 
-        var provider = {
-            "providerName": TISTORY_PROVIDER,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-            "providerId": profile.userId.toString(),
-            "displayName": profile.id
-        };
+        var provider  = new botFormat.ProviderOauth2(TISTORY_PROVIDER, profile.userId.toString(), profile.id,
+                    accessToken, refreshToken);
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -177,9 +176,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.send(500).send(err);
             }
 
-            var send_data = {};
-            send_data.provider = provider;
-            send_data.blogs = [];
+            var botBlogList = new botFormat.BotBlogList(provider);
 
             try {
                 var item = JSON.parse(body).tistory.item;
@@ -194,9 +191,11 @@ router.get('/bot_bloglist', function (req, res) {
                     else {
                         target_url = hostname;
                     }
+
                     log.debug('target_url=', target_url, meta);
                     //tistory api had used targetUrl instead of blogId;
-                    send_data.blogs.push({"blog_id": target_url, "blog_title": item[i].title, "blog_url": item[i].url});
+                    var botBlog = new botFormat.BotBlog(target_url, item[i].title, item[i].url);
+                    botBlogList.blogs.push(botBlog);
                 }
             }
             catch(e) {
@@ -205,7 +204,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(send_data);
+            res.send(botBlogList);
         });
     });
 });
@@ -238,11 +237,10 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return res.status(500).send(err);
             }
 
-            var send_data = {};
-            send_data.provider_name = TISTORY_PROVIDER;
-
+            var postCount;
             try {
                 var item = JSON.parse(body).tistory.item;
+
                 log.debug('item length=' + item.length, meta);
 
                 for (var i = 0; i < item.length; i+=1) {
@@ -255,12 +253,10 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
                 if (i === item.length) {
                     log.debug('Fail to find blog=' + target_url, meta);
-                    send_data.blog_id = target_url;
-                    send_data.post_count = 0;
+                    postCount = 0;
                 }
                 else {
-                    send_data.blog_id = target_url;
-                    send_data.post_count = item[i].statistics.post;
+                    postCount = item[i].statistics.post;
                 }
             }
             catch(e)  {
@@ -269,7 +265,8 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(send_data);
+            var botPostCount = new botFormat.BotPostCount(TISTORY_PROVIDER, target_url, postCount);
+            res.send(botPostCount);
         });
     });
 });
@@ -328,27 +325,23 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     return res.status(err.statusCode).send(err);
                 }
 
-                var send_data = {};
-                send_data.provider_name = TISTORY_PROVIDER;
-                send_data.blog_id = target_url;
-                send_data.post_count = 0;
-                send_data.posts = [];
+                var botPostList = new botFormat.BotPostList(TISTORY_PROVIDER, target_url);
 
                 try {
                     var item = JSON.parse(body).tistory.item;
 
-                    var recv_post_count = 0;
+                    var recvPostCount = 0;
                     if (item.totalCount === 1) {
-                        recv_post_count = item.totalCount;
+                        recvPostCount = item.totalCount;
                     }
                     else {
-                        recv_post_count = item.posts.post.length;
+                        recvPostCount = item.posts.post.length;
                     }
                     //log.debug('tistory target_url='+target_url+' posts='+recv_post_count, meta);
 
-                    for (var i = 0; i < recv_post_count; i += 1) {
+                    for (var i = 0; i < recvPostCount; i += 1) {
                         var raw_post = {};
-                        if (recv_post_count === 1) {
+                        if (recvPostCount === 1) {
                             raw_post = item.posts.post;
                         }
                         else {
@@ -366,15 +359,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                             }
                         }
 
-                        var send_post = {};
-                        send_post.title = raw_post.title;
-                        send_post.modified = raw_post.date;
-                        send_post.id = raw_post.id;
-                        send_post.url = raw_post.postUrl;
-                        send_post.categories = [];
-                        send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
-                        send_data.posts.push(send_post);
-                        send_data.post_count += 1;
+                        var botPost = new botFormat.BotTextPost(raw_post.id, " ", raw_post.date, raw_post.postUrl,
+                                    raw_post.title, _getCategoryNameById(category, raw_post.categoryId));
+                        botPostList.posts.push(botPost);
                     }
                 }
                 catch(e) {
@@ -382,7 +369,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     log.error(body, meta);
                     return res.status(500).send(e);
                 }
-                res.send(send_data);
+                res.send(botPostList);
             });
         });
     });
@@ -427,27 +414,18 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
                 //log.debug(body, meta);
 
-                var send_data = {};
-                send_data.provider_name = TISTORY_PROVIDER;
-                send_data.blog_id = target_url;
-                send_data.posts = [];
+                var botPostList = new botFormat.BotPostList(TISTORY_PROVIDER, target_url);
 
                 try {
                     var item = JSON.parse(body).tistory.item;
-                    var raw_post = item;
-                    var send_post = {};
-                    send_post.title = raw_post.title;
-                    send_post.modified = raw_post.date; //it's write date tistory was not supporting modified date
-                    send_post.id = raw_post.id;
-                    send_post.url = raw_post.postUrl;
-                    send_post.categories = [];
-                    send_post.categories.push(_getCategoryNameById(category, raw_post.categoryId));
 
-                    send_post.content = entities.decode(raw_post.content);
-                    send_post.replies = [];
-                    send_post.replies.push({"comment_count": raw_post.comments});
-                    send_post.replies.push({"trackback_count": raw_post.trackbacks});
-                    send_data.posts.push(send_post);
+                    var replies = [];
+                    replies.push({"comment": item.comments});
+                    replies.push({"trackback": item.trackbacks});
+
+                    var botPost = new botFormat.BotTextPost(item.id, entities.decode(item.content), item.date, item.postUrl,
+                        item.title, _getCategoryNameById(category, item.categoryId), [], replies);
+                    botPostList.posts.push(botPost);
                 }
                 catch(e) {
                     log.error(e, meta);
@@ -455,7 +433,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                     return res.status(500).send(e);
                 }
 
-                res.send(send_data);
+                res.send(botPostList);
             });
         });
     });
@@ -472,12 +450,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var target_url = req.params.blog_id;
     var api_url = TISTORY_API_URL + "/post/write";
 
-    var new_post = {};
-    new_post.targetUrl = target_url;
-    new_post.visibility = 3; //3:발행
+    var newPost = {};
+    var botPost = req.body;
 
-    if (req.body.title) {
-        new_post.title = req.body.title;
+    newPost.targetUrl = target_url;
+    newPost.visibility = 3; //3:발행
+
+    if (botPost.title) {
+        newPost.title = botPost.title;
     }
     else {
         var error =  new Error("Fail to get title");
@@ -485,16 +465,16 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         return res.status(400).send(error);
     }
 
-    if (req.body.content) {
-        new_post.content = req.body.content;
+    if (botPost.content) {
+        newPost.content = bC.convertBotPostToTextContent(botPost);
     }
-    if (req.body.tags) {
-        new_post.tag = req.body.tags;
+    if (botPost.tags) {
+        newPost.tag = botPost.tags.toString();
     }
 
     var categoryName;
-    if (req.body.categories) {
-        categoryName =  req.body.categories[0];
+    if (botPost.categories) {
+        categoryName =  botPost.categories[0];
     }
 
     userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
@@ -503,7 +483,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return res.status(500).send(err);
         }
 
-        new_post.access_token = provider.accessToken;
+        newPost.access_token = provider.accessToken;
 
         _getCategoryIds(target_url, provider.accessToken, request.getEx, function(err, category) {
             if (err)  {
@@ -513,39 +493,31 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             //get category_id from name
             if (categoryName) {
-                new_post.category_id = _getCategoryIdByName(category, categoryName);
-                //todo create category
-                //if(!new_post.category_id) {
-                //
-                //}
+                newPost.category_id = _getCategoryIdByName(category, categoryName);
+
+                //tistory didn't open create category
+                if(!newPost.category_id) {
+                    delete newPost.category_id;
+                }
             }
-            new_post.output = "json";
+            newPost.output = "json";
 
             request.postEx(api_url, {
-                form: new_post
+                form: newPost
             }, function (err, response, body) {
                 if (err)  {
                     log.error(err);
                     return res.status(err.statusCode).send(err);
                 }
 
-                var send_data = {};
-                send_data.provider_name = TISTORY_PROVIDER;
-                send_data.blog_id = target_url;
-                send_data.posts = [];
+                var botPostList = new botFormat.BotPostList(TISTORY_PROVIDER, target_url);
 
                 try {
                     var item = JSON.parse(body).tistory;
-
-                    var send_post = {};
-                    send_post.title = new_post.title;
                     //todo: get date
-                    send_post.modified = new Date();
-                    send_post.id = item.postId;
-                    send_post.url = item.url;
-                    send_post.categories = [];
-                    send_post.categories.push(_getCategoryNameById(category, new_post.categoryId));
-                    send_data.posts.push(send_post);
+                    var botPost = new botFormat.BotTextPost(item.postId, ' ', new Date(), item.url, newPost.title,
+                                _getCategoryNameById(category, newPost.categoryId));
+                    botPostList.posts.push(botPost);
                 }
                 catch(e) {
                     log.error(e, meta);
@@ -554,7 +526,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 }
 
                 //log.debug(send_data);
-                res.send(send_data);
+                res.send(botPostList);
             });
         });
     });
@@ -592,21 +564,16 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
             }
 
             //log.debug(body);
-            var send = {};
-            send.providerName = provider.providerName;
-            send.blogID = targetURL;
-            send.postID = postID;
+            var botCommentList = new botFormat.BotCommentList(provider.providerName, targetURL, postID);
 
             try {
                 var item = JSON.parse(body).tistory.item;
-                send.found = item.totalCount;
-                send.comments = [];
+
+
                 for (var i = 0; i < item.totalCount; i+=1) {
-                    var comment = {};
-                    comment.date = item.comments.comment[i].date;
-                    comment.URL = item.url;
-                    comment.content = item.comments.comment[i].comment;
-                    send.comments.push(comment);
+                    var comment = new botFormat.BotComment(item.comments.comment[i].comment, item.url,
+                                item.comments.comment[i].date);
+                    botCommentList.comments.push(comment);
                 }
             }
             catch(e) {
@@ -615,7 +582,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(send);
+            res.send(botCommentList);
         });
     });
 });
