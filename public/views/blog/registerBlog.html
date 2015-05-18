@@ -48,7 +48,7 @@
     </div>
     <div class="content-box" ng-if="button[2]==='Register'">
         <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === 'selected'}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
-            <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
+            <img class="icon-blog"  id="{{site.blog.blog_id}}" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
             &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
         </a>
     </div>
