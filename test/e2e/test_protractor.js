@@ -90,6 +90,12 @@
  flow.execute(getInfo1);
  //getInfo2();
  //getInfo1();
+
+ //get attribute
+ var ele = element(by.binding(nameBinding.title));
+ ele.getAttribute('class').then(function(name){
+    console.log('attr' + name);
+ });
  ****************************************************************/
 var request = require('request');
 
@@ -133,7 +139,7 @@ var nameBinding = Object.freeze({
     message : 'message',
     histories : 'histories',
     posts : 'posts',
-    registerButton1 : 'button[1]'
+    registerButton : 'button[2]'
 });
 
 var pageObjectString = Object.freeze({
@@ -148,12 +154,13 @@ var pageMain = Object.freeze({
 var pageRegister = Object.freeze({
     title : 'Your blog groups',
     repeterSites : 'site in sites track by $index',
-    registerCreate : 'Create'
+    register : 'Register'
 });
 
 var pageMyArticles = Object.freeze({
     title : 'Collect Feedback',
-    repeaterArticles : 'post in posts'
+    repeaterArticles : 'post in posts',
+    postCount : 'posts.length'
 });
 
 var pageHistory = Object.freeze({
@@ -186,8 +193,11 @@ var testString = Object.freeze({
 var userInfo;
 var blogCountOnRegistPage = 0;
 var blogList = [];
+var blogIdList = [];
 var registedCount = 0;
 var registedBlogs = [];
+var sentPosts;
+var postCount = 0;
 
 /***************************************
  * Global function
@@ -208,8 +218,8 @@ function sendPostToTwitter(blogId)
     url += user._id;
     var opt = {
         form : {
-            title: 'manual posting test 0101',
-            modified: '2015-04-26T15:07:00+09:00',
+            //title: 'manual posting test 0101',
+            //modified: '2015-04-26T15:07:00+09:00',
             id: '3',
             url: 'https://pokers11.wordpress.com/2015/04/26/test_wordpress-01/',
             categories: ['미분류'],
@@ -233,7 +243,7 @@ var mainController = function() {
     this.params = browser.params;
 
     this.setPageIndex = function(pageObject){
-        console.log('set page : ' + pageObject);
+        //console.log('set page : ' + pageObject);
         switch(pageObject)
         {
             case cssSubPages.main:
@@ -267,7 +277,7 @@ var mainController = function() {
     };
     this.getSubPageNonAngular = function(url){
         return browser.driver.get(this.params.url.main + url);
-    }
+    };
 
     this.getSubPageByCss = function(pageCss){
         element(by.css(pageCss)).click();
@@ -280,7 +290,7 @@ var mainController = function() {
 
     this.getElementsByRepeater = function(repeaterName){
         return element.all(by.repeater(repeaterName));
-    }
+    };
 
     this.getProvidersList = function (){
         return element.all(by.repeater(pageAccount.repeaterProviders));
@@ -293,7 +303,7 @@ var mainController = function() {
     };
     this.getUserProviderByRow = function(row){
         return this.getUserProvidersList().get(row);
-    }
+    };
 
     this.getMainTitle = function(){
         return browser.getTitle();
@@ -402,10 +412,22 @@ var testObject = function() {
         this.mainCtrl.getSubPageByCss(cssSubPages.myArticles);
 
         // Using the 'getElementByBinding' occurs WARNING when you execute this test. Because there are many binding name as 'title'.
-        //expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageMyArticles.title);
-        expect(element.all(by.binding(nameBinding.title)).get(0).getText()).toEqual(pageMyArticles.title);
+        expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageMyArticles.title);
+        //expect(element.all(by.binding(nameBinding.title)).get(0).getText()).toEqual(pageMyArticles.title);
 
         expect(this.mainCtrl.getElementByBinding(nameBinding.posts).getText()).toEqual(nameBinding.posts + ' : ' + count);
+    };
+
+    this.testGetCountOfArticles = function(){
+        this.mainCtrl.getSubPageByCss(cssSubPages.myArticles);
+
+        //this.mainCtrl.getElementByBinding(pageRegister.postCount).getText().then(function(string){
+        element(by.css('.lead')).getText().then(function(string){
+            var stringArray = string.split(':');
+            postCount = new Number(stringArray[1].trim());
+            console.log('get count : ' + stringArray[1]);
+            console.log('Article count : %d', postCount);
+        });
     };
 
     this.testMyArticle = function(index){
@@ -422,12 +444,9 @@ var testObject = function() {
     this.testOpenBlogs = function () {
         this.mainCtrl.getMainPage();
         this.mainCtrl.getSubPageByCss(cssSubPages.register);
-        //var button = this.mainCtrl.getElementByBinding('button[1]');
-        var button = this.mainCtrl.getElementByBinding(nameBinding.registerButton1);
-        expect(button.getText()).toEqual(pageRegister.registerCreate);
-        button.click(); // click 'create' button
-
-        return this.mainCtrl.getElementsByRepeater(pageRegister.repeterSites);
+        var button = this.mainCtrl.getElementByBinding(nameBinding.registerButton);
+        expect(button.getText()).toEqual(pageRegister.register);
+        //button.click(); // click 'create' button
     };
 
     this.testGetBlogCount = function (blogs) {
@@ -439,6 +458,7 @@ var testObject = function() {
 
     this.testRegistBlogs = function(toBeRegisted){
         var blogs = this.mainCtrl.getElementsByRepeater(pageRegister.repeterSites);
+
         blogs.count().then(function(count){
             blogCountOnRegistPage = count;
 
@@ -449,18 +469,21 @@ var testObject = function() {
             }
             registedBlogs = new Array();
             blogList = new Array();
+            blogIdList = new Array();
             registedCount = 0;
 
+            console.log('list count : ' + toBeRegisted.length);
+            console.log('blog count : ' + count);
             for(var idx = 0 ; idx < count ; idx++)
             {
                 blogs.get(idx).getText().then(function(string){
                     (function(str){
-                        console.log('blog name : ' + string);
+                        //console.log('To find blog name : ' + str);
                         blogList.push(str);
-
-                        for(var i ; i<toBeRegisted.length; i++)
+                        for(var i = 0 ; i<toBeRegisted.length; i++)
                         {
-                            if(toBeRegisted[i].indexOf(str) !== -1)
+                            //console.log('org : ' + toBeRegisted[i]);
+                            if(str.indexOf(toBeRegisted[i]) !== -1)
                             {
                                 console.log('regist blog :' + str);
                                 registedCount++;
@@ -468,6 +491,15 @@ var testObject = function() {
                             }
                         }
                     })(string);
+                });
+
+                var ele = element.all(by.css('.icon-blog'));
+
+                ele.getAttribute('id').then(function(idString){
+                    (function(id){
+                        console.log('id : '+ id);
+                        blogIdList.push(id);
+                    })(idString);
                 });
             }
         });
@@ -489,21 +521,20 @@ var testObject = function() {
     this.testSendPost =  function(blogName){
         var blogId;
         var idx = 0;
-        console.log('registed list count : ' + registedBlogs.length);
+        //console.log('registed list count : ' + registedBlogs.length);
 
         for(idx = 0 ; idx < registedBlogs.length ; idx++)
         {
             if(registedBlogs[idx].indexOf(blogName) !== -1)
             {
-                var component = registedBlogs[idx].split(':');
-                blogId = new String(component[1].trim());   // index 0 : blog name, index 1 : blog ID
+                blogId = new String(blogIdList[idx]);
                 console.log('found blog ID : ' + blogId);
                 break;
             }
         }
         //sendPostToTwitter(blogId);
     }
-}
+};
 
 describe('Test web page on the BlogSync : ', function(){
 
@@ -544,8 +575,12 @@ describe('Test web page on the BlogSync : ', function(){
             testObj.testUserGroups();
         });
 
+        it('get count of articles', function(){
+            testObj.testGetCountOfArticles();
+        });
+
         it('check count of my articles', function () {
-            testObj.testCountOfArticles(0); // 0 --> for test
+            testObj.testCountOfArticles(postCount);
         });
 
         it('get user information to be used posting article', function () {
@@ -553,9 +588,8 @@ describe('Test web page on the BlogSync : ', function(){
         });
 
         describe('Check registing and get info on the regist page', function () {
-            var blogs;
             it('Show blog list on register page', function () {
-                blogs = testObj.testOpenBlogs();
+                testObj.testOpenBlogs();
             });
 
             //it('Get Blog count', function () {
@@ -575,6 +609,10 @@ describe('Test web page on the BlogSync : ', function(){
 
         it('post simple article', function(){
             testObj.testSendPost('twitter');
+        });
+
+        it('check count of my articles', function () {
+            testObj.testCountOfArticles(1);
         });
     });
 
