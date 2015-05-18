@@ -160,6 +160,84 @@ var blogConvert = {
         }
 
         return title;
+    },
+    removeHtmlTags: function (content) {
+        var plain = content;
+        plain = plain.replace(/<\/?[^>]+(>|$)/g, ""); //remove html tag
+        plain = plain.replace(/^\s*/, ""); //remove blank from start of string
+        plain = plain.replace(/\s*$/, ""); //remove blank from end of string
+
+        return plain;
+    },
+    maxShortenUrlLen : 24,
+    /**
+     *
+     * @param longUrl
+     * @param callback
+     */
+    convertShortenUrl: function (longUrl, callback) {
+        var shortUrl = require('shorturl');
+        shortUrl(longUrl, function (result) {
+            return callback(result);
+        });
+    },
+
+    /**
+     *
+     * @param botPost
+     * @param maxLen
+     * @param {function} shortenFunc
+     * @param callBack
+     */
+    convertPostToPlainContentWithTitle: function (botPost, maxLen, shortenFunc, callBack) {
+        var content;
+        var url;
+
+        if (botPost.title) {
+            content = botPost.title;
+        }
+
+        if(botPost.type === 'text') {
+            content += ' ' + botPost.content;
+            content = blogConvert.removeHtmlTags(content);
+            url = botPost.url;
+            if (content.length < maxLen) {
+                return callBack(content);
+            }
+        }
+        else {
+            if (botPost.description) {
+                content += ' ' + botPost.description;
+            }
+            content = blogConvert.removeHtmlTags(content);
+            if (botPost.type === 'link') {
+                url = botPost.contentUrl;
+            }
+            else if (botPost.type === 'photo') {
+                //content =  add photos shortenurl
+                //Todo: support multi url
+                url = botPost.mediaUrls[0];
+            }
+            else if (botPost.type === 'audio') {
+                url = botPost.audioUrl;
+            }
+            else if (botPost.type === 'video') {
+                if (botPost.videoUrl) {
+                   url = botPost.videoUrl;
+                }
+                else {
+                   url = botPost.url;
+                }
+            }
+        }
+        var cutLen = maxLen-blogConvert.maxShortenUrlLen;
+        if (content.length >= cutLen) {
+            content = content.slice(0, cutLen);
+        }
+
+        shortenFunc(url, function (shortenUrl) {
+           return callBack(shortenUrl + ' ' + content);
+        });
     }
 };
 

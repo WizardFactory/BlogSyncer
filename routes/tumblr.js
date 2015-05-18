@@ -560,7 +560,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return res.status(500).send(error);
         }
 
-        log.error(options, meta);
+        log.debug(options, meta);
 
         client[postType](blog_id, options, function (error, response) {
             if (error) {
