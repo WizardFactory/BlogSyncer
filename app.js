@@ -43,7 +43,7 @@ global.log  = new Logger(__dirname + "/debug.log");
 var svcConfig = require('./models/svcConfig.json');
 
 var app = express();
-var blogBot = require('./controllers/blogbot');
+var blogBot = require('./controllers/blogBot');
 
 var connectInfo;
 

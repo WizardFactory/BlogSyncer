@@ -6,7 +6,7 @@
 
 var express = require('express');
 var router = express.Router();
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 
 /**
  *

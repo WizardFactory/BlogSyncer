@@ -9,7 +9,7 @@ var passport = require('passport');
 var request = require('../controllers/requestEx');
 var url = require('url');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
@@ -204,7 +204,28 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botBlogList);
+            var async = require('async');
+            var asyncTasks = [];
+
+            botBlogList.blogs.forEach(function (botBlog) {
+              asyncTasks.push(function (callback) {
+                  _getCategoryIds(botBlog.blog_id, provider.accessToken, request.getEx, function(err, category) {
+                      if (err) {
+                          log.error(err, meta);
+                          return callback(err);
+                      }
+                      callback(null, category);
+                  });
+              });
+            });
+
+            async.parallel(asyncTasks, function (err, result) {
+                botBlogList.blogs.forEach(function (botBlog, index) {
+                    botBlog.categories = result[index];
+                });
+                log.verbose(botBlogList, meta);
+                res.send(botBlogList);
+            });
         });
     });
 });
@@ -491,13 +512,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            //get category_id from name
+            //get categoryId from name
             if (categoryName) {
-                newPost.category_id = _getCategoryIdByName(category, categoryName);
+                newPost.category = _getCategoryIdByName(category, categoryName);
 
                 //tistory didn't open create category
-                if(!newPost.category_id) {
-                    delete newPost.category_id;
+                if(!newPost.category) {
+                    delete newPost.category;
                 }
             }
             newPost.output = "json";
@@ -598,6 +619,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 function _getCategoryIds(target_api_url, accessToken, get, cb) {
     var api_url;
     var category;
+    var botCategories = [];
 
     api_url = TISTORY_API_URL + "/category/list?";
     api_url += "access_token=" + accessToken;
@@ -611,9 +633,13 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
             log.error(err);
             cb(err);
         }
-//        log.debug(body);
         try {
             category = JSON.parse(body).tistory.item.categories.category;
+            if (category) {
+                for (var i=0; i<category.length; i+=1) {
+                    botCategories.push({'id':category[i].id, 'name':category[i].name});
+                }
+            }
         }
         catch (e) {
             e.statusCode = 500;
@@ -623,8 +649,8 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
             cb(e);
         }
 
-//        log.debug(category);
-        cb(null, category);
+        log.debug(botCategories);
+        cb(null, botCategories);
     });
 }
 

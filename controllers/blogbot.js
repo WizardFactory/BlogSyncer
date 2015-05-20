@@ -121,6 +121,10 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
                 //postType is decided by system(depend type of source post
                 //postType = syncInfo.postType;
             }
+            {
+                var bC = require('./blogConvert');
+                bC.mergeTagsCategories(post.categories, targetBlog.categories, post.tags);
+            }
 
             //syncInfo.postType에 따라 post 처리
             BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,

@@ -24,6 +24,7 @@ var testData = {
         blog_id: "33377",
         blog_title: "wizard",
         blog_url: "www.wzdfac.com",
+        categories: [{'id':1, 'name':"development"}, {'id':2, 'name':"company"}],
         postCount: 3
     },
 
@@ -31,6 +32,7 @@ var testData = {
         blog_id: "777373",
         blog_title: "wzdfac",
         blog_url: "www.wzdfac22.com",
+        categories: [{'id':2, 'name':"company"}],
         postCount: 4
     },
 
