@@ -7,7 +7,7 @@
 var router = require('express').Router();
 var passport = require('passport');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');

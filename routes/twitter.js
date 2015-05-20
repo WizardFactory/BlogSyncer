@@ -9,7 +9,7 @@ var passport = require('passport');
 //var request = require('../controllers/requestEx');
 var url = require('url');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
