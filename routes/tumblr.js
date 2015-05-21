@@ -9,6 +9,10 @@ var passport = require('passport');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.tumblr;
@@ -36,13 +40,8 @@ passport.use(new TumblrStrategy({
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
 
-        var provider= {
-            "providerName":profile.provider,
-            "token":token,
-            "tokenSecret":tokenSecret,
-            "providerId":profile.username.toString(),
-            "displayName":profile.username
-        };
+        var provider = new botFormat.ProviderOauth1(profile.provider, profile.username.toString(), profile.username,
+                    token, tokenSecret);
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -186,17 +185,15 @@ router.get('/bot_bloglist', function (req, res) {
             }
             //log.debug(response, meta);
 
-            var send_data = {};
-            send_data.provider = provider;
-            send_data.blogs = [];
+            var botBlogList = new botFormat.BotBlogList(provider);
 
             try {
                 var blogs = response.user.blogs;
                 log.debug('blogs length=' + blogs.length, meta);
 
                 for (var i = 0; i < blogs.length; i+=1) {
-                    send_data.blogs.push({"blog_id": blogs[i].name, "blog_title": blogs[i].title,
-                                            "blog_url": blogs[i].url});
+                    var botBlog = new botFormat.BotBlog(blogs[i].name, blogs[i].title, blogs[i].url);
+                    botBlogList.blogs.push(botBlog);
                 }
             }
             catch(e) {
@@ -205,7 +202,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(send_data);
+            res.send(botBlogList);
         });
     });
 });
@@ -239,11 +236,9 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 res.status(400).send(error);
                 return;
             }
-            var send_data = {};
-            send_data.provider_name = TUMBLR_PROVIDER;
+            var botPostCount;
             try {
-                send_data.blog_id = response.blog.name;
-                send_data.post_count = response.blog.posts;
+                botPostCount = new botFormat.BotPostCount(TUMBLR_PROVIDER, response.blog.name, response.blog.posts);
             }
             catch(e) {
                 log.error(e, meta);
@@ -251,7 +246,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(send_data);
+            res.send(botPostCount);
         });
     });
  });
@@ -260,13 +255,14 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
  *
  * @param posts
  * @param raw_posts
- * @param is_body
  * @param after
  * @private
  */
-function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
+function _pushPostsFromTumblr(posts, raw_posts, after) {
+    var content;
+    var i, j;
 
-    for (var i = 0; i<raw_posts.length; i+=1) {
+    for (i = 0; i<raw_posts.length; i+=1) {
         var raw_post = raw_posts[i];
 
         var post_date = new Date(raw_post.date);
@@ -276,99 +272,103 @@ function _pushPostsFromTumblr(posts, raw_posts, is_body, after) {
             continue;
         }
 
-        var send_post = {};
-        send_post.title = raw_post.title;
-        send_post.modified = raw_post.date;
-        send_post.id = raw_post.id;
-        send_post.url = raw_post.post_url;
+        var botPost;
+        var botPostReplies = [];
 
-        //tumblr does not support categories
-//            send_post.categories = [];
-//            for (var j=0;j<raw_post.categories.length;j++) {
-//                send_post.categories.push(raw_post.categories[j]);
-//            }
-        send_post.tags = [];
-        for (var j=0; j<raw_post.tags.length; j+=1) {
-            send_post.tags.push(raw_post.tags[j]);
+        //note_count has 0
+        if (raw_post.note_count !== undefined) {
+           botPostReplies.push({"notes":raw_post.note_count});
         }
-//            log.debug('tags-send');
-//            log.debug(send_post.tags);
+
+        // tumblr don't have category
+        var categoires = [];
+        var title;
+        if (raw_post.title) {
+            title = raw_post.title.replace(/<\/?[^>]+(>|$)/g, "");
+        }
 
         switch (raw_post.type) {
-            case "text":
-                send_post.title = raw_post.title;
-                if (is_body) {
-                    send_post.content = raw_post.body;
-                }
+            case 'text':
+                botPost = new botFormat.BotTextPost(raw_post.id, raw_post.body, raw_post.date, raw_post.post_url, title,
+                        categoires, raw_post.tags, botPostReplies);
                 break;
-            case "photo":
-                send_post.title = raw_post.caption;
-                if (is_body) {
-                    send_post.content = raw_post.photos; //it's no complete
-                }
+            case 'link':
+                botPost = new botFormat.BotLinkPost(raw_post.id, raw_post.url, raw_post.date,raw_post.post_url, title,
+                        raw_post.description, categoires, raw_post.tags, botPostReplies);
                 break;
-            case "quote":
-                if (raw_post.text) {
-                    send_post.title = raw_post.text;
+            case 'photo':
+                var photoUrls = [];
+                for (j=0; j<raw_post.photos.length; j+=1) {
+                    photoUrls.push(raw_post.photos[j].original_size.url);
                 }
-                else if (raw_post.source_title) {
-                    send_post.title = raw_post.source_title;
-                }
-                if (is_body) {
-                    send_post.content = raw_post.source;
-                }
+                botPost = new botFormat.BotPhotoPost(raw_post.id, photoUrls, raw_post.date, raw_post.post_url,
+                            title, raw_post.caption, categoires, raw_post.tags, botPostReplies);
                 break;
-            case "link":
-                send_post.title = raw_post.title;
-                if (is_body) {
-                    send_post.content = "url : "+raw_post.url+" description : " + raw_post.description;
+            case 'audio':
+                if (!title) {
+                    title = raw_post.track_name;
                 }
+                botPost = new botFormat.BotAudioPost(raw_post.id, raw_post.audio_url, raw_post.audio_source_url,
+                            raw_post.embed,raw_post.date, raw_post.post_url, title, raw_post.caption,
+                            categoires, raw_post.tags, botPostReplies);
                 break;
-            case "chat":
-                send_post.title = raw_post.title;
-                if (is_body) {
-                    send_post.content = raw_post.body;
+            case 'video':
+                var embed_code;
+                if (raw_post.player) {
+                    embed_code = raw_post.player[raw_post.player.length-1].embed_code;
                 }
+                botPost = new botFormat.BotVideoPost(raw_post.id, raw_post.video_url, embed_code,
+                            raw_post.date, raw_post.post_url, title, raw_post.caption, categoires,
+                            raw_post.tags, botPostReplies);
                 break;
-            case "audio":
-                if (raw_post.caption) {
-                    send_post.title = raw_post.caption;
-                }
-                else if (raw_post.source_title) {
-                    send_post.title = raw_post.source_title;
-                }
-                if (is_body) {
-                    send_post.content = raw_post.player;
-                }
+            case 'quote':
+            {
+                content ='';
+                content += '<div><blockquote>';
+                content += raw_post.text;
+                content += '</blockquote><div>';
+                content += raw_post.source;
+                content += '</div></div>';
+                botPost = new botFormat.BotTextPost(raw_post.id, content, raw_post.date, raw_post.post_url, title,
+                            categoires, raw_post.tags, botPostReplies);
+            }
                 break;
-            case "video":
-                if (raw_post.caption) {
-                    send_post.title = raw_post.caption;
+            case 'answer':
+            {
+                if (raw_post.question) {
+                    title = raw_post.question.replace(/<\/?[^>]+(>|$)/g, "");
                 }
-                else if (raw_post.source_title) {
-                    send_post.title = raw_post.source_title;
-                }
-                if (is_body) {
-                    send_post.content = raw_post.player[0].embed_code;
-                }
+                content = raw_post.answer;
+                botPost = new botFormat.BotTextPost(raw_post.id, content, raw_post.date, raw_post.post_url, title,
+                            categoires, raw_post.tags, botPostReplies);
+            }
                 break;
-            case "answer":
-                send_post.title = raw_post.question;
-                if (is_body) {
-                    send_post.content = raw_post.answer;
+            case 'chat':
+            {
+                content='';
+                content += '<ul>';
+                for (j=0;j<raw_post.dialogue.length; j+=1) {
+                    content += '<li><span>';
+                    content += raw_post.dialogue[j].name + ': </span>';
+                    content += raw_post.dialogue[j].phrase;
+                    content += '</li>';
                 }
+                content += '</ul>';
+                botPost = new botFormat.BotTextPost(raw_post.id, content, raw_post.date, raw_post.post_url, title,
+                            categoires, raw_post.tags, botPostReplies);
+            }
                 break;
             default:
-                log.debug('Fail to get type ' + raw_post.type);
-                break;
+                log.error('Unknown type='+raw_post.type);
+                continue;
+        }
+        if (!botPost) {
+            log.error('Fail to create botPost of raw_post');
+            log.error(raw_post);
+            continue;
         }
 
-        send_post.replies = [];
-        if (raw_post.note_count !== undefined) {
-            send_post.replies.push({"notes": raw_post.note_count});
-        }
-
-        posts.push(send_post);
+        posts.push(botPost);
     }
 }
 
@@ -411,13 +411,11 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return;
             }
 
-            var send_data = {};
-            send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.post_count = 0;
-            send_data.posts = [];
+            var botPostList;
             try{
-                send_data.blog_id = response.blog.name;
-                _pushPostsFromTumblr(send_data.posts, response.posts, false, after);
+                botPostList = new botFormat.BotPostList(TUMBLR_PROVIDER, response.blog.name);
+
+                _pushPostsFromTumblr(botPostList.posts, response.posts, after);
             }
             catch(e) {
                 log.error(e, meta);
@@ -425,8 +423,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(400).send(e);
             }
 
-            send_data.post_count = send_data.posts.length;
-            res.send(send_data);
+            res.send(botPostList);
         });
     });
 });
@@ -458,31 +455,24 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
         var options = {id: post_id, reblog_info: true, notes_info: true};
 
         client.posts(blog_id, options, function (error, response) {
-            var send_data = {};
-
             if (error) {
                 log.error(error, meta);
                 res.status(400).send(error);
                 return;
             }
-            //log.debug(response);
 
-            send_data.provider_name = TUMBLR_PROVIDER;
-            send_data.post_count = 0;
-            send_data.posts = [];
-
+            var botPostList;
             try {
-                send_data.blog_id = response.blog.name;
-                _pushPostsFromTumblr(send_data.posts, response.posts, true, 0);
+                botPostList = new botFormat.BotPostList(TUMBLR_PROVIDER, response.blog.name);
+                _pushPostsFromTumblr(botPostList.posts, response.posts, 0);
             }
             catch(e) {
                 log.error(e, meta);
                 log.error(response, meta);
                 return res.status(500).send(e);
             }
-            send_data.post_count = send_data.posts.length;
 
-            res.send(send_data);
+            res.send(botPostList);
         });
     });
 });
@@ -497,39 +487,15 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var blog_id = req.params.blog_id;
     var options = {};
+    var botPost = req.body;
 
-    if (req.body.content) {
-        options.body = req.body.content;
-    }
-    else {
-        var error = new Error("Fail to get content");
-        log.error(error, meta);
-        return res.status(400).send(error);
+    var postType = botPost.type;
+
+    if (botPost.tags) {
+        options.tags = botPost.tags.toString();
     }
 
-    if (req.body.title) {
-        options.title = req.body.title;
-    }
-
-    if (req.body.tags) {
-        options.tags = req.body.tags;
-    }
-
-    var postType = req.query.postType;
-    if (!postType) {
-        log.verbose("postType is undefined, so it set to text", meta);
-        postType = "post";
-    }
-
-    if (req.body.description) {
-        //it's for link post
-        if (postType === "link") {
-            options.description = req.body.description;
-        }
-        else {
-            options.body += req.body.description;
-        }
-    }
+    var botTextPost; //for convert text post
 
     userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
@@ -544,12 +510,48 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             token_secret: provider.tokenSecret
         });
 
-        var postFunc;
-        if (postType === "post") {
-            postFunc = client.text;
+        if (postType === 'text') {
+            options.body = botPost.content;
+            if (botPost.title) { options.title = botPost.title; }
+        }
+        else if (postType === "photo") {
+            if (botPost.mediaUrls.length > 1) {
+                botTextPost = bC.convertPostMediaToText(botPost);
+                options.body = botTextPost.content;
+                postType = 'text';
+            }
+            else {
+                options.source = botPost.mediaUrls[0];
+                options.link = botPost.mediaUrls[0];
+                if (botPost.description) {options.caption = botPost.description;}
+            }
         }
         else if (postType === "link") {
-            postFunc = client.link;
+            options.url = botPost.contentUrl;
+            if (botPost.title) {options.title = botPost.title;}
+            if (botPost.description) {options.description = botPost.description;}
+        }
+        else if (postType === "audio") {
+            if (botPost.audio_source_url) {
+                options.external_url = botPost.audio_source_url;
+                if (botPost.description) {options.caption = botPost.description;}
+            }
+            else {
+                botTextPost = bC.convertPostMediaToText(botPost);
+                options.body = botTextPost.content;
+                postType = 'text';
+            }
+        }
+        else if (postType === "video") {
+            if (botPost.videoUrl) {
+                options.embed = bC.warpMediaTag(botPost.type, botPost.videoUrl);
+                if (botPost.description) {options.caption = botPost.description;}
+            }
+            else {
+                botTextPost = bC.convertPostMediaToText(botPost);
+                options.body = botTextPost.content;
+                postType = 'text';
+            }
         }
         else {
             //need to refactoring make a error object;
@@ -558,7 +560,9 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return res.status(500).send(error);
         }
 
-        postFunc.call(client, blog_id, options, function (error, response) {
+        log.error(options, meta);
+
+        client[postType](blog_id, options, function (error, response) {
             if (error) {
                 log.error(error, meta);
                 return res.status(400).send(error);
@@ -566,9 +570,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             //log.debug(response, meta);
 
-            var options = response;
-
-            client.posts(blog_id, options, function (error, response) {
+            client.posts(blog_id, response, function (error, response) {
                 if (error) {
                     log.error(error, meta);
                     res.status(400).send(error);
@@ -576,15 +578,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 }
                 //log.debug(response);
 
-                var send_data = {};
-                send_data.provider_name = TUMBLR_PROVIDER;
-                send_data.post_count = 0;
-                send_data.posts = [];
+                var botPostList;
 
                 try {
-                    send_data.blog_id = response.blog.name;
-                    _pushPostsFromTumblr(send_data.posts, response.posts, false, 0);
-                    send_data.post_count = send_data.posts.length;
+                    botPostList = new botFormat.BotPostList(TUMBLR_PROVIDER, response.blog.name);
+                    _pushPostsFromTumblr(botPostList.posts, response.posts, 0);
                 }
                 catch(e) {
                     log.error(e, meta);
@@ -592,7 +590,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                     return res.status(500).send(e);
                 }
 
-                res.send(send_data);
+                res.send(botPostList);
             });
         });
     });

@@ -9,6 +9,10 @@ var request = require('../controllers/requestEx');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.kakao;
@@ -36,14 +40,8 @@ passport.use(new KakaoStrategy({
         //log.debug("refreshToken:" + refreshToken, meta);
         //log.debug("params:"+JSON.stringify(params), meta);
         //log.debug("profile:" + JSON.stringify(profile), meta);
-        var provider = {
-            "providerName": profile.provider,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-            "providerId": profile.id.toString(),
-            "tokenExpireTime": userMgr.makeTokenExpireTime(params.expires_in),
-            "displayName": profile.username
-        };
+        var provider  = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.username, accessToken,
+                    refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -161,8 +159,6 @@ router.get('/bot_bloglist', function (req, res) {
             }
 
             var nickName;
-            var blogUrl;
-            var sendData;
 
             try {
                 nickName = body.properties.nickname;
@@ -173,17 +169,12 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            blogUrl = "stroy.kakao.com/" + nickName;
-            sendData = {};
-            sendData.provider = provider;
-            sendData.blogs = [];
-            sendData.blogs.push({"blog_id": nickName, "blog_title": nickName, "blog_url": blogUrl});
-            /*
-             { "provider":object, "blogs":
-             [ {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-             {"blog_id":"12", "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
-             */
-            res.send(sendData);
+            var blogUrl = "stroy.kakao.com/" + nickName;
+            var botBlogList = new botFormat.BotBlogList(provider);
+            var botBlog = new botFormat.BotBlog(nickName, nickName, blogUrl);
+            botBlogList.blogs.push(botBlog);
+
+            res.send(botBlogList);
         });
     });
 });
@@ -198,13 +189,59 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     //kakao did not support post_count.
     var blogId = req.params.blog_id;
-    var sendData = {};
-    sendData.provider_name = KAKAO_PROVIDER;
-    sendData.blog_id = blogId;
-    sendData.post_count = -1;
+    var botPostCount = new botFormat.BotPostCount(KAKAO_PROVIDER, blogId, -1);
 
-    res.send(sendData);
+    res.send(botPostCount);
  });
+
+function _pushPostsFromKakao(posts, rawPosts, after) {
+    for (var i = 0; i < rawPosts.length; i+=1) {
+        var rawPost = rawPosts[i];
+        if (after) {
+            var postDate = new Date(rawPost.created_at);
+            var afterDate = new Date(after);
+
+            if (postDate < afterDate) {
+                //log.debug('post is before', meta);
+                continue;
+            }
+        }
+
+        var botPost;
+        var replies = [];
+        replies.push({'comment':rawPost.comment_count});
+        replies.push({'like':rawPost.like_count});
+
+        switch(rawPost.media_type) {
+            case 'NOTE':
+                botPost = new botFormat.BotTextPost(rawPost.id, rawPost.content, rawPost.created_at,
+                    rawPost.url, '', [], [], replies);
+                break;
+            case 'PHOTO':
+                var mediaUrls=[];
+                for (var j=0; j<rawPost.media.length; j+=1) {
+                   mediaUrls.push(rawPost.media[j].original);
+                }
+                botPost = new botFormat.BotPhotoPost(rawPost.id, mediaUrls, rawPost.created_at, rawPost.url, '',
+                            rawPost.content, [], [], replies);
+                break;
+            case 'NOT_SUPPORTED':
+                botPost = new botFormat.BotLinkPost(rawPost.id, rawPost.url, rawPost.created_at, rawPost.url, '',
+                            rawPost.content, [], [], replies);
+                break;
+            default:
+                log.error('Unknown media_type');
+                break;
+        }
+        if(!botPost) {
+            log.error(rawPost);
+            log.error('Fail to create botPost!');
+            continue;
+        }
+
+        posts.push(botPost);
+    }
+}
 
 router.get('/bot_posts/:blog_id', function (req, res) {
     var userId = userMgr._getUserId(req, res);
@@ -236,35 +273,10 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = KAKAO_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(KAKAO_PROVIDER, blogId);
 
             try {
-                for (var i = 0; i < body.length; i+=1) {
-                    var rawPost = body[i];
-                    if (after) {
-                        var postDate = new Date(rawPost.created_at);
-                        var afterDate = new Date(after);
-
-                        if (postDate < afterDate) {
-                            //log.debug('post is before', meta);
-                            continue;
-                        }
-                    }
-
-                    var sendPost = {};
-                    //send_post.title;
-                    sendPost.modified = rawPost.created_at;
-                    sendPost.id = rawPost.id;
-                    sendPost.url = rawPost.url;
-                    sendPost.categories = [];
-                    sendPost.tags = [];
-                    sendPost.content = rawPost.content;
-
-                    sendData.posts.push(sendPost);
-                }
+                _pushPostsFromKakao(botPostList.posts, body, after);
             }
             catch(e) {
                 log.error(e, meta);
@@ -272,9 +284,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            sendData.post_count = sendData.posts.length;
-
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -308,28 +318,12 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            //log.debug(body, meta);
-
-            var sendData = {};
-            sendData.provider_name = KAKAO_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.post_count = 1;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(KAKAO_PROVIDER, blogId);
+            log.info(body, meta);
             try {
-                var rawPost = body;
-                var sendPost = {};
-                //send_post.title;
-                sendPost.modified = rawPost.created_at;
-                sendPost.id = rawPost.id;
-                sendPost.url = rawPost.url;
-                sendPost.categories = [];
-                sendPost.tags = [];
-
-                sendPost.content = rawPost.content;
-                sendPost.replies = [];
-                sendPost.replies.push({"comment_count": rawPost.comment_count});
-                sendPost.replies.push({"like_count": rawPost.like_count});
-                sendData.posts.push(sendPost);
+                var rawPosts = [];
+                rawPosts.push(body);
+                _pushPostsFromKakao(botPostList.posts, rawPosts);
             }
             catch(e) {
                 log.error(e, meta);
@@ -337,7 +331,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            return res.send(sendData);
+            return res.send(botPostList);
         });
     });
 });
@@ -355,35 +349,41 @@ function _convertToURL(postId) {
     return str;
 }
 
-function _makeNewPost(body) {
-    var newPost = {};
+function _makeContent(rcvPost) {
+    var content = '';
 
-    newPost.content = "";
-
-    if (body.title) {
-        newPost.content += body.title +'\n';
+    if (rcvPost.content) {
+        content += rcvPost.content;
+    }
+    if (rcvPost.description) {
+        content += rcvPost.description;
     }
 
-    if (body.content) {
-        newPost.content += body.content;
-    }
+    //if didn't have any content, add padding for safety
+    content += ' ';
 
-    log.debug(newPost);
-
-    return newPost;
+    return content;
 }
 
-function _postText(accessToken, rcvPost, callback) {
+function _makePhotoPost(accessToken, rcvPost, callback) {
+    var photoPost = {};
+    photoPost.image_url_list = rcvPost.mediaUrls;
+    photoPost.content = _makeContent(rcvPost);
 
-    var newPost;
-    newPost = _makeNewPost(rcvPost);
-    return callback(undefined, newPost);
+    return callback(undefined, photoPost);
 }
 
-function _postLink(accessToken, rcvPost, callback) {
+function _makeNotePost(accessToken, rcvPost, callback) {
+    var notePost = {};
+    notePost.content = _makeContent(rcvPost);
+
+    return callback(undefined, notePost);
+}
+
+function _makeLinkPost(accessToken, rcvPost, callback) {
     var meta={};
     meta.cName = KAKAO_PROVIDER;
-    meta.fName = "_postLink";
+    meta.fName = "_makeLinkPost";
 
     var linkInfoUrl;
     linkInfoUrl = KAKAO_API_URL + "/v1/api/story/linkinfo";
@@ -397,11 +397,11 @@ function _postLink(accessToken, rcvPost, callback) {
             return callback(err);
         }
 
-        //log.debug(body, meta);
+        var linkPost = {};
+        linkPost.content = _makeContent(rcvPost);
 
-        var newPost = {};
         try {
-            newPost.link_info = JSON.stringify(body);
+            linkPost.link_info = JSON.stringify(body);
         }
         catch(e) {
             log.error(e, meta);
@@ -409,57 +409,10 @@ function _postLink(accessToken, rcvPost, callback) {
             return callback(e);
         }
 
-        if (rcvPost.title) {
-            newPost.content = rcvPost.title;
-        }
-        else if (rcvPost.content) {
-            newPost.content = rcvPost.content;
-        }
-        else {
-            newPost.content = " ";
-        }
+        log.debug(linkPost, meta);
 
-        log.debug(newPost, meta);
-
-        return callback(undefined, newPost);
+        return callback(undefined, linkPost);
     });
-}
-
-function _responsePostResult(blogId, content, body, callback) {
-
-    var sendData = {};
-      sendData.provider_name = KAKAO_PROVIDER;
-      sendData.blog_id = blogId;
-      sendData.posts = [];
-
-    var sendPost = {};
-      sendPost.modified = new Date();
-
-    var rawPost;
-    try {
-        if (typeof(body) === "string") {
-            rawPost = JSON.parse(body);
-        }
-        else if (typeof(body) === "object") {
-            rawPost = body;
-        }
-        sendPost.id = rawPost.id;
-    }
-    catch(e) {
-        log.error(e);
-        log.error(body);
-        return callback(e);
-    }
-
-    sendPost.url = "https://story.kakao.com" + "/" + _convertToURL(sendPost.id);
-    sendPost.categories = [];
-    sendPost.tags = [];
-    sendPost.content = content;
-    sendData.posts.push(sendPost);
-
-    log.debug(sendData);
-
-    callback (undefined, sendData);
 }
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
@@ -471,14 +424,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     log.info("+", meta);
 
     var blogId = req.params.blog_id;
-    var postType = req.query.postType;
+    var botPost= req.body;
+    var postType = botPost.type;
     if (!postType) {
         log.error("postType is undefined, so it set to text", meta);
-        postType = "post";
+        postType = 'text';
     }
 
-    var rcvPost= req.body;
-    var apiUrl = KAKAO_API_URL + "/v1/api/story/post/note";
+    var apiUrl = KAKAO_API_URL + "/v1/api/story/post";
     log.debug(apiUrl, meta);
 
     userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
@@ -487,40 +440,62 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             return res.status(500).send(err);
         }
 
-        var postFunc;
-        if (postType === "post") {
-            postFunc = _postText;
+        var makePostFunc;
+        if (postType === 'photo') {
+            makePostFunc = _makePhotoPost;
+            apiUrl += '/photo';
         }
-        else if (postType === "link") {
-            postFunc = _postLink;
+        else if (postType === 'text') {
+           //if big page(like blog post) link post
+           // else
+            makePostFunc = _makeNotePost;
+            apiUrl += '/note';
+        }
+        else if (postType === 'link') {
+            makePostFunc = _makeLinkPost;
+            apiUrl += '/link';
+        }
+        else if (postType === 'audio' || postType === 'video') {
+            //make generate link or note
+            log.debug('test audio/video to note');
+
+            botPost = bC.convertPostMediaToText(botPost);
+            makePostFunc = _makeNotePost;
+            apiUrl += '/note';
         }
         else {
-            //need to refactoring make a error object;
             err = new Error("postType was undefined");
             log.error(err, meta);
             return res.status(500).send(err);
         }
 
-        postFunc(provider.accessToken, rcvPost, function(err, postData) {
+        makePostFunc(provider.accessToken, botPost, function(err, newPost) {
             if (err) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
 
-            _requestPost(apiUrl, provider.accessToken, postData, function(err, response, body) {
+            _requestPost(apiUrl, provider.accessToken, newPost, function(err, response, body) {
                 if (err) {
                     log.error(err, meta);
                     return res.status(err.statusCode).send(err);
                 }
 
-                _responsePostResult(blogId, rcvPost.content, body, function(err, sendData) {
-                    if (err) {
-                        log.error(err, meta);
-                        return res.status(500).send(err);
-                    }
+                var botPostList = new botFormat.BotPostList(KAKAO_PROVIDER, blogId);
+                try {
+                    botPost.id = body.id;
+                    botPost.url = "https://story.kakao.com" + "/" + _convertToURL(body.id);
+                    botPost.created_at = new Date(); //temp
+                    botPost.replies = [];
+                    botPostList.posts.push(botPost);
+                }
+                catch(e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.status(500).send(e);
+                }
 
-                    return res.send(sendData);
-                });
+                return res.send(botPostList);
             });
         });
     });
@@ -556,20 +531,16 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var send = {};
-            send.providerName = KAKAO_PROVIDER;
-            send.blogID = blogId;
-            send.postID = postId;
-            send.comments = [];
+            var botCommentList = new botFormat.BotCommentList(KAKAO_PROVIDER, blogId, postId);
 
             try {
                 for (var i = 0; i < body.comment_count; i+=1) {
                     var comment = {};
                     comment.URL = body.url;
                     comment.content = body.comments[i].text;
-                    send.comments.push(comment);
+                    var botComment = new botFormat.BotComment(body.comments[i].text, new Date(0), body.url);
+                    botCommentList.comments.push(botComment);
                 }
-                send.found = body.comment_count;
             }
             catch(e) {
                 log.error(e, meta);
@@ -577,7 +548,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            return res.send(send);
+            return res.send(botCommentList);
         });
     });
 });

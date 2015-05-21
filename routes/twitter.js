@@ -11,6 +11,10 @@ var url = require('url');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.twitter;
@@ -47,13 +51,8 @@ passport.use(new TwitterStrategy({
 //        log.debug("token secret:" + tokenSecret); // 인증 이후 auto token secret을 출력할 것이다.
 //        log.debug("profile:" + JSON.stringify(profile));
 
-        var provider = {
-            "providerName":profile.provider,
-            "token":token,
-            "tokenSecret":tokenSecret,
-            "providerId":profile.username.toString(),
-            "displayName":profile.displayName
-        };
+        var provider  = new botFormat.ProviderOauth1(profile.provider, profile.username.toString(), profile.displayName,
+            token, tokenSecret);
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -133,26 +132,18 @@ router.get('/bot_bloglist', function (req, res) {
                 return;
             }
 
-            var blog_id;
-            var blog_title;
-            var blog_url;
-
+            var botBlogList = new botFormat.BotBlogList(provider);
+            var botBlog;
             try{
                 var result = JSON.parse(body);
-                blog_id = result.id;
-                blog_title = result.name;
-                blog_url = result.url;
+                botBlog = new botFormat.BotBlog(result.id, result.name, result.url);
+                botBlogList.blogs.push(botBlog);
             }
             catch(e) {
                 log.error(e, meta);
-                log.error(body, meta);
+                log.silly(body, meta);
                 res.status(500).send(e);
             }
-
-            var botBlogList = {};
-            botBlogList.provider = provider;
-            botBlogList.blogs = [];
-            botBlogList.blogs.push({"blog_id": blog_id, "blog_title": blog_title, "blog_url": blog_url});
 
             res.send(botBlogList);
         });
@@ -187,17 +178,15 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 return;
             }
 
-            var botPostCount = {};
+            var botPostCount;
 
             try {
                 var result = JSON.parse(body);
-                botPostCount.provider_name = TWITTER_PROVIDER;
-                botPostCount.blog_id = result.id;
-                botPostCount.post_count = result.statuses_count;
+                botPostCount = new botFormat.BotPostCount(TWITTER_PROVIDER, result.id, result.statuses_count);
             }
             catch(e) {
                 log.error(e, meta);
-                log.error(body, meta);
+                log.silly(body, meta);
                 res.status(500).send(e);
                 return;
             }
@@ -207,29 +196,30 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     });
 });
 
-function _convertBotPosts(providerName, blogId) {
-    return {"provider_name": providerName, "blog_id": blogId, "posts": []};
-}
-
-function _convertBotPost(raw_post) {
-    var botPost = {};
-    botPost.title = raw_post.text;
-    botPost.modified = raw_post.created_at;
-
-    //you have to use id_str NOT id
-    botPost.id = raw_post.id_str;
-
-    //twitter didn't have url
-    botPost.categories = [];
-    botPost.tags = [];
-
-    //twitter didn't have content
-    botPost.content = raw_post.text;
-    botPost.replies = [];
-    botPost.replies.push({"retweet_count": raw_post.retweet_count});
-    botPost.replies.push({"like_count": raw_post.favorite_count});
-
-    return botPost;
+/**
+ * "entities":  {
+      "hashtags":  [
+         {
+          "text": "prodmgmt",
+          "indices":  [
+            139,
+            140
+          ]
+        }
+      ],
+ * @param hashTags
+ * @private
+ */
+function _convertBotTags(hashTags) {
+    var tags = [];
+    if (!hashTags && !hashTags.length) {
+        log.error('hashTags is not valid');
+        return tags;
+    }
+    for (var i=0; i<hashTags.length; i+=1) {
+        tags.push(hashTags[i].text);
+    }
+    return tags;
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
@@ -278,7 +268,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
             catch(e) {
                 log.error(e, meta);
-                log.error(body, meta);
+                log.silly(body, meta);
                 res.status(500).send(e);
                 return;
             }
@@ -292,7 +282,10 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return;
             }
 
-            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            var botPostList = new botFormat.BotPostList(TWITTER_PROVIDER, blog_id);
+            var postUrl = 'https://twitter.com';
+            postUrl += '/' + blog_id + '/status';
+
             for (var i = 0; i < result.length; i += 1) {
                 var raw_post = result[i];
                 if (after) {
@@ -305,34 +298,34 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     }
                 }
 
-                var send_post = _convertBotPost(raw_post);
+               //https://twitter.com/kimalec7/status/599212089035476994
+                postUrl += '/' + raw_post.id_str;
 
-                //log.debug(send_post);
+                var botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                            '', [], _convertBotTags(raw_post.entities.hashtags), []);
 
-                send_data.posts.push(send_post);
+                botPostList.posts.push(botPost);
 
-                send_data.stopReculsive = false;
+                botPostList.stopReculsive = false;
             }
-
-            send_data.post_count = send_data.posts.length;
 
             if(!after)
             {
-                if(!(send_data.posts[i-1])) {
+                if(!(botPostList.posts[i-1])) {
                     error = new Error("posts in undefined !!");
                     log.error(error, meta);
                     res.status(500).send(error);
                     return;
                 }
 
-                if( (last_id === send_data.posts[i-1].id.toString()) &&
+                if( (last_id === botPostList.posts[i-1].id.toString()) &&
                     (result.length === 1) ) {
                     log.debug("stop Recursive!!!!!", meta);
-                    send_data.stopReculsive = true;
+                    botPostList.stopReculsive = true;
                 }
             }
 
-            res.send(send_data);
+            res.send(botPostList);
         });
     });
 });
@@ -367,11 +360,21 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return;
             }
 
-            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
-            var send_post;
+            var botPostList = new botFormat.BotPostList(TWITTER_PROVIDER, blog_id);
+            var postUrl = 'https://twitter.com';
+            postUrl += '/' + blog_id + '/status';
+
+            var botPost;
             try {
-                var result = JSON.parse(body);
-                send_post = _convertBotPost(result);
+                var raw_post = JSON.parse(body);
+
+                postUrl += '/' + raw_post.id_str;
+                var replies = [];
+                replies.push({"retweet": raw_post.retweet_count});
+                replies.push({"like": raw_post.favorite_count});
+
+                botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                    '', [], _convertBotTags(raw_post.entities.hashtags), replies);
             }
             catch (e) {
                 log.error(e, meta);
@@ -379,30 +382,12 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 res.status(500).send(e);
                 return;
             }
-            send_data.posts.push(send_post);
-            send_data.post_count = send_data.posts.length;
+            botPostList.posts.push(botPost);
 
-            res.send(send_data);
+            res.send(botPostList);
         });
     });
 });
-
-function _makeNewPost(body) {
-    var newPost = {};
-
-    newPost.content = "";
-
-    if (body.title) {
-        newPost.content += body.title +'\n';
-    }
-    if (body.content) {
-        newPost.content += body.content;
-    }
-
-    log.debug(newPost);
-
-    return newPost;
-}
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
     var userId = userMgr._getUserId(req, res);
@@ -412,12 +397,28 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta);
 
-    var provider_id = req.query.providerid;
     var blog_id = req.params.blog_id;
-    var newPost = _makeNewPost(req.body);
+    var botPost = req.body;
+
+    var newPost = {};
+    newPost.type = botPost.type;
+    newPost.content = bC.convertBotPostToTextContent(botPost);
+    if (newPost.content.length > 140) {
+        if (newPost.type === 'link') {
+            //cut content
+            log.error('Need to cut content');
+        }
+        else {
+            //change to link
+            log.error('Need to convert to link');
+        }
+    }
+    //todo convert tags to hashTags;
+    //var hashTags = _makeHashTags(newPost.tags);
+
     var encodedPost = encodeURIComponent(newPost.content);
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
+    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, undefined, function (err, user, provider) {
 
         //log.debug(encodedPost, meta);
 
@@ -430,13 +431,18 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return;
             }
 
-            var send_data = _convertBotPosts(TWITTER_PROVIDER, blog_id);
+            var botPostList = new botFormat.BotPostList(TWITTER_PROVIDER, blog_id);
+            var postUrl = 'https://twitter.com';
+            postUrl += '/' + blog_id + '/status';
 
-            var send_post = {};
-            var raw_post = body;
+            var botPost = {};
+            var raw_post = JSON.parse(body);
 
             try {
-                send_post = _convertBotPost(raw_post);
+                postUrl += '/' + raw_post.id_str;
+
+                botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                    '', [], _convertBotTags(raw_post.entities.hashtags));
             }
             catch (e) {
                 log.error(e, meta);
@@ -445,9 +451,9 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return;
             }
 
-            send_data.posts.push(send_post);
-            log.debug(send_data, meta);
-            res.send(send_data);
+            botPostList.posts.push(botPost);
+            log.debug(botPostList, meta);
+            res.send(botPostList);
         });
     });
 });
