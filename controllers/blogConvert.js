@@ -160,6 +160,62 @@ var blogConvert = {
         }
 
         return title;
+    },
+    /**
+     *
+     * @param {string[]} tags
+     * @param {string[]} categories
+     */
+    addCategoriesToTags: function (tags, categories) {
+        for (var i=0;i<categories.length; i+=1) {
+            for (var j=0; j<tags.length; j+=1) {
+                if (categories[i] === tags[j]) {
+
+                    //already included categories
+                    break;
+                }
+            }
+            if (j === tags.length) {
+                tags.push(categories[i]);
+            }
+        }
+    },
+    /**
+     *
+     * @param {String[]} dstCategories
+     * @param {Object[]} blogCategories
+     * @param {String[]} tags
+     */
+    addTagsToCategories: function (dstCategories, blogCategories, tags) {
+        for (var i=0; i<tags.length; i+=1)    {
+            for (var j=0; j<blogCategories.length; j+=1) {
+
+                //it is candidate of category
+                if (tags[i] === blogCategories[j].name) {
+                    for (var k=0; k<dstCategories.length; k+=1) {
+
+                        //already included tag
+                       if (tags[i] === dstCategories[k])  {
+                           break;
+                       }
+                    }
+                    if (k === dstCategories.length) {
+                       dstCategories.push(tags[i]);
+                    }
+                    break;
+                }
+            }
+        }
+    },
+    /**
+     *
+     * @param {string[]} categories
+     * @param {Object[]} blogCategories
+     * @param {string[]} tags
+     */
+    mergeTagsCategories: function (categories, blogCategories, tags) {
+        blogConvert.addTagsToCategories(categories, blogCategories, tags);
+        blogConvert.addCategoriesToTags(tags, categories);
     }
 };
 
