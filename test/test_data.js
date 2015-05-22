@@ -176,7 +176,9 @@ var testData = {
         providerName: "google",
         blogID: "3384",
         postID: "7752"
-    }
+    },
+    testNewLineString: 'kakao story line change test 20:40\nl\ni\nn\ne\n(Sticker) \n(Sticker) \n',
+    testBreakString: 'kakao story line change test 20:40<br>l<br>i<br>n<br>e<br>(Sticker) <br>(Sticker) <br>'
 };
 
 module.exports = testData;
