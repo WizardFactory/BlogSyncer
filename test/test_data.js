@@ -189,7 +189,9 @@ var testData = {
         blogID: "3384",
         postID: "7752"
     },
-    testShortenUrl: 'http://is.gd/N5CgDW'
+    testShortenUrl: 'http://is.gd/N5CgDW',
+    testNewLineString: 'kakao story line change test 20:40\nl\ni\nn\ne\n(Sticker) \n(Sticker) \n',
+    testBreakString: 'kakao story line change test 20:40<br>l<br>i<br>n<br>e<br>(Sticker) <br>(Sticker) <br>'
 };
 
 module.exports = testData;
