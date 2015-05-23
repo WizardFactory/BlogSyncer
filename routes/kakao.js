@@ -359,6 +359,8 @@ function _makeContent(rcvPost) {
         content += rcvPost.description;
     }
 
+    content = bC.removeHtmlTags(content);
+
     //if didn't have any content, add padding for safety
     content += ' ';
 
@@ -375,9 +377,11 @@ function _makePhotoPost(accessToken, rcvPost, callback) {
 
 function _makeNotePost(accessToken, rcvPost, callback) {
     var notePost = {};
-    notePost.content = _makeContent(rcvPost);
-
-    return callback(undefined, notePost);
+    //notePost.content = _makeContent(rcvPost);
+    bC.convertPostToPlainContentWithTitle(rcvPost, 2048, bC.convertShortenUrl, function (content) {
+        notePost.content = content;
+        return callback(undefined, notePost);
+    });
 }
 
 function _makeLinkPost(accessToken, rcvPost, callback) {
@@ -441,11 +445,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }
 
         var makePostFunc;
-        if (postType === 'photo') {
-            makePostFunc = _makePhotoPost;
-            apiUrl += '/photo';
-        }
-        else if (postType === 'text') {
+        //kakao supports only upload photo
+        //if (postType === 'photo') {
+        //    makePostFunc = _makePhotoPost;
+        //    apiUrl += '/photo';
+        //}
+        //else
+        if (postType === 'text') {
            //if big page(like blog post) link post
            // else
             makePostFunc = _makeNotePost;
@@ -455,11 +461,10 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             makePostFunc = _makeLinkPost;
             apiUrl += '/link';
         }
-        else if (postType === 'audio' || postType === 'video') {
+        else if (postType === 'audio' || postType === 'video' || postType === 'photo') {
             //make generate link or note
             log.debug('test audio/video to note');
 
-            botPost = bC.convertPostMediaToText(botPost);
             makePostFunc = _makeNotePost;
             apiUrl += '/note';
         }

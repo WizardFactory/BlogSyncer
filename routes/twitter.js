@@ -401,60 +401,54 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var botPost = req.body;
 
     var newPost = {};
-    newPost.type = botPost.type;
-    newPost.content = bC.convertBotPostToTextContent(botPost);
-    if (newPost.content.length > 140) {
-        if (newPost.type === 'link') {
-            //cut content
-            log.error('Need to cut content');
-        }
-        else {
-            //change to link
-            log.error('Need to convert to link');
-        }
-    }
+
     //todo convert tags to hashTags;
     //var hashTags = _makeHashTags(newPost.tags);
 
-    var encodedPost = encodeURIComponent(newPost.content);
+    bC.convertPostToPlainContentWithTitle(botPost, 140, bC.convertShortenUrl, function (content) {
+        newPost.content = content;
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, undefined, function (err, user, provider) {
+        var encodedPost = encodeURIComponent(newPost.content);
 
-        //log.debug(encodedPost, meta);
+        userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, undefined, function (err, user, provider) {
 
-        var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
-        objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, body, response) {
-            if(error) {
-                log.error(error, meta);
-                log.error(response, meta);
-                res.status(error.statusCode).send(error);
-                return;
-            }
+            //log.debug(encodedPost, meta);
 
-            var botPostList = new botFormat.BotPostList(TWITTER_PROVIDER, blog_id);
-            var postUrl = 'https://twitter.com';
-            postUrl += '/' + blog_id + '/status';
+            var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
+            objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, body, response) {
+                if(error) {
+                    log.error(error, meta);
+                    log.error(response, meta);
+                    res.status(error.statusCode).send(error);
+                    return;
+                }
 
-            var botPost = {};
-            var raw_post = JSON.parse(body);
+                var botPostList = new botFormat.BotPostList(TWITTER_PROVIDER, blog_id);
+                var postUrl = 'https://twitter.com';
+                postUrl += '/' + blog_id + '/status';
 
-            try {
-                postUrl += '/' + raw_post.id_str;
+                var botPost = {};
+                var raw_post = JSON.parse(body);
 
-                botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
-                    '', [], _convertBotTags(raw_post.entities.hashtags));
-            }
-            catch (e) {
-                log.error(e, meta);
-                log.error(body, meta);
-                res.status(500).send(e);
-                return;
-            }
+                try {
+                    postUrl += '/' + raw_post.id_str;
 
-            botPostList.posts.push(botPost);
-            log.debug(botPostList, meta);
-            res.send(botPostList);
+                    botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                        '', [], _convertBotTags(raw_post.entities.hashtags));
+                }
+                catch (e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    res.status(500).send(e);
+                    return;
+                }
+
+                botPostList.posts.push(botPost);
+                log.debug(botPostList, meta);
+                res.send(botPostList);
+            });
         });
+
     });
 });
 

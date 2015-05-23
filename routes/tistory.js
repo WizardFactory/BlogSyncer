@@ -460,14 +460,11 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         newPost.title = botPost.title;
     }
     else {
-        var error =  new Error("Fail to get title");
-        log.error(error, meta);
-        return res.status(400).send(error);
+        newPost.title = bC.makeTitle(botPost) ;
     }
 
-    if (botPost.content) {
-        newPost.content = bC.convertBotPostToTextContent(botPost);
-    }
+    newPost.content = bC.convertBotPostToTextContent(botPost);
+
     if (botPost.tags) {
         newPost.tag = botPost.tags.toString();
     }
