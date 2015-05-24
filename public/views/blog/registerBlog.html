@@ -1,25 +1,25 @@
 <div class="content-title">
-    <h1 class="page-header">{{title}}</h1>
+    <h1 class="page-header">{{title | translate}}</h1>
 </div>
 <div class="content-body">
     <div class="content-box">
-        <a href="" ng-click="onClickButton(button[0]);">{{button[0]}}</a>
-        <a href="" class="btn-right" ng-click="onClickButton(button[1]);">{{button[1]}}</a>
+        <a href="" ng-click="onClickButton(button[0]);">{{button[0] | translate}}</a>
+        <a href="" class="btn-right" ng-click="onClickButton(button[1]);">{{button[1] | translate}}</a>
         <div style="clear: both;"></div>
     </div>
     <div class="content-inner-box hero-unit" ng-repeat="group in groups track by $index" ng-show="groupInfo===null">
-        <span class="icon-delete glyphicon glyphicon-remove-circle" aria-hidden="false" ng-show="button[0]==='Confirm'" ng-click="onClickGroup($index);"></span>
-        <span class="icon-check glyphicon  glyphicon-ok-circle" aria-hidden="false" ng-show="button[1]==='Confirm'" ng-click="onClickGroup($index);"></span>
+        <span class="icon-delete glyphicon glyphicon-remove-circle" aria-hidden="false" ng-show="button[0]===type.REGISTER_BUTTON.CONFIRM" ng-click="onClickGroup($index);"></span>
+        <span class="icon-check glyphicon  glyphicon-ok-circle" aria-hidden="false" ng-show="button[1]===type.REGISTER_BUTTON.CONFIRM" ng-click="onClickGroup($index);"></span>
         <p class="btn btn-default btn-blog" ng-repeat="site in group.group">
             <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
-            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
+            &nbsp;&nbsp;{{'LOC_'+site.provider.providerName | translate}} : {{site.blog.blog_title}}
         </p>
     </div>
     <div id="paper"></div>
-    <div class="content-box" ng-show="groupInfo!==null && groupInfoType==='table'">
+    <div class="content-box" ng-show="groupInfo!==null && groupInfoType===type.GROUP_INFO.TABLE">
         <table border="1">
             <tr>
-                <td>From/To</td>
+                <td>{{'LOC_TABLE_INFO' | translate}}</td>
                 <td ng-repeat="site in group track by $index">
                     <img class="icon-blog-small" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
                     <br>
@@ -33,27 +33,27 @@
                     {{group[$index].blog.blog_title}}
                 </td>
                 <td ng-repeat="info in infos" ng-click="onClickGroupInfo(fromIndex, $index);"
-                    ng-class="{'sync-true': info.syncEnable == 'true', 'sync-false': info.syncEnable == 'false', 'sync-none': info.syncEnable == 'none'}">
-                    <span ng-if="info.syncEnable == 'false'">Off</span>
-                    <span ng-if="info.syncEnable == 'none'">None</span>
-                    <span ng-if="info.syncEnable == 'true'">On</span>
+                    ng-class="{'sync-true': info.syncEnable == type.SYNC_ENABLE.ON, 'sync-false': info.syncEnable == type.SYNC_ENABLE.OFF, 'sync-none': info.syncEnable == type.SYNC_ENABLE.NONE}">
+                    <span ng-if="info.syncEnable == type.SYNC_ENABLE.OFF">{{'LOC_OFF' | translate}}</span>
+                    <span ng-if="info.syncEnable == type.SYNC_ENABLE.NONE">{{'LOC_NONE' | translate}}</span>
+                    <span ng-if="info.syncEnable == type.SYNC_ENABLE.ON">{{'LOC_ON' | translate}}</span>
                 </td>
             </tr>
         </table>
     </div>
     <div class="content-box">
-        <a href="" ng-click="onClickButton(button[2]);">{{button[2]}}</a>
-        <a href="" class="btn-right" ng-click="onClickButton(button[3]);" ng-if="button[2]==='Register'">{{button[3]}}</a>
+        <a href="" ng-click="onClickButton(button[2]);">{{button[2] | translate}}</a>
+        <a href="" class="btn-right" ng-click="onClickButton(button[3]);" ng-if="button[2]===type.REGISTER_BUTTON.REGISTER">{{button[3] | translate}}</a>
         <br>
         <span class="error-msg" ng-show="info!==''">
             <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
-            {{info}}
+            {{info | translate}}
         </span>
     </div>
-    <div class="content-box" ng-if="button[2]==='Register'">
-        <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === 'selected'}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
-            <img class="icon-blog"  id="{{site.blog.blog_id}}" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
-            &nbsp;&nbsp;{{site.provider.providerName}} : {{site.blog.blog_title}}
+    <div class="content-box" ng-if="button[2]===type.REGISTER_BUTTON.REGISTER">
+        <a class="btn btn-default btn-blog" ng-class="{active: selected[$index] === true}" ng-click="onClickBlog($index);" ng-repeat="site in sites track by $index">
+            <img class="icon-blog" id="{{site.blog.blog_id}}" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
+            &nbsp;&nbsp;{{'LOC_'+site.provider.providerName | translate}} : {{site.blog.blog_title}}
         </a>
     </div>
 </div>

@@ -1,22 +1,23 @@
 /**
  * Created by aleckim on 2014. 5. 15..
  */
-var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap']);
+var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap', 'pascalprecht.translate']);
 
 // define service
-bs.factory('Data', function () {
+bs.factory('Data', function (Type) {
     "use strict";
 
     var user = {};
-    var providerType = ["facebook", "google", "kakao", "tistory", "tumblr", "twitter", "Wordpress"];
+    var providerType = [Type.PROVIDER.FACEBOOK, Type.PROVIDER.GOOGLE, Type.PROVIDER.KAKAO,
+        Type.PROVIDER.TISTORY, Type.PROVIDER.TUMBLR, Type.PROVIDER.TWITTER, Type.PROVIDER.WORDPRESS];
     var postType = [
-        ["post","post","post","post","post","post","post"],
-        ["link","post","link","post","post","link","post"],
-        ["post","post","post","post","post","post","post"],
-        ["link","post","link","post","post","link","post"],
-        ["link","post","link","post","post","link","post"],
-        ["post","post","post","post","post","post","post"],
-        ["link","post","link","post","post","link","post"]
+        [Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST],
+        [Type.POST.LINK, Type.POST.POST, Type.POST.LINK, Type.POST.POST, Type.POST.POST, Type.POST.LINK, Type.POST.POST],
+        [Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST],
+        [Type.POST.LINK, Type.POST.POST, Type.POST.LINK, Type.POST.POST, Type.POST.POST, Type.POST.LINK, Type.POST.POST],
+        [Type.POST.LINK, Type.POST.POST, Type.POST.LINK, Type.POST.POST, Type.POST.POST, Type.POST.LINK, Type.POST.POST],
+        [Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST, Type.POST.POST],
+        [Type.POST.LINK, Type.POST.POST, Type.POST.LINK, Type.POST.POST, Type.POST.POST, Type.POST.LINK, Type.POST.POST]
     ];
 //    var port = -1;
 
@@ -26,6 +27,9 @@ bs.factory('Data', function () {
         },
         setUser: function (usr) {
             user = usr;
+        },
+        getProviderType: function() {
+            return providerType;
         },
         getPostType: function (fromProvider, toProvider) {
             if (typeof(fromProvider) === 'number' && typeof(toProvider) === 'number') {
@@ -95,10 +99,6 @@ bs.config(function ($routeProvider) {
             templateUrl : '../views/blog/registerBlog.html',
             controller : 'blogRegisterCtrl'
         })
-        .when('/blog/blogSetSync', {
-            templateUrl : '../views/blog/setSync.html',
-            controller : 'blogCtrl'
-        })
         .when('/blog/blogHistorySync', {
             templateUrl : '../views/blog/historySync.html',
             controller : 'blogHistoryCtrl'
@@ -112,4 +112,60 @@ bs.config(function ($routeProvider) {
             templateUrl : '../views/signin.html',
             controller : 'signinCtrl'
         });
+});
+
+bs.config(function ($translateProvider) {
+    "use strict";
+
+    //$translateProvider.translations('kor', langData.kor);
+    //language change : $translate.use(langKey);
+    //string translate : {{'TRANSLATION_ID' | translate}}
+
+    $translateProvider.useStaticFilesLoader({
+        prefix: 'views/strings/',
+        suffix: '.json'
+    });
+    $translateProvider.preferredLanguage('kor');
+});
+
+
+bs.constant("Type", {
+    MENU: {
+        HOME: 0,
+        BLOG_REGISTER: 1,
+        COLLECT_FEEDBACK: 2,
+        HISTORY : 3,
+        LOGIN : 4
+    },
+    PROVIDER: {
+        WORDPRESS: 'Wordpress',
+        TISTORY: 'tistory',
+        GOOGLE: 'google',
+        FACEBOOK: 'facebook',
+        TUMBLR: 'tumblr',
+        TWITTER: 'twitter',
+        KAKAO: 'kakao'
+    },
+    POST: {
+        NONE: 'none',
+        POST: 'post',
+        LINK: 'link'
+    },
+    REGISTER_BUTTON: {
+        DELETE: 'LOC_DELETE',
+        DETAIL_SETTING: 'LOC_DETAIL_SETTING',
+        REGISTER: 'LOC_REGISTER',
+        CLOSE: 'LOC_CLOSE',
+        CREATE: 'LOC_CREATE',
+        CONFIRM: 'LOC_CONFIRM'
+    },
+    GROUP_INFO: {
+        POLYGONS: 0,
+        TABLE: 1
+    },
+    SYNC_ENABLE: {
+        OFF: "false",
+        NONE: 'none',
+        ON: 'true'
+    }
 });

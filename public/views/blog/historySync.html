@@ -1,8 +1,8 @@
 <div class="content-title">
-    <h1 class="page-header">{{title}}</h1>
+    <h1 class="page-header">{{title | translate}}</h1>
 </div>
 <div>
-    <p class="lead">histories : {{histories.length}}</p>
+    <p class="lead">{{'LOC_HISTORY_COUNT' | translate}} : {{histories.length}}</p>
     <div  class="container marketing" ng-repeat="history in histories">
         <hr class="featurette-divider">
         <div class="row featurette">

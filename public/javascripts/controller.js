@@ -1,18 +1,9 @@
-bs.controller('mainCtrl', function ($q, $scope, $http, Data) {
+bs.controller('mainCtrl', function ($q, $scope, $http, Data, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
-    $scope.username = '당신';
-    $scope.message = '의 블로그 글들을 동기화 시킵니다.';
-    $scope.signstat = '로그인';
-
-    // add DropDown Blog
-    $scope.options = [
-        {"Route":"/#/blog/blogRegister","Display":"블로그 등록"},
-        {"Route":"/#/blog/blogSetSync","Display":"동기화 설정"},
-        {"Route":"/#/blog/blogHistorySync","Display":"동기 히스토리"},
-        {"Route":"/#/blog/blogCollectFeedback","Display":"피드백 모음"}
-    ];
+    $scope.signstat = 'LOC_LOGIN';
+    $scope.menuType = Type.MENU;
 
     console.log('Start mainCtrl');
 
@@ -25,8 +16,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, Data) {
                 else {
                     var user = data;
                     Data.setUser(user);
-                    $scope.signstat = "내계정";
-                    $scope.username = user.providers[0].displayName;
+                    $scope.signstat = "LOC_MY_ACCOUNT";
                     console.log('Change username, signstat');
                 }
             })
@@ -40,84 +30,56 @@ bs.controller('homeCtrl', function ($q, $scope) {
     "use strict";
 
     console.log('Start homeCtrl');
-    $scope.title = 'Home';
+    $scope.title = 'LOC_BLOG_SYNC';
 });
 
-bs.controller('blogCtrl', function ($scope, $http, Data) {
+bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
-    $scope.title = 'Your blog ctrl';
-});
-
-bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
-    "use strict";
-
-    $scope.user = Data.getUser();
-    $scope.title = "Blog Sync Histories";
-    $scope.histories = [];
-
-    var user = $scope.user;
-
-    if (user._id === undefined) {
-        console.log('you have to signin~');
-    }
-
-    $http.get('/blogs/histories')
-        .success(function (data) {
-            $scope.histories = data.histories;
-        })
-        .error(function (data) {
-            window.alert('Error: ' + data);
-        });
-});
-
-bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
-    "use strict";
-
-    $scope.user = Data.getUser();
-    $scope.title = 'Your blog groups';
-    $scope.button = ['Delete', 'Detail Setting', 'Register', 'Close'];
+    $scope.title = 'LOC_BLOG_GROUPS';
+    $scope.type = Type;
+    $scope.button = [Type.REGISTER_BUTTON.DELETE, Type.REGISTER_BUTTON.DETAIL_SETTING, Type.REGISTER_BUTTON.REGISTER, Type.REGISTER_BUTTON.CLOSE];
     $scope.groups = [];
     $scope.group = null;
     $scope.groupInfo = null;
-    $scope.groupInfoType = 'polygons'; //'table' or 'polygons'
+    $scope.groupInfoType = Type.GROUP_INFO.POLYGONS;
     $scope.sites = [];
     $scope.selected = [];
     $scope.info = "";
     var graph, paper, circles, links, selectCircle;
 
     $scope.onClickButton = function(button) {
-        if (button === 'Delete') {
+        if (button === Type.REGISTER_BUTTON.DELETE) {
             if ($scope.groups.length > 0) {
-                $scope.button[0] = 'Confirm';
+                $scope.button[0] = Type.REGISTER_BUTTON.CONFIRM;
                 $scope.button[1] = '';
             }
-        } else if (button === 'Detail Setting') {
+        } else if (button === Type.REGISTER_BUTTON.DETAIL_SETTING) {
             if ($scope.groups.length > 0) {
                 $scope.button[0] = '';
-                $scope.button[1] = 'Confirm';
+                $scope.button[1] = Type.REGISTER_BUTTON.CONFIRM;
             }
-        } else if (button === 'Confirm') {
+        } else if (button === Type.REGISTER_BUTTON.CONFIRM) {
             if ($scope.button[0] === '') {
                 updateDetailSetting();
             } else if ($scope.button[1] === '') {
                 updateBlogGroup();
             }
-            $scope.button[0] = 'Delete';
-            $scope.button[1] = 'Detail Setting';
-        } else if (button === 'Create') {
+            $scope.button[0] = Type.REGISTER_BUTTON.DELETE;
+            $scope.button[1] = Type.REGISTER_BUTTON.DETAIL_SETTING;
+        } else if (button === Type.REGISTER_BUTTON.CREATE) {
             disselectAllBlog();
-            $scope.button[2] = 'Register';
-        } else if (button === 'Close') {
-            $scope.button[2] = 'Create';
-        } else if (button === 'Register') {
+            $scope.button[2] = Type.REGISTER_BUTTON.REGISTER;
+        } else if (button === Type.REGISTER_BUTTON.CLOSE) {
+            $scope.button[2] = Type.REGISTER_BUTTON.CREATE;
+        } else if (button === Type.REGISTER_BUTTON.REGISTER) {
             registerBlogGroup();
         }
     };
 
     $scope.onClickGroup = function(group_index) {
-        if ($scope.button[0] === '' && $scope.button[1] === 'Confirm') {
+        if ($scope.button[0] === '' && $scope.button[1] === Type.REGISTER_BUTTON.CONFIRM) {
             var group = $scope.groups[group_index];
             var count = group.group.length;
             var index = 0;
@@ -130,11 +92,11 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                     //if group didn't have groupinfo, postType is set to post. It's for legacy groupDb
                     if (!$scope.groups[group_index].groupInfo[index]) {
                         if (i === j) {
-                            $scope.groupInfo[i][j] = {"syncEnable": 'none', "postType": 'none'};
+                            $scope.groupInfo[i][j] = {"syncEnable": Type.SYNC_ENABLE.NONE, "postType": Type.POST.NONE};
                         } else {
                             var fromProvider = group[i].provider.providerName;
                             var toProvider = group[j].provider.providerName;
-                            $scope.groupInfo[i][j] = {"syncEnable": 'true', "postType": Data.getPostType(fromProvider, toProvider)};
+                            $scope.groupInfo[i][j] = {"syncEnable": Type.SYNC_ENABLE.ON, "postType": Data.getPostType(fromProvider, toProvider)};
                         }
                     }
                     else {
@@ -145,39 +107,39 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             }
 
             drawDetailSetting();
-        } else if ($scope.button[0] === 'Confirm' && $scope.button[1] === '') {
+        } else if ($scope.button[0] === Type.REGISTER_BUTTON.CONFIRM && $scope.button[1] === '') {
             $scope.groups.splice(group_index, 1);
             if ($scope.groups.length === 0) {
                 updateBlogGroup();
-                $scope.button[0] = 'Delete';
-                $scope.button[1] = 'Detail Setting';
+                $scope.button[0] = Type.REGISTER_BUTTON.DELETE;
+                $scope.button[1] = Type.REGISTER_BUTTON.DETAIL_SETTING;
             }
         }
     };
 
     $scope.onClickGroupInfo = function(fromIndex, toIndex) {
-        if ($scope.button[0] === '' && $scope.button[1] === 'Confirm') {
+        if ($scope.button[0] === '' && $scope.button[1] === Type.REGISTER_BUTTON.CONFIRM) {
             var info = $scope.groupInfo[fromIndex][toIndex];
-            if (info.syncEnable === 'false') {
-                info.syncEnable = 'true';
-            } else if (info.syncEnable === 'true') {
-                info.syncEnable = 'false';
+            if (info.syncEnable === Type.SYNC_ENABLE.OFF) {
+                info.syncEnable = Type.SYNC_ENABLE.ON;
+            } else if (info.syncEnable === Type.SYNC_ENABLE.ON) {
+                info.syncEnable = Type.SYNC_ENABLE.OFF;
             }
         }
     };
 
     $scope.onClickBlog = function(index) {
-        if ($scope.selected[index] !== 'selected') {
-            $scope.selected[index] = 'selected';
+        if ($scope.selected[index] !== true) {
+            $scope.selected[index] = true;
         } else {
-            $scope.selected[index] = 'normal';
+            $scope.selected[index] = false;
         }
     };
 
     function disselectAllBlog() {
         if ($scope.sites && $scope.sites.length) {
             for (var i = 0; i < $scope.sites.length; i += 1) {
-                $scope.selected[i] = 'normal';
+                $scope.selected[i] = false;
             }
         }
     }
@@ -204,7 +166,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             $scope.group = null;
             $scope.groupInfo = null;
 
-            if ($scope.groupInfoType === 'polygons') {
+            if ($scope.groupInfoType === Type.GROUP_INFO.POLYGONS) {
                 $('#paper').hide();
                 graph.clear();
                 circles = [];
@@ -218,14 +180,14 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
         var group = [];
         var i, j, k, isExist;
         for (i = 0; i < $scope.sites.length; i += 1) {
-            if ($scope.selected[i] === 'selected') {
-                $scope.selected[i] = 'normal';
+            if ($scope.selected[i] === true) {
+                $scope.selected[i] = false;
                 group.push($scope.sites[i]);
             }
         }
 
         if (group.length <= 1) {
-            $scope.info = "A group must have at least more than two blogs!!";
+            $scope.info = 'LOC_COUNT_ERROR';
             return;
         }
 
@@ -248,7 +210,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                 }
             }
             if (isExist) {
-                $scope.info = "The group already exists!!";
+                $scope.info = 'LOC_EXIST_ERROR';
                 return;
             }
         }
@@ -260,9 +222,9 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             for (j = 0; j < group.length; j += 1) {
                 toProvider = group[j].provider.providerName;
                 if (i === j) {
-                    groupInfo.push({"syncEnable": 'none', "postType": 'none'});
+                    groupInfo.push({"syncEnable": Type.SYNC_ENABLE.NONE, "postType": Type.POST.NONE});
                 } else {
-                    groupInfo.push({"syncEnable": 'true', "postType": Data.getPostType(fromProvider, toProvider)});
+                    groupInfo.push({"syncEnable": Type.SYNC_ENABLE.ON, "postType": Data.getPostType(fromProvider, toProvider)});
                 }
             }
         }
@@ -280,7 +242,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
     }
 
     function drawDetailSetting() {
-        if ($scope.groupInfoType !== 'polygons') {
+        if ($scope.groupInfoType !== Type.GROUP_INFO.POLYGONS) {
             return;
         }
 
@@ -345,7 +307,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
         var targetFill = 'transparent';
         var connectionStroke = 'black';
 
-        if (sourceInfo !== null && sourceInfo.syncEnable === 'true') {
+        if (sourceInfo !== null && sourceInfo.syncEnable === Type.SYNC_ENABLE.ON) {
             if (selectedMarker === 'target') {
                 sourceFill = 'pink';
             }
@@ -353,7 +315,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                 sourceFill = 'red';
             }
         }
-        if (targetInfo !== null && targetInfo.syncEnable === 'true') {
+        if (targetInfo !== null && targetInfo.syncEnable === Type.SYNC_ENABLE.ON) {
             if (selectedMarker === 'source') {
                 targetFill = 'pink';
             }
@@ -366,13 +328,13 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
             connectionStroke = 'lightgray';
         }
         else if (selectedMarker === 'source') {
-            if (sourceInfo.syncEnable === 'true') {
+            if (sourceInfo.syncEnable === Type.SYNC_ENABLE.ON) {
                 connectionStroke = 'red';
             }
             element.toFront();
         }
         else if (selectedMarker === 'target') {
-            if (targetInfo.syncEnable === 'true') {
+            if (targetInfo.syncEnable === Type.SYNC_ENABLE.ON) {
                 connectionStroke = 'red';
             }
             element.toFront();
@@ -386,7 +348,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
     }
 
     function initDetailSetting() {
-        if ($scope.groupInfoType !== 'polygons') {
+        if ($scope.groupInfoType !== Type.GROUP_INFO.POLYGONS) {
             return;
         }
 
@@ -435,19 +397,19 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
 
                     if (selectCircle.id === link.get('source').id) {
                         info = $scope.groupInfo[i][j];
-                        if (info.syncEnable === 'false') {
-                            info.syncEnable = 'true';
-                        } else if (info.syncEnable === 'true') {
-                            info.syncEnable = 'false';
+                        if (info.syncEnable === Type.SYNC_ENABLE.OFF) {
+                            info.syncEnable = Type.SYNC_ENABLE.ON;
+                        } else if (info.syncEnable === Type.SYNC_ENABLE.ON) {
+                            info.syncEnable = Type.SYNC_ENABLE.OFF;
                         }
                         setArrowheads(link, $scope.groupInfo[j][i], info, 'target');
                     }
                     else {
                         info = $scope.groupInfo[j][i];
-                        if (info.syncEnable === 'false') {
-                            info.syncEnable = 'true';
-                        } else if (info.syncEnable === 'true') {
-                            info.syncEnable = 'false';
+                        if (info.syncEnable === Type.SYNC_ENABLE.OFF) {
+                            info.syncEnable = Type.SYNC_ENABLE.ON;
+                        } else if (info.syncEnable === Type.SYNC_ENABLE.ON) {
+                            info.syncEnable = Type.SYNC_ENABLE.OFF;
                         }
                         setArrowheads(link, info, $scope.groupInfo[i][j], 'source');
                     }
@@ -496,6 +458,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
                 }
             }
         });
+        $('#paper').hide();
     }
 
     function init() {
@@ -530,6 +493,28 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site) {
     }
 
     init();
+});
+
+bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
+    "use strict";
+
+    $scope.user = Data.getUser();
+    $scope.title = "LOC_HISTORY";
+    $scope.histories = [];
+
+    var user = $scope.user;
+
+    if (user._id === undefined) {
+        console.log('you have to signin~');
+    }
+
+    $http.get('/blogs/histories')
+        .success(function (data) {
+            $scope.histories = data.histories;
+        })
+        .error(function (data) {
+            window.alert('Error: ' + data);
+        });
 });
 
 bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $timeout) {
@@ -596,7 +581,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
     }
 
     $scope.user = Data.getUser();
-    $scope.title = 'Collect Feedback';
+    $scope.title = 'LOC_COLLECT_FEEDBACK';
     $scope.posts = [];
     $scope.waiting = false;
     $scope.getReplyContent = function (providerName, blogID, postID) {
@@ -703,10 +688,10 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
     init();
 });
 
-bs.controller('signinCtrl', function ($scope, $http, Data, Site) {
+bs.controller('signinCtrl', function ($scope, $http, Data, Site, Type) {
     "use strict";
 
-    $scope.providers = [ "Wordpress", "tistory", "google", "facebook", "tumblr", "twitter", "kakao"];
+    $scope.providers = Data.getProviderType();
 
     function init() {
         $scope.user = Data.getUser();
@@ -725,6 +710,10 @@ bs.controller('signinCtrl', function ($scope, $http, Data, Site) {
                 return;
             }
 
+            if (provider.providerName !== Type.PROVIDER.WORDPRESS) {
+                return;
+            }
+
             for (var i = 0; i < $scope.sites.length; i += 1) {
                 if ($scope.sites[i].provider.providerId === provider.providerId) {
                     return "(" + $scope.sites[i].blog.blog_title + ")";
@@ -733,10 +722,10 @@ bs.controller('signinCtrl', function ($scope, $http, Data, Site) {
         };
 
         if ($scope.user._id) {
-            $scope.title = 'Your accounts';
+            $scope.title = 'LOC_ACCOUNT_LIST';
         }
         else {
-            $scope.title = 'Please sign in';
+            $scope.title = 'LOC_LOGIN_TITLE';
         }
     }
 
