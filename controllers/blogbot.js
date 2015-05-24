@@ -342,7 +342,7 @@ BlogBot.load = function () {
     meta.cName = this.name;
     meta.fName = "load";
 
-    userMgr._findUsers(function(err, users) {
+    userMgr.findUsers(function(err, users) {
         var i;
 
         if (err) {

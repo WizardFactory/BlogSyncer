@@ -54,7 +54,7 @@ passport.use(new TwitterStrategy({
         var provider  = new botFormat.ProviderOauth1(profile.provider, profile.username.toString(), profile.displayName,
             token, tokenSecret);
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -62,7 +62,7 @@ passport.use(new TwitterStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -99,7 +99,7 @@ router.get('/authorized',
 );
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -115,7 +115,7 @@ router.get('/bot_bloglist', function (req, res) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             res.status(500).send(err);
@@ -151,7 +151,7 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -160,7 +160,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     var providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TWITTER_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             res.status(500).send(err);
@@ -223,7 +223,7 @@ function _convertBotTags(hashTags) {
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -235,7 +235,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var last_id = req.query.offset;
     var after = req.query.after;
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TWITTER_PROVIDER, provider_id, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             res.status(500).send(err);
@@ -331,7 +331,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -341,7 +341,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var blog_id = req.params.blog_id;
     var post_id = req.params.post_id;
 
-    userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, null, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TWITTER_PROVIDER, null, function (err, user, provider) {
         if (err) {
             log.error(err);
             res.status(500).send(err);
@@ -390,7 +390,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -410,7 +410,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
         var encodedPost = encodeURIComponent(newPost.content);
 
-        userMgr._findProviderByUserId(userId, TWITTER_PROVIDER, undefined, function (err, user, provider) {
+        userMgr.findProviderByUserId(userId, TWITTER_PROVIDER, undefined, function (err, user, provider) {
 
             //log.debug(encodedPost, meta);
 

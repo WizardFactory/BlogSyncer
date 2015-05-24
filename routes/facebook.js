@@ -43,7 +43,7 @@ passport.use(new FacebookStrategy({
         var provider = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.displayName,
             accessToken, refreshToken);
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -51,7 +51,7 @@ passport.use(new FacebookStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -88,14 +88,14 @@ router.get('/authorized',
 );
 
 router.get('/me', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
     var meta = {"cName":FACEBOOK_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta);
 
-    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -117,7 +117,7 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -134,7 +134,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -198,7 +198,7 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req);
+    var userId = userMgr.getUserId(req);
     if (!userId) {
         return;
     }
@@ -212,7 +212,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
 router.get('/bot_posts/:blog_id', function (req, res) {
     var userId;
-    userId = userMgr._getUserId(req, res);
+    userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -224,7 +224,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var until = req.query.until;
     var pagingToken = req.query.__paging_token;
 
-    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -285,7 +285,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -295,7 +295,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var blogId = req.params.blog_id;
     var postId = req.params.post_id;
 
-    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -345,7 +345,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -357,7 +357,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
