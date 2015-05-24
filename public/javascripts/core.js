@@ -125,7 +125,7 @@ bs.config(function ($translateProvider) {
         prefix: 'views/strings/',
         suffix: '.json'
     });
-    $translateProvider.preferredLanguage('kor');
+    $translateProvider.preferredLanguage('en');
 });
 
 

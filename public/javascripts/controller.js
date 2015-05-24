@@ -1,4 +1,4 @@
-bs.controller('mainCtrl', function ($q, $scope, $http, Data, Type) {
+bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
@@ -6,6 +6,9 @@ bs.controller('mainCtrl', function ($q, $scope, $http, Data, Type) {
     $scope.menuType = Type.MENU;
 
     console.log('Start mainCtrl');
+
+    var lang = navigator.language.split("-"); //ko, ko-kr 둘 다 ko로 설정
+    $translate.use(lang[0]);
 
     if (!$scope.user._id) {
         $http.get('/user')
