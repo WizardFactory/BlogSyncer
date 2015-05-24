@@ -423,8 +423,19 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                     replies.push({"comment": item.comments});
                     replies.push({"trackback": item.trackbacks});
 
+                    var tags;
+                    if (Array.isArray(item.tags.tag)) {
+                        tags = item.tags.tag;
+                    }
+                    else {
+                        tags = [];
+                        if (item.tags.tag) {
+                            tags.push(item.tags.tag);
+                        }
+                    }
+
                     var botPost = new botFormat.BotTextPost(item.id, entities.decode(item.content), item.date, item.postUrl,
-                        item.title, _getCategoryNameById(category, item.categoryId), [], replies);
+                        item.title, _getCategoryNameById(category, item.categoryId), tags, replies);
                     botPostList.posts.push(botPost);
                 }
                 catch(e) {
