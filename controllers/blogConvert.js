@@ -22,13 +22,13 @@ var blogConvert = {
     wrapMediaTag: function (type, url) {
         var str = "";
         if (type === 'photo') {
-            str = '<img src=\"' + url + '\">';
+            str = '<img src=\"' + url + '\" style="max-width: 100%;">';
         }
         else if (type === 'audio') {
-            str = '<audio controls><source src=\"' + url + '\">Your browser does not support the audio element.</audio>';
+            str = '<audio controls style="max-width: 100%;"><source src=\"' + url + '\">Your browser does not support the audio element.</audio>';
         }
         else if (type === 'video') {
-            str = '<video width="500" controls><source src=\"';
+            str = '<video width="500" controls style="max-width: 100%;"><source src=\"';
             str += url + '\">Your browser does not support the video element.</video>';
         }
         return str;
