@@ -21,7 +21,6 @@ function _getUser(req, res) {
         var errorMsg = 'You have to login first!';
         log.error(errorMsg);
         res.status(401).send(errorMsg); //401 Unauthorized
-        res.redirect("/#/signin");
         return;
     }
 
