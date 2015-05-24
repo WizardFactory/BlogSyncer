@@ -9,7 +9,7 @@ var botFormat = require('../models/botFormat');
 
 /**
  *
- * @type {{warpMediaTag: Function, convertPostLinkToText: Function, convertPostMediaToText: Function, makeTitle: Function}}
+ * @type {{wrapMediaTag: Function, convertPostLinkToText: Function, convertPostMediaToText: Function, makeTitle: Function}}
  */
 var blogConvert = {
     /**
@@ -19,7 +19,7 @@ var blogConvert = {
      * @returns {string}
      * @private
      */
-    warpMediaTag: function (type, url) {
+    wrapMediaTag: function (type, url) {
         var str = "";
         if (type === 'photo') {
             str = '<img src=\"' + url + '\">';
@@ -73,7 +73,7 @@ var blogConvert = {
         if (botMediaPost.type === 'photo') {
             for(var i=0; i<botMediaPost.mediaUrls.length; i+=1) {
                 var url = botMediaPost.mediaUrls[i];
-                content += this.warpMediaTag(botMediaPost.type, url);
+                content += this.wrapMediaTag(botMediaPost.type, url);
                 content += "<br>";
             }
         }
@@ -82,12 +82,12 @@ var blogConvert = {
                 content += botMediaPost.embed;
             }
             else {
-                content += this.warpMediaTag(botMediaPost.type, botMediaPost.audioUrl);
+                content += this.wrapMediaTag(botMediaPost.type, botMediaPost.audioUrl);
             }
         }
         else if (botMediaPost.type === 'video') {
             if (botMediaPost.videoUrl) {
-                content += this.warpMediaTag(botMediaPost.type, botMediaPost.videoUrl);
+                content += this.wrapMediaTag(botMediaPost.type, botMediaPost.videoUrl);
             }
             else {
                 content += botMediaPost.embed;

@@ -544,7 +544,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }
         else if (postType === "video") {
             if (botPost.videoUrl) {
-                options.embed = bC.warpMediaTag(botPost.type, botPost.videoUrl);
+                options.embed = bC.wrapMediaTag(botPost.type, botPost.videoUrl);
                 if (botPost.description) {options.caption = botPost.description;}
             }
             else {
