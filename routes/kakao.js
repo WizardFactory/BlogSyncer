@@ -19,6 +19,8 @@ var clientConfig = svcConfig.kakao;
 var KakaoStrategy = require('passport-kakao').Strategy;
 var KAKAO_API_URL = "https://kapi.kakao.com";
 var KAKAO_PROVIDER = "kakao";
+var KAKAO_CONTENT_MAX_LENGTH = 2048;
+
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -349,36 +351,41 @@ function _convertToURL(postId) {
     return str;
 }
 
-function _makeContent(rcvPost) {
-    var content = '';
+//content is already included
+//function _makeContent(rcvPost) {
+//    var content = '';
+//
+//    if (rcvPost.content) {
+//        content += rcvPost.content;
+//    }
+//    if (rcvPost.description) {
+//        content += rcvPost.description;
+//    }
+//
+//    content = bC.removeHtmlTags(content);
+//    if (content.length > KAKAO_CONTENT_MAX_LENGTH) {
+//        content = content.slice(0, KAKAO_CONTENT_MAX_LENGTH);
+//    }
+//    else if (content.length === 0) {
+//        //if didn't have any content, add padding for safety
+//        content += ' ';
+//    }
+//
+//    return content;
+//}
 
-    if (rcvPost.content) {
-        content += rcvPost.content;
-    }
-    if (rcvPost.description) {
-        content += rcvPost.description;
-    }
-
-    content = bC.removeHtmlTags(content);
-
-    //if didn't have any content, add padding for safety
-    content += ' ';
-
-    return content;
-}
-
-function _makePhotoPost(accessToken, rcvPost, callback) {
-    var photoPost = {};
-    photoPost.image_url_list = rcvPost.mediaUrls;
-    photoPost.content = _makeContent(rcvPost);
-
-    return callback(undefined, photoPost);
-}
+//kakao supports only upload photo
+//function _makePhotoPost(accessToken, rcvPost, callback) {
+//    var photoPost = {};
+//    photoPost.image_url_list = rcvPost.mediaUrls;
+//    photoPost.content = _makeContent(rcvPost);
+//
+//    return callback(undefined, photoPost);
+//}
 
 function _makeNotePost(accessToken, rcvPost, callback) {
     var notePost = {};
-    //notePost.content = _makeContent(rcvPost);
-    bC.convertPostToPlainContentWithTitle(rcvPost, 2048, bC.convertShortenUrl, function (content) {
+    bC.convertPostToPlainContent(rcvPost, KAKAO_CONTENT_MAX_LENGTH, bC.convertShortenUrl, function (content) {
         notePost.content = content;
         return callback(undefined, notePost);
     });
@@ -402,7 +409,6 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
 
         var linkPost = {};
-        linkPost.content = _makeContent(rcvPost);
 
         try {
             linkPost.link_info = JSON.stringify(body);
@@ -452,10 +458,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         //}
         //else
         if (postType === 'text') {
-           //if big page(like blog post) link post
-           // else
-            makePostFunc = _makeNotePost;
-            apiUrl += '/note';
+            if (bC.isHtml(botPost.content)) {
+                makePostFunc = _makeLinkPost;
+                apiUrl += '/link';
+            }
+            else {
+                makePostFunc = _makeNotePost;
+                apiUrl += '/note';
+            }
         }
         else if (postType === 'link') {
             makePostFunc = _makeLinkPost;

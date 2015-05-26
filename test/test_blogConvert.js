@@ -30,7 +30,10 @@ var testVideoPost1 = tD.testVideoPost1;
 var convertTextResultOfVideo = tD.convertTextResultOfVideo;
 
 function _testShortenFunc(longUrl, callback) {
-      return callback(tD.testShortenUrl);
+    if (longUrl) {
+        log.debug('It is not used');
+    }
+    return callback(tD.testShortenUrl);
 }
 
 describe('blogConvert', function () {
@@ -91,9 +94,11 @@ describe('blogConvert', function () {
         });
         it('make title from date', function () {
             var tmpPost = botPhotoPost;
+            var tmpDes = botPhotoPost.description;
             tmpPost.description = '';
             var title = blogConvert.makeTitle(tmpPost);
             assert.equal(title, TEST_PHOTO_POST_TITLE_BY_DATE, "Mismatch title");
+            botPhotoPost.description = tmpDes;
         });
         it('remove html tag in content', function () {
             var content;
@@ -117,7 +122,7 @@ describe('blogConvert', function () {
 
             assert.equal(botTextPost1.replies[0].notes, testTextPost1.replies[0].notes, "Mismatch reply of botPost");
 
-            blogConvert.convertPostToPlainContentWithTitle(botTextPost1, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
+            blogConvert.convertPostToPlainContent(botTextPost1, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
@@ -128,40 +133,46 @@ describe('blogConvert', function () {
                 testTextPost2.replies);
             assert.equal(botTextPost2.replies[0].notes, testTextPost2.replies[0].notes, "Mismatch reply of botPost");
 
-            blogConvert.convertPostToPlainContentWithTitle(botTextPost2, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            blogConvert.convertPostToPlainContent(botTextPost2, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert link post to plain content', function (done) {
-            blogConvert.convertPostToPlainContentWithTitle(botLinkPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            blogConvert.convertPostToPlainContent(botLinkPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert photo post to plain content', function (done) {
-            blogConvert.convertPostToPlainContentWithTitle(botPhotoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            blogConvert.convertPostToPlainContent(botPhotoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
-                            console.log(content);
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert audio post to plain content', function (done) {
-            blogConvert.convertPostToPlainContentWithTitle(botAudioPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            blogConvert.convertPostToPlainContent(botAudioPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert video post to plain content', function (done) {
-            blogConvert.convertPostToPlainContentWithTitle(botVideoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            blogConvert.convertPostToPlainContent(botVideoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
+        });
+        it('is html', function () {
+            var result;
+            result = blogConvert.isHtml(tD.convertTextResultOfLink);
+            assert.equal(result, true, true, 'It is HTML');
+            result = blogConvert.isHtml(tD.convertPlainTextOfLink);
+            assert.equal(result, false, true, 'It is not HTML');
         });
     });
 });

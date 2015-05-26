@@ -160,7 +160,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
 
     postDb = BlogBot._findDbByUser(user, "post");
 
-    log.debug(rcvPosts.posts, meta);
+    log.silly(rcvPosts.posts, meta);
 
     if(!rcvPosts.posts) {
         log.error("Length is undefined !!!", meta);
