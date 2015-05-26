@@ -189,7 +189,6 @@ UserMgr._getUserId = function (req, res) {
         log.debug(errorMsg, meta);
         if (res) {
             res.send(errorMsg);
-            res.redirect("/#/signin");
         }
     }
     return userId;
