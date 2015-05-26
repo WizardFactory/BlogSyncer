@@ -20,11 +20,11 @@ function UserMgr() {
  * @param callback
  * @private
  */
-UserMgr._updateOrCreateUser = function (req, provider, callback) {
+UserMgr.updateOrCreateUser = function (req, provider, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_updateOrCreateUser";
+    meta.fName = "updateOrCreateUser";
     meta.providerName = provider.providerName;
     meta.providerId = provider.providerId;
 
@@ -140,11 +140,11 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
  * @returns {*}
  * @private
  */
-UserMgr._combineUser = function (user, delUser, callback) {
+UserMgr.combineUser = function (user, delUser, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_combineUser";
+    meta.fName = "combineUser";
 
     user.providers = user.providers.concat(delUser.providers);
     delUser.remove(function (err) {
@@ -169,13 +169,13 @@ UserMgr._combineUser = function (user, delUser, callback) {
  * @returns {*}
  * @private
  */
-UserMgr._getUserId = function (req, res) {
+UserMgr.getUserId = function (req, res) {
     var userId;
     var errorMsg;
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_getUserId";
+    meta.fName = "getUserId";
 
     if (req.user) {
         userId = req.user._id;
@@ -202,11 +202,11 @@ UserMgr._getUserId = function (req, res) {
  * @returns {*}
  * @private
  */
-UserMgr._findProviderByUserId = function (userId, providerName, providerId, callback) {
+UserMgr.findProviderByUserId = function (userId, providerName, providerId, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_findProviderByUserId";
+    meta.fName = "findProviderByUserId";
     meta.userId = userId;
     meta.providerName = providerName;
 
@@ -235,11 +235,11 @@ UserMgr._findProviderByUserId = function (userId, providerName, providerId, call
  * @returns {*}
  * @private
  */
-UserMgr._findUsers = function (callback) {
+UserMgr.findUsers = function (callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_findUsers";
+    meta.fName = "findUsers";
 
     UserDb.find({}, function(err, users) {
         if (err) {
@@ -282,8 +282,5 @@ UserMgr.updateAccessToken = function (user, provider, accessToken, refreshToken,
 
     return provider;
 };
-
-
-
 
 module.exports = UserMgr;
