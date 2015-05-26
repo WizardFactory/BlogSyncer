@@ -3,32 +3,18 @@
  * Created by aleckim on 14. 11. 15..
  */
 
+'use strict';
 
 var assert  = require('assert');
 var Site = require('../models/blogdb');
+var tD = require('./test_data');
 if (!global.log) {
     global.log = require('winston');
 }
 
-var testProvider1 = {
-    providerName: "twitter",
-    providerId: "3373",
-    accessToken: "xxxdfd",
-    refreshToken: "xxddsdf",
-    displayName: "wizard"
-};
-
-var testBlog1 = {
-    blog_id: "33377",
-    blog_title: "wizard",
-    blog_url: "www.wzdfac.com"
-};
-
-var testBlog2 = {
-    blog_id: "777373",
-    blog_title: "wzdfac",
-    blog_url: "www.wzdfac22.com"
-};
+var testProvider1 = tD.testProvider1;
+var testBlog1 = tD.testBlog1;
+var testBlog2 = tD.testBlog2;
 
 describe('siteDb', function () {
     describe('Function', function () {

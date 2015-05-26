@@ -69,7 +69,7 @@ setInterval(function() {
     "use strict";
 
     blogBot.task();
-}, 1000*60*2); //2 min
+}, 1000*60); //1 min
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');

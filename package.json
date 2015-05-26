@@ -2,26 +2,26 @@
   "name": "blogsyncer-app",
   "description": "sync between blogs",
   "keywords": [
-     "oauth",
-     "blog"
+    "oauth",
+    "blog"
   ],
-  "author" : {
-      "name": "Wizard Factory",
-      "email": "wizards@wizardfactory.net",
-      "url": "http://www.wizardfactory.net"
+  "author": {
+    "name": "Wizard Factory",
+    "email": "wizards@wizardfactory.net",
+    "url": "http://www.wizardfactory.net"
   },
   "repository": {
-      "type": "git",
-      "url": "git://github.com/WizardFactory/BlogSyncer.git"
+    "type": "git",
+    "url": "git://github.com/WizardFactory/BlogSyncer.git"
   },
   "bugs": {
-      "url": "http://github.com/WizardFactory/BlogSyncer/issues"
+    "url": "http://github.com/WizardFactory/BlogSyncer/issues"
   },
   "licenses": [
-      {
-          "type": "MIT",
-          "url": "http://www.opensource.org/licenses/MIT"
-      }
+    {
+      "type": "MIT",
+      "url": "http://www.opensource.org/licenses/MIT"
+    }
   ],
   "private": true,
   "scripts": {
@@ -49,6 +49,7 @@
     "q": "~1.1.2",
     "request": "~2.39.0",
     "serve-favicon": "~2.1.5",
+    "shorturl": "0.0.3",
     "socket.io": "~1.0.6",
     "tumblr.js": "~0.0.4",
     "winston": "~1.0.0"
