@@ -18,7 +18,6 @@ function UserMgr() {
  * @param req
  * @param provider
  * @param callback
- * @private
  */
 UserMgr.updateOrCreateUser = function (req, provider, callback) {
     var meta = {};
@@ -32,7 +31,7 @@ UserMgr.updateOrCreateUser = function (req, provider, callback) {
         function (err, user) {
             var p;
             var isNewProvider = false;
-            var reqUser, newUser;
+            var newUser;
 
             if (err) {
                 return callback(err);
@@ -137,8 +136,7 @@ UserMgr.updateOrCreateUser = function (req, provider, callback) {
  *
  * @param user
  * @param delUser
- * @returns {*}
- * @private
+ * @param callback
  */
 UserMgr.combineUser = function (user, delUser, callback) {
     var meta = {};
@@ -167,7 +165,6 @@ UserMgr.combineUser = function (user, delUser, callback) {
  * @param req
  * @param res
  * @returns {*}
- * @private
  */
 UserMgr.getUserId = function (req, res) {
     var userId;
@@ -198,9 +195,8 @@ UserMgr.getUserId = function (req, res) {
  *
  * @param userId
  * @param providerName
+ * @param providerId
  * @param callback
- * @returns {*}
- * @private
  */
 UserMgr.findProviderByUserId = function (userId, providerName, providerId, callback) {
     var meta = {};
@@ -229,11 +225,7 @@ UserMgr.findProviderByUserId = function (userId, providerName, providerId, callb
 
 /**
  *
- * @param userId
- * @param providerName
  * @param callback
- * @returns {*}
- * @private
  */
 UserMgr.findUsers = function (callback) {
     var meta = {};

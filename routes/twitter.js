@@ -405,7 +405,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     //todo convert tags to hashTags;
     //var hashTags = _makeHashTags(newPost.tags);
 
-    bC.convertPostToPlainContentWithTitle(botPost, 140, bC.convertShortenUrl, function (content) {
+    bC.convertPostToPlainContent(botPost, 140, bC.convertShortenUrl, function (content) {
         newPost.content = content;
 
         var encodedPost = encodeURIComponent(newPost.content);
