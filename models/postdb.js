@@ -60,10 +60,10 @@ postSchema.methods.findPostById = function(postId) {
 
 /**
  *
- * @param {string} providerName
- * @param {string} blogId
- * @param {string} postId
- * @returns {{*}}
+ * @param providerName
+ * @param blogId
+ * @param postId
+ * @returns {*}
  */
 postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId) {
     "use strict";
@@ -149,7 +149,7 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
 };
 
 /**
- *
+ * title is not key!!
  * @param {string} title
  * @returns {*}
  */
@@ -201,6 +201,9 @@ postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId)
 
     for (i = 0; i<this.posts.length; i+=1) {
         infos = this.posts[i].infos;
+        if (infos === null) {
+            continue;
+        }
         for (j = 0; j<infos.length; j+=1) {
            if (infos[j].provider_name === providerName &&
                     infos[j].blog_id === blogId &&
@@ -234,17 +237,17 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
     meta.blogId = blogId;
     meta.newPostId = newPost.id;
 
-    log.debug("+", meta);
+    log.silly("+", meta);
 
     totalCount = this.posts.length;
-    log.debug("Total=" + totalCount, meta);
 
     if (newPost.title) {
         post.title = newPost.title;
     }
     else {
         log.debug("Title is undefined", meta);
-        post.title = 'title';
+        //todo : update to remove title
+        post.title = blogId+'-'+newPost.id;
     }
 
     if (newPost.type) {
@@ -285,6 +288,8 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
 
     post.infos.push(postInfo);
     this.posts.push(post);
+
+    log.silly("Total=" + this.posts.length, meta);
     return this.posts[totalCount];
 };
 

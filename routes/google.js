@@ -10,6 +10,9 @@ var request = require('../controllers/requestEx');
 
 var blogBot = require('./../controllers/blogbot');
 var userMgr = require('./../controllers/userManager');
+var botFormat = require('../models/botFormat');
+var bC = require('../controllers/blogConvert');
+
 var svcConfig = require('../models/svcConfig.json');
 
 var clientConfig = svcConfig.google;
@@ -34,22 +37,16 @@ passport.use(new GoogleStrategy({
     function(req, accessToken, refreshToken, params, profile, done) {
         var meta = {"cName": GOOGLE_PROVIDER, "fName":"passport.use" };
 
-        log.debug("accessToken:" + accessToken, meta);
-        log.debug("refreshToken:" + refreshToken, meta);
-        log.debug("params:"+JSON.stringify(params), meta);
-        log.debug("profile:" + JSON.stringify(profile), meta);
+        //log.debug("accessToken:" + accessToken, meta);
+        //log.debug("refreshToken:" + refreshToken, meta);
+        //log.debug("params:"+JSON.stringify(params), meta);
+        //log.debug("profile:" + JSON.stringify(profile), meta);
 
         //It's not correct information. but I confirmed by /blogger/v3/users/self"
         var providerId = "g"+profile.id;
 
-        var provider = {
-            "providerName": profile.provider,
-            "accessToken": accessToken,
-            "refreshToken": refreshToken,
-            "providerId": providerId.toString(),
-            "tokenExpireTime": userMgr.makeTokenExpireTime(params.expires_in),
-            "displayName": profile.displayName
-        };
+        var provider = new botFormat.ProviderOauth2(profile.provider, providerId.toString(), profile.displayName,
+                    accessToken, refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
 
         userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -158,16 +155,14 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider = provider;
-            sendData.blogs = [];
-
+            var botBlogList = new botFormat.BotBlogList(provider);
             try {
                 var items = body.items;
                 log.debug("items length=" + items.length, meta);
 
                 for (var i = 0; i < items.length; i+=1) {
-                    sendData.blogs.push({"blog_id": items[i].id, "blog_title": items[i].name, "blog_url": items[i].url});
+                    var botBlog = new botFormat.BotBlog(items[i].id, items[i].name, items[i].url);
+                    botBlogList.blogs.push(botBlog);
                 }
             }
             catch(e) {
@@ -176,12 +171,7 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            /*
-             { "provider":object, "blogs":
-             [ {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"},
-             {"blog_id":12, "blog_title":"wzdfac", "blog_url":"wzdfac.iptime.net"} ] },
-             */
-            res.send(sendData);
+            res.send(botBlogList);
         });
     });
 });
@@ -211,20 +201,18 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
-            var sendData = {};
-            sendData.provider_name = GOOGLE_PROVIDER;
+            var botPostCount;
 
             try {
-                sendData.blog_id = body.id;
-                sendData.post_count = body.posts.totalItems;
+                botPostCount = new botFormat.BotPostCount(GOOGLE_PROVIDER, body.id, body.posts.totalItems);
             }
             catch(e) {
                 log.error(e, meta);
                 log.error(body, meta);
                 return res.status(500).send(e);
             }
-            log.info("post_count="+sendData.post_count, meta);
-            res.send(sendData);
+            log.info("post_count="+botPostCount.post_count, meta);
+            res.send(botPostCount);
         });
     });
 });
@@ -291,35 +279,18 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = GOOGLE_PROVIDER;
-            sendData.blog_id = blogId;
+            var botPostList = new botFormat.BotPostList(GOOGLE_PROVIDER, blogId, body.nextPageToken);
+
             try {
-                if (body.items) {
-                    sendData.post_count = body.items.length;
+                if (!body.items) {
+                    return res.send(botPostList);
                 }
-                else {
-                    sendData.post_count = 0;
-                }
-
-                sendData.nextPageToken = body.nextPageToken;
-                sendData.posts = [];
-
-                for (var i = 0; i<sendData.post_count; i+=1) {
+                for (var i = 0; i<body.items.length; i+=1) {
                     var item = body.items[i];
-                    var sendPost = {};
-                    sendPost.title = item.title;
-                    sendPost.modified = item.updated;
-                    sendPost.id = item.id;
-                    sendPost.url = item.url;
-                    sendPost.categories = [];
-                    sendPost.tags = [];
-                    if (item.labels) {
-                        for (var j = 0; j < item.labels.length; j += 1) {
-                            sendPost.tags.push(item.labels[j]);
-                        }
-                    }
-                    sendData.posts.push(sendPost);
+
+                    var botPost = new botFormat.BotTextPost(item.id, " ", item.updated, item.url, item.title, [],
+                                item.labels);
+                    botPostList.posts.push(botPost);
                 }
             }
             catch(e) {
@@ -328,7 +299,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -364,30 +335,13 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = GOOGLE_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.post_count = 1;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(GOOGLE_PROVIDER, blogId);
 
             try {
                 var item = body;
-                var sendPost = {};
-                sendPost.title = item.title;
-                sendPost.modified = item.updated;
-                sendPost.id = item.id;
-                sendPost.url = item.url;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                if (item.labels) {
-                    for (var j=0; j<item.labels.length; j+=1) {
-                        sendPost.tags.push(item.labels[j]);
-                    }
-                }
-                sendPost.content = item.content;
-                sendPost.replies = [];
-                sendPost.replies.push({"comment_count":item.replies.totalItems});
-                sendData.posts.push(sendPost);
+                var botPost = new botFormat.BotTextPost(item.id, item.content, item.updated, item.url, item.title, [],
+                            item.labels, [{"comment_count":item.replies.totalItems}]);
+                botPostList.posts.push(botPost);
             }
             catch(e) {
                 log.error(e, meta);
@@ -395,7 +349,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
 });
@@ -431,21 +385,13 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.providerName = provider.providerName;
-            sendData.blogID = blogId;
-            sendData.postID = postId;
-            sendData.comments = [];
+            var botCommentList = new botFormat.BotCommentList(provider.providerName, blogId, postId);
 
             try {
-                sendData.found = body.items.length;
                 for(var i=0; i<body.items.length; i+=1) {
                     var item = body.items[i];
-                    var comment = {};
-                    comment.date = item.updated;
-                    comment.URL = item.selfLink;
-                    comment.content = item.content;
-                    sendData.comments.push(comment);
+                    var comment = new botFormat.BotComment(item.content, item.selfLink, item.updated);
+                    botCommentList.comments.push(comment);
                 }
             }
             catch(e) {
@@ -454,7 +400,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botCommentList);
         });
     });
 });
@@ -468,6 +414,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     log.info("+", meta) ;
 
     var blogId = req.params.blog_id;
+    var botPost = req.body;
 
     var apiUrl = GOOGLE_API_URL + "/blogger/v3";
     apiUrl += "/blogs";
@@ -482,10 +429,19 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         }
 
         var newPost = {};
+
         newPost.kind = 'blogger#post';
-        //newPost.blog = {};
-        newPost.title = req.body.title;
-        newPost.content = req.body.content;
+       if (botPost.tags && botPost.tags.length > 0) {
+            newPost.labels = botPost.tags;
+        }
+        if(botPost.title) {
+            newPost.title = botPost.title;
+        }
+        else {
+            //todo: make title for blogger
+            log.warn('It needs to make title');
+        }
+        newPost.content = bC.convertBotPostToTextContent(botPost);
 
         request.postEx(apiUrl, {
             json: true,
@@ -499,30 +455,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var sendData = {};
-            sendData.provider_name = GOOGLE_PROVIDER;
-            sendData.blog_id = blogId;
-            sendData.post_count = 1;
-            sendData.posts = [];
+            var botPostList = new botFormat.BotPostList(GOOGLE_PROVIDER, blogId);
 
             try {
-                var item = body;
-                var sendPost = {};
-                sendPost.title = item.title;
-                sendPost.modified = item.updated;
-                sendPost.id = item.id;
-                sendPost.url = item.url;
-                sendPost.categories = [];
-                sendPost.tags = [];
-                if (item.labels) {
-                    for (var j = 0; j < item.labels.length; j += 1) {
-                        sendPost.tags.push(item.labels[j]);
-                    }
-                }
-                sendPost.replies = [];
-                sendPost.replies.push({"comment_count":item.replies.totalItems});
-
-                sendData.posts.push(sendPost);
+                var rawPost = body;
+                var botPost = new botFormat.BotTextPost(rawPost.id, " ", rawPost.updated, rawPost.url, rawPost.title, [],
+                            rawPost.labels);
+                botPostList.posts.push(botPost);
             }
             catch(e) {
                 log.error(e, meta);
@@ -530,7 +469,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(sendData);
+            res.send(botPostList);
         });
     });
  });
@@ -557,8 +496,8 @@ function _requestGet(url, accessToken, callback) {
  *
  * @param user
  * @param provider
+ * @param callback
  * @private
- * @bug 401에러 발생한 요청사항은 무시되어버림.
  */
 function _updateAccessToken(user, provider, callback) {
     var url =  GOOGLE_API_URL + "/oauth2/v3/token";

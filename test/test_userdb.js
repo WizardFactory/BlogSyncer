@@ -2,19 +2,16 @@
  * Created by aleckim on 2014. 6. 20..
  */
 
+'use strict';
+
 var assert  = require('assert');
 var User = require('../models/userdb');
+var tD = require('./test_data');
 if (!global.log) {
     global.log = require('winston');
 }
 
-var testProvider1 = {
-    "providerName":"twitter",
-    "providerId":"3388",
-    "accessToken":"XXXX",
-    "refreshToken":"bbbbb",
-    "displayName" :"wizard"
-};
+var testProvider1 = tD.testProvider1;
 
 describe('userdb', function () {
     describe('Function', function () {
