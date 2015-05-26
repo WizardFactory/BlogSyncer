@@ -189,17 +189,12 @@ var blogConvert = {
      * @param {function} shortenFunc
      * @param callBack
      */
-    convertPostToPlainContentWithTitle: function (botPost, maxLen, shortenFunc, callBack) {
-        var content;
+    convertPostToPlainContent: function (botPost, maxLen, shortenFunc, callBack) {
+        var content = '';
         var url;
 
-        if (botPost.title) {
-            content = botPost.title;
-        }
-
         if(botPost.type === 'text') {
-            content += ' ' + botPost.content;
-            content = blogConvert.removeHtmlTags(content);
+            content = blogConvert.removeHtmlTags(botPost.content);
             url = botPost.url;
             if (content.length < maxLen) {
                 return callBack(content);
@@ -207,7 +202,7 @@ var blogConvert = {
         }
         else {
             if (botPost.description) {
-                content += ' ' + botPost.description;
+                content = botPost.description;
             }
             content = blogConvert.removeHtmlTags(content);
             if (botPost.type === 'link') {
@@ -238,6 +233,15 @@ var blogConvert = {
         shortenFunc(url, function (shortenUrl) {
            return callBack(shortenUrl + ' ' + content);
         });
+    },
+
+    /**
+     *
+     * @param {string} content
+     * @returns {boolean}
+     */
+    isHtml : function (content) {
+        return /<[a-z][\s\S]*>/i.test(content);
     }
 };
 
