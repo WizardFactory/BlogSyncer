@@ -102,6 +102,20 @@ describe('blogConvert', function () {
 
         var MAX_PLAIN_TEXT_LENGTH = 140;
 
+        it('make limit length string', function () {
+            var hashTagString = bC.convertTagToHashtag(tD.testPainTextPost1.tags).toString();
+            var str;
+            var urls = [];
+
+            urls.push(tD.testPainTextPost1.post_url);
+            str = bC.makeLimitString(140, tD.testPainTextPost1.content, hashTagString, urls);
+            assert.equal(str, tD.testPainTextLimitStringResult1, true, "Mismatch limitString");
+
+            urls = [];
+            urls.push(tD.testPainTextPost1.post_url);
+            str = bC.makeLimitString(60, tD.testPainTextPost1.content, hashTagString, urls);
+            assert.equal(str, tD.testPainTextLimitStringResult2, true, "Mismatch limitString");
+        });
         it('convert short text post to plain content', function (done) {
             var botTextPost1 = new bF.BotTextPost(tD.testTextPost1.id, tD.testTextPost1.content, tD.testTextPost1.modified,
                         tD.testTextPost1.post_url, tD.testTextPost1.title, tD.testTextPost1.categories, tD.testTextPost1.tags,
@@ -121,32 +135,31 @@ describe('blogConvert', function () {
             assert.equal(botTextPost2.replies[0].notes, tD.testTextPost2.replies[0].notes, "Mismatch reply of botPost");
 
             bC.convertPostToPlainContent(botTextPost2, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
-                assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
+                assert.equal(content.length <= MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert link post to plain content', function (done) {
             bC.convertPostToPlainContent(botLinkPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
-                assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
+                assert.equal(content.length <= MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert photo post to plain content', function (done) {
             bC.convertPostToPlainContent(botPhotoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
-                assert.equal(content, tD.convertPlainTextResultOfPhoto, true, "Over max length");
+                assert.equal(content.length <= MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert audio post to plain content', function (done) {
             bC.convertPostToPlainContent(botAudioPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
-                //console.log(content);
-                assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
+                assert.equal(content.length <= MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert video post to plain content', function (done) {
             bC.convertPostToPlainContent(botVideoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
-                assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
+                assert.equal(content.length <= MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
@@ -181,6 +194,25 @@ describe('blogConvert', function () {
             assert.equal(result, true, true, 'It is HTML');
             result = bC.isHtml(tD.convertPlainTextOfLink);
             assert.equal(result, false, true, 'It is not HTML');
+        });
+        it('convert tags to hash tags', function () {
+            var hashTags = bC.convertTagToHashtag(tD.testTextPost1.tags);
+            assert.equal(hashTags.toString(), tD.testHashTags.toString(), true, "Mismatch hashtags");
+        });
+        it('convert hash tags to tags', function () {
+            var tags = bC.convertHashtagToTag(tD.testHashTags);
+            assert.equal(tags.toString(), tD.testTextPost1.tags.toString(), true, "Mismatch tags");
+        });
+        it('get hashtags in string', function () {
+            var hashTags;
+            hashTags= bC.getHashTags(tD.testStringForHashTags1);
+            assert.equal(hashTags.toString(), tD.testStringForHashTagsResult1, true, "Mismatch hashtags");
+
+            hashTags = bC.getHashTags(tD.testStringForHashTags2);
+            assert.equal(hashTags.toString(), tD.testStringForHashTagsResult2, true, "Mismatch hashtags");
+
+            hashTags = bC.getHashTags(tD.testStringForHashTags3);
+            assert.equal(hashTags.toString(), tD.testStringForHashTagsResult3, true, "Mismatch hashtags");
         });
     });
 });
