@@ -161,6 +161,10 @@ var blogConvert = {
 
         return title;
     },
+    /**
+     * @param {string} content
+     * @return {string}
+     */
     removeHtmlTags: function (content) {
         var plain = content;
         plain = plain.replace(/<\/?[^>]+(>|$)/g, ""); //remove html tag
@@ -169,6 +173,9 @@ var blogConvert = {
 
         return plain;
     },
+    /**
+     *
+     */
     maxShortenUrlLen : 24,
     /**
      *
@@ -181,7 +188,6 @@ var blogConvert = {
             return callback(result);
         });
     },
-
     /**
      *
      * @param botPost
@@ -197,7 +203,7 @@ var blogConvert = {
             content = botPost.title;
         }
 
-        if(botPost.type === 'text') {
+        if (botPost.type === 'text') {
             content += ' ' + botPost.content;
             content = blogConvert.removeHtmlTags(content);
             url = botPost.url;
@@ -223,21 +229,77 @@ var blogConvert = {
             }
             else if (botPost.type === 'video') {
                 if (botPost.videoUrl) {
-                   url = botPost.videoUrl;
+                    url = botPost.videoUrl;
                 }
                 else {
-                   url = botPost.url;
+                    url = botPost.url;
                 }
             }
         }
-        var cutLen = maxLen-blogConvert.maxShortenUrlLen;
+        var cutLen = maxLen - blogConvert.maxShortenUrlLen;
         if (content.length >= cutLen) {
             content = content.slice(0, cutLen);
         }
 
         shortenFunc(url, function (shortenUrl) {
-           return callBack(shortenUrl + ' ' + content);
+            return callBack(shortenUrl + ' ' + content);
         });
+    },
+    /**
+     *
+     * @param {string[]} tags
+     * @param {string[]} categories
+     */
+    addCategoriesToTags: function (tags, categories) {
+        for (var i=0;i<categories.length; i+=1) {
+            for (var j=0; j<tags.length; j+=1) {
+                if (categories[i] === tags[j]) {
+
+                    //already included categories
+                    break;
+                }
+            }
+            if (j === tags.length) {
+                tags.push(categories[i]);
+            }
+        }
+    },
+    /**
+     *
+     * @param {String[]} dstCategories
+     * @param {Object[]} blogCategories
+     * @param {String[]} tags
+     */
+    addTagsToCategories: function (dstCategories, blogCategories, tags) {
+        for (var i=0; i<tags.length; i+=1)    {
+            for (var j=0; j<blogCategories.length; j+=1) {
+
+                //it is candidate of category
+                if (tags[i] === blogCategories[j].name) {
+                    for (var k=0; k<dstCategories.length; k+=1) {
+
+                        //already included tag
+                       if (tags[i] === dstCategories[k])  {
+                           break;
+                       }
+                    }
+                    if (k === dstCategories.length) {
+                       dstCategories.push(tags[i]);
+                    }
+                    break;
+                }
+            }
+        }
+    },
+    /**
+     *
+     * @param {string[]} categories
+     * @param {Object[]} blogCategories
+     * @param {string[]} tags
+     */
+    mergeTagsCategories: function (categories, blogCategories, tags) {
+        blogConvert.addTagsToCategories(categories, blogCategories, tags);
+        blogConvert.addCategoriesToTags(tags, categories);
     }
 };
 
