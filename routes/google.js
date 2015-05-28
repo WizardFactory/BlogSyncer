@@ -442,6 +442,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             log.warn('It needs to make title');
         }
         newPost.content = bC.convertBotPostToTextContent(botPost);
+        newPost.content = bC.convertNewLineToBreakTag(newPost.content);
 
         request.postEx(apiUrl, {
             json: true,

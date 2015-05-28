@@ -86,6 +86,10 @@ describe('blogConvert', function () {
             content = bC.convertBotPostToTextContent(botLinkPost);
             assert.equal(content, convertTextResultOfLink, "Mismatch content of text post");
         });
+        it('convert new line to break tag', function () {
+            var brString = blogConvert.convertNewLineToBreakTag(tD.testNewLineString);
+            assert.equal(brString, tD.testBreakString, "Mismatch content of break string");
+        });
         it('make title from description', function () {
             var title = bC.makeTitle(botPhotoPost);
             assert.equal(title, TEST_PHOTO_POST_TITLE_BY_DESC, "mismatch title");

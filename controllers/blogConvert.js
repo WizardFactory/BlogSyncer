@@ -132,6 +132,16 @@ var blogConvert = {
         return content;
     },
     /**
+     *
+     * @param content
+     * @returns {string|void|XML|*}
+     */
+    convertNewLineToBreakTag: function (content) {
+        var result;
+        result = content.replace(/\n/g ,'<br>');
+        return result;
+    },
+    /**
      * @param {Object} botPost
      * @return {string}
      */

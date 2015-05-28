@@ -496,6 +496,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
 
     newPost.content = bC.convertBotPostToTextContent(botPost);
+    newPost.content = bC.convertNewLineToBreakTag(newPost.content);
 
     if (botPost.tags) {
         newPost.tag = botPost.tags.toString();
