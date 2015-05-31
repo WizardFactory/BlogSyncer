@@ -76,7 +76,7 @@ passport.use(new FacebookStrategy({
 
 router.get('/authorize',
     passport.authenticate('facebook', {scope: ['user_status', 'user_about_me', 'user_posts', 'user_photos',
-                'user_website', 'publish_actions']})
+                'user_website', 'publish_actions', 'manage_pages']})
 );
 
 router.get('/authorized',
@@ -150,41 +150,13 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            //log.debug(body, meta);
-
-            var botBlogList = new botFormat.BotBlogList(provider);
-
-            log.debug("pageId: "+provider.providerId+", pageName: feed, pageLink: https://www.facebook.com", meta);
-
-            //user can have unique url for people or pages on facebook
-            var botBlog;
-            botBlog = new botFormat.BotBlog(provider.providerId, "feed", "https://www.facebook.com");
-            botBlogList.blogs.push(botBlog);
+            var blogIds = [];
+            blogIds.push(provider.providerId); //account's feed
 
             try {
-                for (var i = 0; i < body.data.length; i+=1) {
+                for (var i = 0; i < body.data.length; i += 1) {
                     var item = body.data[i];
-                    var pageId = item.id;
-                    var pageName = item.name;
-                    var pageLink = "https://www.facebook.com";
-                    /*
-                     apiUrl = FACEBOOK_API_URL+"/"+pageId;
-                     log.debug(apiUrl);
-                     _requestGet(apiUrl, p.accessToken, function(err, response, pageBody) {
-                     var hasError = _checkError(err, response, pageBody);
-                     if (hasError !== undefined) {
-                     log.debug("hasError: "+hasError);
-                     res.send(hasError);
-                     return;
-                     }
-                     pageLink = pageBody.link;
-                     //log.debug("pageId: "+pageId+", pageName: "+pageName+", pageLink: "+pageLink);
-                     });
-                     */
-                    log.debug("pageId: "+pageId+", pageName: "+pageName+", pageLink: "+pageLink);
-
-                    botBlog = new botFormat.BotBlog(pageId, pageName, pageLink);
-                    botBlogList.blogs.push(botBlog);
+                    blogIds.push(item.id); //page id
                 }
             }
             catch(e) {
@@ -193,7 +165,40 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botBlogList);
+            var async = require('async');
+            var asyncTasks = [];
+
+            blogIds.forEach(function (blogId) {
+              asyncTasks.push(function (callback) {
+                  var url = FACEBOOK_API_URL+"/"+ blogId;
+                  _requestGet(url, provider.accessToken, function(err, response, body) {
+                      if (err)  {
+                          log.error(err, meta);
+                          callback(err);
+                      }
+
+                      var botBlog;
+                      try {
+                          botBlog = new botFormat.BotBlog(body.id, body.name, body.link);
+                      }
+                      catch(e) {
+                          log.error(e, meta);
+                          callback(e);
+                      }
+                      callback(null, botBlog);
+                  });
+              });
+            });
+
+            var botBlogList = new botFormat.BotBlogList(provider);
+            async.parallel(asyncTasks, function (err, blogList) {
+                blogList.forEach(function (botBlog) {
+                  botBlogList.blogs.push(botBlog) ;
+                });
+
+                log.silly(botBlogList, meta);
+                res.send(botBlogList);
+            });
         });
     });
 });
