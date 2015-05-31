@@ -207,11 +207,11 @@ var blogConvert = {
      */
     convertPostToPlainContent: function (botPost, maxLen, shortenFunc, callBack) {
         var content = '';
-        var url;
+        var urls = [];
 
         if(botPost.type === 'text') {
             content = blogConvert.removeHtmlTags(botPost.content);
-            url = botPost.url;
+            urls.push(botPost.url);
             if (content.length < maxLen) {
                 return callBack(content);
             }
@@ -222,32 +222,56 @@ var blogConvert = {
             }
             content = blogConvert.removeHtmlTags(content);
             if (botPost.type === 'link') {
-                url = botPost.contentUrl;
+                urls.push(botPost.contentUrl);
             }
             else if (botPost.type === 'photo') {
-                //content =  add photos shortenurl
-                //Todo: support multi url
-                url = botPost.mediaUrls[0];
+                urls = botPost.mediaUrls;
             }
             else if (botPost.type === 'audio') {
-                url = botPost.audioUrl;
+                urls.push(botPost.audioUrl);
             }
             else if (botPost.type === 'video') {
                 if (botPost.videoUrl) {
-                    url = botPost.videoUrl;
+                    urls.push(botPost.videoUrl);
                 }
                 else {
-                    url = botPost.url;
+                    urls.push(botPost.url);
                 }
             }
         }
+
         var cutLen = maxLen - blogConvert.maxShortenUrlLen;
         if (content.length >= cutLen) {
             content = content.slice(0, cutLen);
         }
 
-        shortenFunc(url, function (shortenUrl) {
-            return callBack(shortenUrl + ' ' + content);
+        if (!urls.length) {
+           return callBack(content);
+        }
+
+        var async = require('async');
+        var asyncTasks = [];
+
+        urls.forEach(function (url) {
+            asyncTasks.push(function (cB) {
+                shortenFunc(url, function (shortenUrl) {
+                    return cB(null, shortenUrl);
+                });
+            });
+        });
+
+        async.parallel(asyncTasks, function (err, result) {
+            if(err) {
+                log.error('Fail to get shortenUrl');
+                return callBack(err);
+            }
+            var fullContent = '';
+            result.forEach(function (shortenUrl) {
+                fullContent += shortenUrl + ' ';
+            });
+
+            fullContent += content;
+            callBack(fullContent);
         });
     },
     /**
