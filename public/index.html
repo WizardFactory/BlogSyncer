@@ -65,6 +65,10 @@
             </div>
         </div>
     </div>
+    <div class="alert" ng-class="alertType" role="alert" ng-show="alertType !== ''">
+        <button type="button" class="close" ng-click="hideAlert();"><span aria-hidden="true">&times;</span></button>
+        <strong>{{alertHeader | translate}}</strong> {{alertMessage | translate}}
+    </div>
 
     <div class="container">
         <!-- angular templating -->

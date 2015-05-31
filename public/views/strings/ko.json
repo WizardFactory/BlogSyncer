@@ -26,11 +26,16 @@
   "LOC_LOGIN_TITLE": "로그인하세요",
   "LOC_ACCOUNT_LIST": "계정 리스트",
   "LOC_LOGOUT": "로그아웃",
+  "LOC_LOGIN_ERROR": "먼저 로그인부터 하세요!",
   "LOC_Wordpress": "워드프레스",
   "LOC_tistory": "티스토리",
   "LOC_google": "구글",
   "LOC_facebook": "페이스북",
   "LOC_tumblr": "텀블러",
   "LOC_twitter": "트위터",
-  "LOC_kakao": "카카오"
+  "LOC_kakao": "카카오",
+  "LOC_ALERT_SUCCESS": "성공!",
+  "LOC_ALERT_INFO": "정보!",
+  "LOC_ALERT_WARNING": "경고!",
+  "LOC_ALERT_Danger": "에러!"
 }
