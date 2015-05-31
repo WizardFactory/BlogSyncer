@@ -438,8 +438,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             newPost.title = botPost.title;
         }
         else {
-            //todo: make title for blogger
-            log.warn('It needs to make title');
+            newPost.title = bC.makeTitle(botPost);
         }
         newPost.content = bC.convertBotPostToTextContent(botPost);
         newPost.content = bC.convertNewLineToBreakTag(newPost.content);
@@ -470,7 +469,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botPostList);
+            return res.send(botPostList);
         });
     });
  });

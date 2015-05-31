@@ -89,7 +89,7 @@ var testData = {
         replies: [{'notes': 33}]
     },
 
-    convertTextResultOfPhoto: '<figure><img src="http://s.wsj.net/public/resources/images/BN-IG731_Americ_G_20150505224714.jpg"><br><img src="http://si.wsj.net/public/resources/images/BN-IF969_0506pt_G_20150504172642.jpg"><br><img src="http://si.wsj.net/public/resources/images/PJ-CB508_PTECHc_G_20150505130613.jpg"><br><figcaption><div class="insetContent"><h3 class="first"> <a href="#"> More In 우버</a></h3><ul><li></li><a href="http://kr.wsj.com/posts/2015/05/06/%ed%98%b8%ec%a3%bc-%eb%8f…%94-%eb%ad%94%ea%b0%80-%ed%8a%b9%eb%b3%84%ed%95%98%eb%8b%a4/">호주 도미노 피자는 뭔가 특별하다</a></li></ul></div></figcaption></figure>',
+    convertTextResultOfPhoto: '<figure><img src="http://s.wsj.net/public/resources/images/BN-IG731_Americ_G_20150505224714.jpg" style="max-width: 100%;"><br><img src="http://si.wsj.net/public/resources/images/BN-IF969_0506pt_G_20150504172642.jpg" style="max-width: 100%;"><br><img src="http://si.wsj.net/public/resources/images/PJ-CB508_PTECHc_G_20150505130613.jpg" style="max-width: 100%;"><br><figcaption><div class="insetContent"><h3 class="first"> <a href="#"> More In 우버</a></h3><ul><li></li><a href="http://kr.wsj.com/posts/2015/05/06/%ed%98%b8%ec%a3%bc-%eb%8f…%94-%eb%ad%94%ea%b0%80-%ed%8a%b9%eb%b3%84%ed%95%98%eb%8b%a4/">호주 도미노 피자는 뭔가 특별하다</a></li></ul></div></figcaption></figure>',
     TEST_PHOTO_POST_TITLE_BY_DESC: 'More In 우버호주 도미노 피자는 뭔가 특별하다',
     TEST_PHOTO_POST_TITLE_BY_DATE: 'photo at '+ d.toString(),
 

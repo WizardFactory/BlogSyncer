@@ -31,7 +31,10 @@ var tVideoPost1 = tD.testVideoPost1;
 var convertTextResultOfVideo = tD.convertTextResultOfVideo;
 
 function _testShortenFunc(longUrl, callback) {
-      return callback(tD.testShortenUrl);
+    if (longUrl) {
+        log.debug('It is not used');
+    }
+    return callback(tD.testShortenUrl);
 }
 
 describe('blogConvert', function () {
@@ -87,7 +90,7 @@ describe('blogConvert', function () {
             assert.equal(content, convertTextResultOfLink, "Mismatch content of text post");
         });
         it('convert new line to break tag', function () {
-            var brString = blogConvert.convertNewLineToBreakTag(tD.testNewLineString);
+            var brString = bC.convertNewLineToBreakTag(tD.testNewLineString);
             assert.equal(brString, tD.testBreakString, "Mismatch content of break string");
         });
         it('make title from description', function () {
@@ -96,9 +99,11 @@ describe('blogConvert', function () {
         });
         it('make title from date', function () {
             var tmpPost = botPhotoPost;
+            var tmpDes = botPhotoPost.description;
             tmpPost.description = '';
             var title = bC.makeTitle(tmpPost);
             assert.equal(title, TEST_PHOTO_POST_TITLE_BY_DATE, "Mismatch title");
+            botPhotoPost.description = tmpDes;
         });
         it('remove html tag in content', function () {
             var content;
@@ -122,7 +127,7 @@ describe('blogConvert', function () {
 
             assert.equal(botTextPost1.replies[0].notes, testTextPost1.replies[0].notes, "Mismatch reply of botPost");
 
-            bC.convertPostToPlainContentWithTitle(botTextPost1, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
+            bC.convertPostToPlainContent(botTextPost1, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc, function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
@@ -133,36 +138,35 @@ describe('blogConvert', function () {
                 testTextPost2.replies);
             assert.equal(botTextPost2.replies[0].notes, testTextPost2.replies[0].notes, "Mismatch reply of botPost");
 
-            bC.convertPostToPlainContentWithTitle(botTextPost2, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            bC.convertPostToPlainContent(botTextPost2, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert link post to plain content', function (done) {
-            bC.convertPostToPlainContentWithTitle(botLinkPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            bC.convertPostToPlainContent(botLinkPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert photo post to plain content', function (done) {
-            bC.convertPostToPlainContentWithTitle(botPhotoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            bC.convertPostToPlainContent(botPhotoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
-                            console.log(content);
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert audio post to plain content', function (done) {
-            bC.convertPostToPlainContentWithTitle(botAudioPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            bC.convertPostToPlainContent(botAudioPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
             });
         });
         it('convert video post to plain content', function (done) {
-            bC.convertPostToPlainContentWithTitle(botVideoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
+            bC.convertPostToPlainContent(botVideoPost, MAX_PLAIN_TEXT_LENGTH, _testShortenFunc,
                         function (content) {
                 assert.equal(content.length < MAX_PLAIN_TEXT_LENGTH, true, "Over max length");
                 done();
@@ -192,6 +196,13 @@ describe('blogConvert', function () {
             bC.mergeTagsCategories(testCategories1, tD.testBlog1.categories, testTags2);
             assert.equal(testCategories1.toString(), ['development', 'company'].toString(), true, "Mismatch array");
             assert.equal(testTags2.toString(), ['adc', 'ac', 'dd', 'company', 'development'].toString(), true, "Mismatch array");
+        });
+        it('is html', function () {
+            var result;
+            result = bC.isHtml(tD.convertTextResultOfLink);
+            assert.equal(result, true, true, 'It is HTML');
+            result = bC.isHtml(tD.convertPlainTextOfLink);
+            assert.equal(result, false, true, 'It is not HTML');
         });
     });
 });
