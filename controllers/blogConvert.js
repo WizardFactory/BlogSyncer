@@ -22,13 +22,13 @@ var blogConvert = {
     wrapMediaTag: function (type, url) {
         var str = "";
         if (type === 'photo') {
-            str = '<img src=\"' + url + '\">';
+            str = '<img src=\"' + url + '\" style="max-width: 100%;">';
         }
         else if (type === 'audio') {
-            str = '<audio controls><source src=\"' + url + '\">Your browser does not support the audio element.</audio>';
+            str = '<audio controls style="max-width: 100%;"><source src=\"' + url + '\">Your browser does not support the audio element.</audio>';
         }
         else if (type === 'video') {
-            str = '<video width="500" controls><source src=\"';
+            str = '<video width="500" controls style="max-width: 100%;"><source src=\"';
             str += url + '\">Your browser does not support the video element.</video>';
         }
         return str;
@@ -132,6 +132,16 @@ var blogConvert = {
         return content;
     },
     /**
+     *
+     * @param content
+     * @returns {string|void|XML|*}
+     */
+    convertNewLineToBreakTag: function (content) {
+        var result;
+        result = content.replace(/\n/g ,'<br>');
+        return result;
+    },
+    /**
      * @param {Object} botPost
      * @return {string}
      */
@@ -161,6 +171,10 @@ var blogConvert = {
 
         return title;
     },
+    /**
+     * @param {string} content
+     * @return {string}
+     */
     removeHtmlTags: function (content) {
         var plain = content;
         plain = plain.replace(/<\/?[^>]+(>|$)/g, ""); //remove html tag
@@ -169,6 +183,9 @@ var blogConvert = {
 
         return plain;
     },
+    /**
+     *
+     */
     maxShortenUrlLen : 24,
     /**
      *
@@ -181,7 +198,6 @@ var blogConvert = {
             return callback(result);
         });
     },
-
     /**
      *
      * @param botPost
@@ -189,17 +205,12 @@ var blogConvert = {
      * @param {function} shortenFunc
      * @param callBack
      */
-    convertPostToPlainContentWithTitle: function (botPost, maxLen, shortenFunc, callBack) {
-        var content;
+    convertPostToPlainContent: function (botPost, maxLen, shortenFunc, callBack) {
+        var content = '';
         var url;
 
-        if (botPost.title) {
-            content = botPost.title;
-        }
-
         if(botPost.type === 'text') {
-            content += ' ' + botPost.content;
-            content = blogConvert.removeHtmlTags(content);
+            content = blogConvert.removeHtmlTags(botPost.content);
             url = botPost.url;
             if (content.length < maxLen) {
                 return callBack(content);
@@ -207,7 +218,7 @@ var blogConvert = {
         }
         else {
             if (botPost.description) {
-                content += ' ' + botPost.description;
+                content = botPost.description;
             }
             content = blogConvert.removeHtmlTags(content);
             if (botPost.type === 'link') {
@@ -223,21 +234,85 @@ var blogConvert = {
             }
             else if (botPost.type === 'video') {
                 if (botPost.videoUrl) {
-                   url = botPost.videoUrl;
+                    url = botPost.videoUrl;
                 }
                 else {
-                   url = botPost.url;
+                    url = botPost.url;
                 }
             }
         }
-        var cutLen = maxLen-blogConvert.maxShortenUrlLen;
+        var cutLen = maxLen - blogConvert.maxShortenUrlLen;
         if (content.length >= cutLen) {
             content = content.slice(0, cutLen);
         }
 
         shortenFunc(url, function (shortenUrl) {
-           return callBack(shortenUrl + ' ' + content);
+            return callBack(shortenUrl + ' ' + content);
         });
+    },
+    /**
+     *
+     * @param {string[]} tags
+     * @param {string[]} categories
+     */
+    addCategoriesToTags: function (tags, categories) {
+        for (var i=0;i<categories.length; i+=1) {
+            for (var j=0; j<tags.length; j+=1) {
+                if (categories[i] === tags[j]) {
+
+                    //already included categories
+                    break;
+                }
+            }
+            if (j === tags.length) {
+                tags.push(categories[i]);
+            }
+        }
+    },
+    /**
+     *
+     * @param {String[]} dstCategories
+     * @param {Object[]} blogCategories
+     * @param {String[]} tags
+     */
+    addTagsToCategories: function (dstCategories, blogCategories, tags) {
+        for (var i=0; i<tags.length; i+=1)    {
+            for (var j=0; j<blogCategories.length; j+=1) {
+
+                //it is candidate of category
+                if (tags[i] === blogCategories[j].name) {
+                    for (var k=0; k<dstCategories.length; k+=1) {
+
+                        //already included tag
+                       if (tags[i] === dstCategories[k])  {
+                           break;
+                       }
+                    }
+                    if (k === dstCategories.length) {
+                       dstCategories.push(tags[i]);
+                    }
+                    break;
+                }
+            }
+        }
+    },
+    /**
+     *
+     * @param {string[]} categories
+     * @param {Object[]} blogCategories
+     * @param {string[]} tags
+     */
+    mergeTagsCategories: function (categories, blogCategories, tags) {
+        blogConvert.addTagsToCategories(categories, blogCategories, tags);
+        blogConvert.addCategoriesToTags(tags, categories);
+    },
+    /**
+     *
+     * @param {string} content
+     * @returns {boolean}
+     */
+    isHtml : function (content) {
+        return /<[a-z][\s\S]*>/i.test(content);
     }
 };
 

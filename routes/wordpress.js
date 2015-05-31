@@ -9,7 +9,7 @@ var router = require('express').Router();
 var passport = require('passport');
 var request = require('../controllers/requestEx');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
@@ -55,7 +55,7 @@ passport.use(new wordpressStrategy({
         var provider = new botFormat.ProviderOauth2(profile.provider, providerId.toString(), profile.displayName,
             accessToken, refreshToken);
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -63,7 +63,7 @@ passport.use(new wordpressStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -100,12 +100,12 @@ router.get('/authorized',
 );
 
 router.get('/me', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -127,7 +127,7 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -144,35 +144,52 @@ router.get('/bot_bloglist', function (req, res) {
 
     var providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, providerId, function (err, user, provider) {
 
-        var apiUrl = WORDPRESS_API_URL+"/sites/"+provider.providerId;
-        log.debug(apiUrl);
+        var getSiteListUrl = WORDPRESS_API_URL+"/sites/"+provider.providerId;
+        log.debug(getSiteListUrl);
 
-        _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
+        _requestGet(getSiteListUrl, provider.accessToken, function(err, response, body) {
             if(err) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
 
-            var botBlogList = new botFormat.BotBlogList(provider);
-            try {
-                var botBlog = new botFormat.BotBlog(body.ID.toString(), body.name, body.URL);
-                botBlogList.blogs.push(botBlog);
-            }
-            catch(e) {
-                log.error(e, meta);
-                log.error(body, meta);
-                return res.statusCode(500).send(e);
-            }
+            var wpBlog = {'id': body.ID.toString(), 'name':body.name, 'url':body.URL};
 
-            res.send(botBlogList);
+            var getCategoriesUrl = getSiteListUrl+'/categories';
+            _requestGet(getCategoriesUrl, provider.accessToken, function(err, response, body) {
+                if(err) {
+                    log.error(err, meta);
+                    return res.status(err.statusCode).send(err);
+                }
+
+                log.debug(body);
+                var botBlogList = new botFormat.BotBlogList(provider);
+                try {
+                    var botCategories = [];
+                    for (var i=0; i<body.categories.length; i+=1) {
+                        var wpCategories = body.categories[i];
+                        botCategories.push({'id':wpCategories.ID, 'name':wpCategories.name});
+                    }
+                    var botBlog = new botFormat.BotBlog(wpBlog.id, wpBlog.name, wpBlog.url,
+                                botCategories);
+                    botBlogList.blogs.push(botBlog);
+                }
+                catch (e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.statusCode(500).send(e);
+                }
+
+                res.send(botBlogList);
+            });
         });
     });
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -181,7 +198,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     var blogId = req.params.blog_id;
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
 
         var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId;
 
@@ -209,11 +226,15 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
  });
 
 
-function _convertBotCategoreis(wpCategories) {
+function _convertBotCategories(wpCategories) {
     var categories = [];
     if (wpCategories) {
         var categoryArr = Object.keys(wpCategories);
         for (var j=0; j<categoryArr.length; j+=1) {
+            //pass '미분류' category
+            if (wpCategories[categoryArr[j]].ID === 1) {
+                continue;
+            }
             categories.push(categoryArr[j]);
         }
     }
@@ -234,7 +255,7 @@ function _convertBotTags(wpTags) {
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -245,7 +266,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var offSet = req.query.offset;
     var after = req.query.after;
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -289,7 +310,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     }
 
                     var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), " ", rawPost.modified, rawPost.URL,
-                                rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags));
+                                rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags));
 
                     botPostList.posts.push(botPost);
                 }
@@ -306,7 +327,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -315,7 +336,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
     var blogId = req.params.blog_id;
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         var postId;
         var apiUrl;
 
@@ -343,7 +364,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 replies.push({"like": rawPost.like_count});
 
                 var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
-                    rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags), replies);
+                    rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags), replies);
 
                 botPostList.posts.push(botPost);
             }
@@ -359,7 +380,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -382,7 +403,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     newPost.content = bC.convertBotPostToTextContent(botPost);
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         var apiUrl = WORDPRESS_API_URL+"/sites/"+blogId +"/posts/new";
         log.debug(apiUrl, meta);
 
@@ -404,7 +425,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             try {
                 var rawPost = body;
                 var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
-                    rawPost.title, _convertBotCategoreis(rawPost.categories), _convertBotTags(rawPost.tags));
+                    rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags));
 
                 botPostList.posts.push(botPost);
             }
@@ -421,7 +442,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    var userId = userMgr._getUserId(req);
+    var userId = userMgr.getUserId(req);
     if (!userId) {
         return;
     }
@@ -431,7 +452,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     var blogId = req.params.blogID;
     var postId = req.params.postID;
 
-    userMgr._findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, WORDPRESS_PROVIDER, blogId, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
