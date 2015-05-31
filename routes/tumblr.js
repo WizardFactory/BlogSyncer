@@ -7,7 +7,7 @@
 var router = require('express').Router();
 var passport = require('passport');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
@@ -43,7 +43,7 @@ passport.use(new TumblrStrategy({
         var provider = new botFormat.ProviderOauth1(profile.provider, profile.username.toString(), profile.username,
                     token, tokenSecret);
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user");
                 return done(err);
@@ -51,7 +51,7 @@ passport.use(new TumblrStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -89,14 +89,14 @@ router.get('/authorized',
 );
 
 router.get('/info', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
     var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta);
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -122,7 +122,7 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/posts/:blogName', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -131,7 +131,7 @@ router.get('/posts/:blogName', function (req, res) {
 
     var blogName = req.params.blogName;
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -156,7 +156,7 @@ router.get('/posts/:blogName', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -165,7 +165,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -208,7 +208,7 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -217,7 +217,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     var blog_id = req.params.blog_id;
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -373,7 +373,7 @@ function _pushPostsFromTumblr(posts, raw_posts, after) {
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -384,7 +384,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     var offset = req.query.offset;
     var after = req.query.after;
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(400).send(err);
@@ -429,7 +429,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -439,7 +439,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var blog_id = req.params.blog_id;
     var post_id = req.params.post_id;
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -478,7 +478,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -497,7 +497,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var botTextPost; //for convert text post
 
-    userMgr._findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TUMBLR_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -597,7 +597,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }

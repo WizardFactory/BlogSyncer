@@ -20,7 +20,11 @@ var siteSchema = mongoose.Schema({
         blogs: [{
             blog_id: String,
             blog_title: String,
-            blog_url: String
+            blog_url: String,
+            categories: [{
+                id: String,
+                name: String
+            }]
         }]
     }]
 });

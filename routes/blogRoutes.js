@@ -6,7 +6,7 @@
 
 var express = require('express');
 var router = express.Router();
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 
 /**
  *
@@ -21,7 +21,6 @@ function _getUser(req, res) {
         var errorMsg = 'You have to login first!';
         log.error(errorMsg);
         res.status(401).send(errorMsg); //401 Unauthorized
-        res.redirect("/#/signin");
         return;
     }
 

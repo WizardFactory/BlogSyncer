@@ -8,7 +8,7 @@ var router = require('express').Router();
 var passport = require('passport');
 var request = require('../controllers/requestEx');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 var botFormat = require('../models/botFormat');
 var bC = require('../controllers/blogConvert');
@@ -48,7 +48,7 @@ passport.use(new GoogleStrategy({
         var provider = new botFormat.ProviderOauth2(profile.provider, providerId.toString(), profile.displayName,
                     accessToken, refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user", meta);
                 return done(err);
@@ -56,7 +56,7 @@ passport.use(new GoogleStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -100,7 +100,7 @@ router.get('/authorized',
 );
 
 router.get('/info', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -111,7 +111,7 @@ router.get('/info', function (req, res) {
     apiUrl += "/self";
     log.info("apiUrl="+apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -129,7 +129,7 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req);
+    var userId = userMgr.getUserId(req);
     if (!userId) {
         return;
     }
@@ -143,7 +143,7 @@ router.get('/bot_bloglist', function (req, res) {
     log.info("apiUrl="+apiUrl, meta);
 
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -177,7 +177,7 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -190,7 +190,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
     apiUrl += "/"+blogId;
     log.info("apiUrl="+apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -218,7 +218,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -267,7 +267,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     apiUrl += "status=live";
     log.info("apiUrl=" + apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -305,7 +305,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -323,7 +323,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
         log.debug("apiUrl=" + apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -355,7 +355,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogId/:postId', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -373,7 +373,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
 
     log.debug("apiUrl=" + apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -406,7 +406,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -422,7 +422,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     apiUrl += "/posts";
     log.info("apiUrl=" + apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -438,10 +438,10 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             newPost.title = botPost.title;
         }
         else {
-            //todo: make title for blogger
-            log.warn('It needs to make title');
+            newPost.title = bC.makeTitle(botPost);
         }
         newPost.content = bC.convertBotPostToTextContent(botPost);
+        newPost.content = bC.convertNewLineToBreakTag(newPost.content);
 
         request.postEx(apiUrl, {
             json: true,
@@ -469,7 +469,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botPostList);
+            return res.send(botPostList);
         });
     });
  });
@@ -521,14 +521,14 @@ function _updateAccessToken(user, provider, callback) {
 }
 
 router.post('/bot_posts/updateToken', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
     var meta = {"cName":GOOGLE_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta) ;
 
-    userMgr._findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);

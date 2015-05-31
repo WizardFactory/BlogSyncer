@@ -7,7 +7,7 @@ var router = require('express').Router();
 var passport = require('passport');
 var request = require('../controllers/requestEx');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
@@ -19,6 +19,8 @@ var clientConfig = svcConfig.kakao;
 var KakaoStrategy = require('passport-kakao').Strategy;
 var KAKAO_API_URL = "https://kapi.kakao.com";
 var KAKAO_PROVIDER = "kakao";
+var KAKAO_CONTENT_MAX_LENGTH = 2048;
+
 
 passport.serializeUser(function(user, done) {
     done(null, user);
@@ -43,7 +45,7 @@ passport.use(new KakaoStrategy({
         var provider  = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.username, accessToken,
                     refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user", meta);
                 return done(err);
@@ -51,7 +53,7 @@ passport.use(new KakaoStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -90,12 +92,12 @@ router.get('/authorized',
 );
 
 router.get('/me', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -112,12 +114,12 @@ router.get('/me', function (req, res) {
 });
 
 router.get('/mystories', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -134,7 +136,7 @@ router.get('/mystories', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -146,7 +148,7 @@ router.get('/bot_bloglist', function (req, res) {
     log.debug(apiUrl, meta);
 
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -180,7 +182,7 @@ router.get('/bot_bloglist', function (req, res) {
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -244,7 +246,7 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
 }
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -261,7 +263,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     }
     log.debug(apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -290,7 +292,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -306,7 +308,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     }
     log.debug(apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.statusCode(500).send(err);
@@ -349,36 +351,41 @@ function _convertToURL(postId) {
     return str;
 }
 
-function _makeContent(rcvPost) {
-    var content = '';
+//content is already included
+//function _makeContent(rcvPost) {
+//    var content = '';
+//
+//    if (rcvPost.content) {
+//        content += rcvPost.content;
+//    }
+//    if (rcvPost.description) {
+//        content += rcvPost.description;
+//    }
+//
+//    content = bC.removeHtmlTags(content);
+//    if (content.length > KAKAO_CONTENT_MAX_LENGTH) {
+//        content = content.slice(0, KAKAO_CONTENT_MAX_LENGTH);
+//    }
+//    else if (content.length === 0) {
+//        //if didn't have any content, add padding for safety
+//        content += ' ';
+//    }
+//
+//    return content;
+//}
 
-    if (rcvPost.content) {
-        content += rcvPost.content;
-    }
-    if (rcvPost.description) {
-        content += rcvPost.description;
-    }
-
-    content = bC.removeHtmlTags(content);
-
-    //if didn't have any content, add padding for safety
-    content += ' ';
-
-    return content;
-}
-
-function _makePhotoPost(accessToken, rcvPost, callback) {
-    var photoPost = {};
-    photoPost.image_url_list = rcvPost.mediaUrls;
-    photoPost.content = _makeContent(rcvPost);
-
-    return callback(undefined, photoPost);
-}
+//kakao supports only upload photo
+//function _makePhotoPost(accessToken, rcvPost, callback) {
+//    var photoPost = {};
+//    photoPost.image_url_list = rcvPost.mediaUrls;
+//    photoPost.content = _makeContent(rcvPost);
+//
+//    return callback(undefined, photoPost);
+//}
 
 function _makeNotePost(accessToken, rcvPost, callback) {
     var notePost = {};
-    //notePost.content = _makeContent(rcvPost);
-    bC.convertPostToPlainContentWithTitle(rcvPost, 2048, bC.convertShortenUrl, function (content) {
+    bC.convertPostToPlainContent(rcvPost, KAKAO_CONTENT_MAX_LENGTH, bC.convertShortenUrl, function (content) {
         notePost.content = content;
         return callback(undefined, notePost);
     });
@@ -402,7 +409,6 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
 
         var linkPost = {};
-        linkPost.content = _makeContent(rcvPost);
 
         try {
             linkPost.link_info = JSON.stringify(body);
@@ -420,7 +426,7 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
 }
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -438,7 +444,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     var apiUrl = KAKAO_API_URL + "/v1/api/story/post";
     log.debug(apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -452,10 +458,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         //}
         //else
         if (postType === 'text') {
-           //if big page(like blog post) link post
-           // else
-            makePostFunc = _makeNotePost;
-            apiUrl += '/note';
+            if (bC.isHtml(botPost.content)) {
+                makePostFunc = _makeLinkPost;
+                apiUrl += '/link';
+            }
+            else {
+                makePostFunc = _makeNotePost;
+                apiUrl += '/note';
+            }
         }
         else if (postType === 'link') {
             makePostFunc = _makeLinkPost;
@@ -508,7 +518,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -524,7 +534,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     }
     log.debug(apiUrl, meta);
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -602,14 +612,14 @@ function _updateAccessToken(user, provider, callback) {
 }
 
 router.post('/bot_posts/updateToken', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
     var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
     log.info("+", meta) ;
 
-    userMgr._findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);

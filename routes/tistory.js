@@ -9,7 +9,7 @@ var passport = require('passport');
 var request = require('../controllers/requestEx');
 var url = require('url');
 
-var blogBot = require('./../controllers/blogbot');
+var blogBot = require('./../controllers/blogBot');
 var userMgr = require('./../controllers/userManager');
 
 var botFormat = require('../models/botFormat');
@@ -48,7 +48,7 @@ passport.use(new TistoryStrategy({
         var provider  = new botFormat.ProviderOauth2(TISTORY_PROVIDER, profile.userId.toString(), profile.id,
                     accessToken, refreshToken);
 
-        userMgr._updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
+        userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
                 log.error("Fail to get user ");
                 return done(err);
@@ -56,7 +56,7 @@ passport.use(new TistoryStrategy({
 
             if (delUser) {
                 blogBot.combineUser(user, delUser);
-                userMgr._combineUser(user, delUser, function(err) {
+                userMgr.combineUser(user, delUser, function(err) {
                     if (err) {
                         return done(err);
                     }
@@ -93,12 +93,12 @@ router.get('/authorized',
 );
 
 router.get('/info', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -120,14 +120,14 @@ router.get('/info', function (req, res) {
 });
 
 router.get('/post/list/:simpleName', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
 
     var blog_name = req.params.simpleName;
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -152,7 +152,7 @@ router.get('/post/list/:simpleName', function (req, res) {
 });
 
 router.get('/bot_bloglist', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -161,7 +161,7 @@ router.get('/bot_bloglist', function (req, res) {
 
     var providerId = req.query.providerid;
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, providerId, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, providerId, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -204,13 +204,34 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botBlogList);
+            var async = require('async');
+            var asyncTasks = [];
+
+            botBlogList.blogs.forEach(function (botBlog) {
+              asyncTasks.push(function (callback) {
+                  _getCategoryIds(botBlog.blog_id, provider.accessToken, request.getEx, function(err, category) {
+                      if (err) {
+                          log.error(err, meta);
+                          return callback(err);
+                      }
+                      callback(null, category);
+                  });
+              });
+            });
+
+            async.parallel(asyncTasks, function (err, result) {
+                botBlogList.blogs.forEach(function (botBlog, index) {
+                    botBlog.categories = result[index];
+                });
+                log.verbose(botBlogList, meta);
+                res.send(botBlogList);
+            });
         });
     });
 });
 
 router.get('/bot_post_count/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -219,7 +240,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 
     var target_url = req.params.blog_id;
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -272,7 +293,7 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -290,7 +311,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         page = offset.split("-")[0] / count + 1; //start from 1
     }
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
@@ -376,7 +397,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 });
 
 router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -386,7 +407,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
     var target_url = req.params.blog_id;
     var post_id = req.params.post_id;
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -451,7 +472,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 });
 
 router.post('/bot_posts/new/:blog_id', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -475,6 +496,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
 
     newPost.content = bC.convertBotPostToTextContent(botPost);
+    newPost.content = bC.convertNewLineToBreakTag(newPost.content);
 
     if (botPost.tags) {
         newPost.tag = botPost.tags.toString();
@@ -485,7 +507,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         categoryName =  botPost.categories[0];
     }
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -499,13 +521,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            //get category_id from name
+            //get categoryId from name
             if (categoryName) {
-                newPost.category_id = _getCategoryIdByName(category, categoryName);
+                newPost.category = _getCategoryIdByName(category, categoryName);
 
                 //tistory didn't open create category
-                if(!newPost.category_id) {
-                    delete newPost.category_id;
+                if(!newPost.category) {
+                    delete newPost.category;
                 }
             }
             newPost.output = "json";
@@ -541,7 +563,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 });
 
 router.get('/bot_comments/:blogID/:postID', function (req, res) {
-    var userId = userMgr._getUserId(req, res);
+    var userId = userMgr.getUserId(req, res);
     if (!userId) {
         return;
     }
@@ -551,7 +573,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
     var targetURL = req.params.blogID;
     var postID = req.params.postID;
 
-    userMgr._findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, TISTORY_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err);
             return res.status(500).send(err);
@@ -606,6 +628,7 @@ router.get('/bot_comments/:blogID/:postID', function (req, res) {
 function _getCategoryIds(target_api_url, accessToken, get, cb) {
     var api_url;
     var category;
+    var botCategories = [];
 
     api_url = TISTORY_API_URL + "/category/list?";
     api_url += "access_token=" + accessToken;
@@ -619,9 +642,13 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
             log.error(err);
             cb(err);
         }
-//        log.debug(body);
         try {
             category = JSON.parse(body).tistory.item.categories.category;
+            if (category) {
+                for (var i=0; i<category.length; i+=1) {
+                    botCategories.push({'id':category[i].id, 'name':category[i].name});
+                }
+            }
         }
         catch (e) {
             e.statusCode = 500;
@@ -631,8 +658,8 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
             cb(e);
         }
 
-//        log.debug(category);
-        cb(null, category);
+        log.debug(botCategories);
+        cb(null, botCategories);
     });
 }
 
@@ -682,7 +709,7 @@ function _getCategoryIdByName(category, categoryName) {
 
 /* It's only for test */
 //router.get('/bot_category/:blog_id', function(req, res) {
-//    var userId = _getUserId(req, res);
+//    var userId = getUserId(req, res);
 //    UserDb.findById(userId, function (err, user) {
 //        var target_url;
 //        var category;

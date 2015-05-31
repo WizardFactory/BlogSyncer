@@ -94,15 +94,17 @@ var BotFormat = {
      * @param {string} blog_id
      * @param {string} blog_title
      * @param {string} blog_url
+     * @param {Object[]} blog_url
      * @constructor
      */
-    BotBlog:  function(blog_id, blog_title, blog_url) {
+    BotBlog:  function(blog_id, blog_title, blog_url, categories) {
         if (!blog_id || !blog_title || !blog_url) {
             log.error('arguments are undefined');
         }
         this.blog_id = blog_id;
         this.blog_title = blog_title;
         this.blog_url = blog_url;
+        this.categories = categories;
     },
     /**
      *
@@ -204,7 +206,7 @@ var BotFormat = {
      *
      * @param id
      * @param audioUrl audio stream address
-     * @param audioSourceUrl audio public adress (can't play by audio tag)
+     * @param audioSourceUrl audio public address (can't play by audio tag)
      * @param embed
      * @param modified
      * @param postUrl

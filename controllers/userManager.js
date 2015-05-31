@@ -18,13 +18,12 @@ function UserMgr() {
  * @param req
  * @param provider
  * @param callback
- * @private
  */
-UserMgr._updateOrCreateUser = function (req, provider, callback) {
+UserMgr.updateOrCreateUser = function (req, provider, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_updateOrCreateUser";
+    meta.fName = "updateOrCreateUser";
     meta.providerName = provider.providerName;
     meta.providerId = provider.providerId;
 
@@ -32,7 +31,7 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
         function (err, user) {
             var p;
             var isNewProvider = false;
-            var reqUser, newUser;
+            var newUser;
 
             if (err) {
                 return callback(err);
@@ -137,14 +136,13 @@ UserMgr._updateOrCreateUser = function (req, provider, callback) {
  *
  * @param user
  * @param delUser
- * @returns {*}
- * @private
+ * @param callback
  */
-UserMgr._combineUser = function (user, delUser, callback) {
+UserMgr.combineUser = function (user, delUser, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_combineUser";
+    meta.fName = "combineUser";
 
     user.providers = user.providers.concat(delUser.providers);
     delUser.remove(function (err) {
@@ -167,15 +165,14 @@ UserMgr._combineUser = function (user, delUser, callback) {
  * @param req
  * @param res
  * @returns {*}
- * @private
  */
-UserMgr._getUserId = function (req, res) {
+UserMgr.getUserId = function (req, res) {
     var userId;
     var errorMsg;
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_getUserId";
+    meta.fName = "getUserId";
 
     if (req.user) {
         userId = req.user._id;
@@ -189,7 +186,6 @@ UserMgr._getUserId = function (req, res) {
         log.debug(errorMsg, meta);
         if (res) {
             res.send(errorMsg);
-            res.redirect("/#/signin");
         }
     }
     return userId;
@@ -199,15 +195,14 @@ UserMgr._getUserId = function (req, res) {
  *
  * @param userId
  * @param providerName
+ * @param providerId
  * @param callback
- * @returns {*}
- * @private
  */
-UserMgr._findProviderByUserId = function (userId, providerName, providerId, callback) {
+UserMgr.findProviderByUserId = function (userId, providerName, providerId, callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_findProviderByUserId";
+    meta.fName = "findProviderByUserId";
     meta.userId = userId;
     meta.providerName = providerName;
 
@@ -230,17 +225,13 @@ UserMgr._findProviderByUserId = function (userId, providerName, providerId, call
 
 /**
  *
- * @param userId
- * @param providerName
  * @param callback
- * @returns {*}
- * @private
  */
-UserMgr._findUsers = function (callback) {
+UserMgr.findUsers = function (callback) {
     var meta = {};
 
     meta.cName = "UserMgr";
-    meta.fName = "_findUsers";
+    meta.fName = "findUsers";
 
     UserDb.find({}, function(err, users) {
         if (err) {
@@ -283,8 +274,5 @@ UserMgr.updateAccessToken = function (user, provider, accessToken, refreshToken,
 
     return provider;
 };
-
-
-
 
 module.exports = UserMgr;
