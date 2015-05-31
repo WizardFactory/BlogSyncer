@@ -268,7 +268,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     var botPost = {};
                     if (rawPost.message) {
                         botPost = new botFormat.BotTextPost(rawPost.id, ' ', rawPost.updated_time, rawPost.link, '', [],
-                                    []);
+                                    bC.convertHashtagToTag(bC.getHashTags(rawPost.message)));
                         botPostList.posts.push(botPost);
                     }
                 }
@@ -331,7 +331,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 replies.push({"like":like_count});
 
                 var botPost = new botFormat.BotTextPost(rawPost.id, rawPost.message, rawPost.updated_time, rawPost.link,
-                            '', [], [], replies);
+                            '', [], bC.convertHashtagToTag(bC.getHashTags(rawPost.message)), replies);
                 botPostList.posts.push(botPost);
             }
             catch(e) {
@@ -360,6 +360,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var apiUrl = FACEBOOK_API_URL+"/"+blogId;
     var postType = botPost.type;
+
     if (postType === 'text') {
         if (bC.isHtml(botPost.content)) {
             convertLinkPost = true;
@@ -415,8 +416,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     }
 
     if (botPost.tags) {
-        //add hashTags
         log.silly(botPost.tags, meta);
+        fbPost.message += '\n'+ bC.convertTagToHashtag(botPost.tags).toString();
     }
 
     userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {

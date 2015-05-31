@@ -241,6 +241,8 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
             continue;
         }
 
+        botPost.tags.push(bC.convertHashtagToTag(bC.getHashTags(rawPost.content)));
+
         posts.push(botPost);
     }
 }
@@ -409,6 +411,15 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
 
         var linkPost = {};
+        linkPost.content = _makeContent(rcvPost);
+
+        var tagString = '';
+        if (!bC.getHashTags(linkPost.comment)) {
+
+            //have to add hashtags
+            tagString = rcvPost.tags.toString();
+        }
+        linkPost.content = bC.makeLimitString(2048, linkPost.content, tagString);
 
         try {
             linkPost.link_info = JSON.stringify(body);
