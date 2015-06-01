@@ -533,12 +533,12 @@ router.post('/bot_posts/updateToken', function (req, res) {
             log.error(err, meta);
             return res.status(500).send(err);
         }
-        _updateAccessToken(user, provider, function (err, data) {
+        _updateAccessToken(user, provider, function (err, newProvider) {
             if (err) {
                 log.error(err, meta);
                 return res.status(err.statusCode).send(err);
             }
-            res.send(data);
+            res.send(newProvider);
         });
     });
 });

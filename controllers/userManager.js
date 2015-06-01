@@ -243,6 +243,11 @@ UserMgr.findUsers = function (callback) {
     });
 };
 
+/**
+ *
+ * @param expires_in
+ * @returns {*}
+ */
 UserMgr.makeTokenExpireTime = function (expires_in) {
     var expireDate;
     if (expires_in) {
@@ -253,6 +258,15 @@ UserMgr.makeTokenExpireTime = function (expires_in) {
     return expireDate;
 };
 
+/**
+ *
+ * @param user
+ * @param provider
+ * @param accessToken
+ * @param refreshToken
+ * @param expires_in
+ * @returns {*}
+ */
 UserMgr.updateAccessToken = function (user, provider, accessToken, refreshToken, expires_in) {
     var meta = {};
     meta.cName = "UserMgr";

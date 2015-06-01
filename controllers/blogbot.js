@@ -277,6 +277,7 @@ BlogBot._updateProviderInfo = function (user, provider) {
                 continue;
             }
             this.users[i].user.providers[j] = provider;
+            return;
         }
     }
 };
@@ -301,7 +302,8 @@ BlogBot._updateAccessToken = function (user) {
             continue;
         }
 
-        log.debug("provider="+provider.providerName+" limitTime="+limitTime.toString(), meta);
+        log.silly("provider="+provider.providerName+" limitTime="+limitTime.toString()+"currentTime="+
+                    currentTime.toString(), meta);
 
         var url = "http://www.justwapps.com/"+provider.providerName + "/bot_posts/updateToken";
         url += "?";
@@ -314,7 +316,12 @@ BlogBot._updateAccessToken = function (user) {
             }
             log.debug(body, meta);
             //you can't direct update though provider
-            BlogBot._updateProviderInfo(user, JSON.parse(body));
+            var newProvider;
+            newProvider = JSON.parse(body);
+            newProvider.signUpTime = new Date(newProvider.signUpTime);
+            newProvider.tokenExpireTime = new Date(newProvider.tokenExpireTime);
+
+            BlogBot._updateProviderInfo(user, newProvider);
         });
     }
 };
