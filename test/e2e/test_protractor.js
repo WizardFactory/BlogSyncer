@@ -7,7 +7,7 @@
  describe('Test the login function on the all providers', function(){
  it('Twitter : allow BlogSync on the twitter to get messages', function(){
  getMainPage();
- getSubPageByName('signstat');
+
 
  var twitter = getProviderByRow(providers.twitter);
  twitter.click();
@@ -18,8 +18,6 @@
 
  // sometimes, it requires to click allow buttion.
  //browser.driver.findElement(by.id('allow')).click();
-
- getSubPageByCss(subPages.register);
 
  //browser.driver.findElement(by.id('allow')).click();
  //element(by.id('username_or_email')).sendKeys('pokers11@empal.com');
@@ -98,69 +96,36 @@
  });
  ****************************************************************/
 var request = require('request');
+var stringKo = require('../../public/views/strings/ko.json');
+var stringEn = require('../../public/views/strings/en.json');
 
 var providers = Object.freeze({
-    wordpress       : 0,
-    tiStory         : 1,
-    google          : 2,
-    facebook        : 3,
+    facebook        : 0,
+    google          : 1,
+    kakao           : 2,
+    tistory         : 3,
     tumbir          : 4,
     twitter         : 5,
-    kakao           : 6,
+    wordpress       : 6,
     maxProviderCount   : 7
 });
 
 var pageIndex = Object.freeze({
-    pageMain : 0,
-    pageRegister : 1,
-    pageArticles : 2,
-    pageHistory : 3,
-    pageAccount : 4,
-    pageNothing : 5
-});
-
-var cssSubPages = Object.freeze({
-    main : '[ng-click=' + '"menu =' + " 'home'" + '; isCollapsed = true"]',
-    register :'[ng-click=' + '"menu =' + " 'blogRegister'" + '"]',
-    myArticles : '[ng-click=' + '"menu =' + " 'blogCollectFeedback'" + '"]',
-    history : '[ng-click=' + '"menu =' + " 'blogHistorySync'" + '"]' ,
-    myAccount : '[ng-click=' + '"menu =' + " 'signin'" + '"]'
-});
-
-var nameSubPages = Object.freeze({
-    signin : 'signstat'
-});
-
-var nameBinding = Object.freeze({
-    title : 'title',
-    signin : 'signstat',
-    user : 'user',
-    userName : 'username',
-    message : 'message',
-    histories : 'histories',
-    posts : 'posts',
-    registerButton : 'button[2]'
-});
-
-var pageObjectString = Object.freeze({
-    myArticlesTitle : 'Collect Feedback'
-});
-
-var pageMain = Object.freeze({
-    title : 'Invisible automation service BlogSyncer',
-    mainString : '의 블로그 글들을 동기화 시킵니다.'
+    main : 0,
+    register : 1,
+    articles : 2,
+    history : 3,
+    account : 4,
+    nothing : 5
 });
 
 var pageRegister = Object.freeze({
-    title : 'Your blog groups',
     repeterSites : 'site in sites track by $index',
-    register : 'Register'
+    registerButton : 'button[2]'
 });
 
 var pageMyArticles = Object.freeze({
-    title : 'Collect Feedback',
-    repeaterArticles : 'post in posts',
-    postCount : 'posts.length'
+
 });
 
 var pageHistory = Object.freeze({
@@ -168,8 +133,6 @@ var pageHistory = Object.freeze({
 });
 
 var pageAccount = Object.freeze({
-    title : 'Your accounts',
-    signinTitle : 'Please sign in',
     repeaterProviders : 'provider in providers',
     repeaterUserProviders : 'provider in user.providers'
 });
@@ -177,7 +140,13 @@ var pageAccount = Object.freeze({
 var pageTwitterElementId = Object.freeze({
     user : 'username_or_email', // input box for username
     passwd : 'password',        // input box for password
-    allow : 'allow'            // button to allow blogsync to access twitter
+    approve : 'allow'            // button to allow blogsync to access twitter
+});
+
+var pageWordpressElementId = Object.freeze({
+    user : 'username',
+    passwd : 'password',
+    approve : 'approve'
 });
 
 var pageStatus = Object.freeze({
@@ -186,106 +155,141 @@ var pageStatus = Object.freeze({
     logout    : 2
 });
 
-var testString = Object.freeze({
-    twitter : 'TEST : twitter - ',
-});
-
 var userInfo;
 var blogCountOnRegistPage = 0;
 var blogList = [];
 var blogIdList = [];
 var registedCount = 0;
 var registedBlogs = [];
-var sentPosts;
 var postCount = 0;
+var stringCur;
 
 /***************************************
  * Global function
  ***************************************/
-function sendPostToTwitter(blogId)
+function setCurLang(seo)
+{
+    "use strict";
+    var lang = 'ko'; // temporary
+    switch(lang)
+    {
+        case 'ko':
+            stringCur = stringKo;
+            break;
+        case 'en':
+            stringCur = stringEn;
+            break;
+        default:
+            stringCur = stringKo;
+            break;
+    }
+}
+
+function sendPost(blogName, blogId)
 {
     "use strict";
     var url;
-
+    var stringBlogNameEn;
     var user = JSON.parse(userInfo);
 
-    console.log('id : ' + user._id);
+    //console.log('blogName : ' + blogName);
+    //console.log('id : ' + user._id);
+    switch(blogName) {
+        case stringCur.LOC_Wordpress:
+            stringBlogNameEn = 'wordpress';
+            break;
 
-    //url = 'http://www.justwapps.com/twitter/bot_posts/new/3158674261?userid=553a5e54b03e147e0609d0b9';
-    url = 'http://www.justwapps.com/twitter/bot_posts/new/';
+        case stringCur.LOC_tistory:
+            stringBlogNameEn = 'tistory';
+            break;
+
+        case stringCur.LOC_google:
+            stringBlogNameEn = 'google';
+            break;
+
+        case stringCur.LOC_facebook:
+            stringBlogNameEn = 'facebook';
+            break;
+
+        case stringCur.LOC_tumblr:
+            stringBlogNameEn = 'tumblr';
+            break;
+
+        case stringCur.LOC_twitter:
+            stringBlogNameEn = 'twitter';
+            break;
+
+        case stringCur.LOC_kakao:
+            stringBlogNameEn = 'kakao';
+            break;
+    }
+
+    //url = 'http://www.justwapps.com/{blogName}/bot_posts/new/{blogID}?userid={userId}';
+    url = 'http://www.justwapps.com/' + stringBlogNameEn + '/bot_posts/new/';
     url += blogId;
     url += '?userid=';
     url += user._id;
     var opt = {
         form : {
-            //title: 'manual posting test 0101',
-            //modified: '2015-04-26T15:07:00+09:00',
+            title: '',
+            modified: '',
             id: '3',
-            url: 'https://pokers11.wordpress.com/2015/04/26/test_wordpress-01/',
-            categories: ['미분류'],
-            tags: []
+            url: 'http://test.protractor.net',
+            categories: [],
+            tags: [],
+            type: 'text'
         }
     };
-    opt.form.title = new String(testString.twitter + '01');
-    opt.form.modified = new Date.now().toString();
 
-    //browser.driver.post()(url, opt, function (err, response, body) {
+    opt.form.modified = '';
+    opt.form.title = 'TEST MESSAGE';
+    opt.form.content = 'TEST CONTENT';
+
+    //opt.form.modified = Date().toString();
+    //opt.form.title = 'TEST[' + blogName + '] - ' + opt.form.modified;
+    //opt.form.content = 'Content : ' + opt.form.title;
+
+    console.log('URL : ' + url);
+    console.log('title : ' + opt.form.title);
+
     request.post(url, opt, function (err, response, body) {
         console.log('error : ' + err );
     });
-};
+}
 
 /***************************************
  * Main controller :
  ***************************************/
 var mainController = function() {
-    this.pageNow = pageIndex.pageNothing;
+    this.pageNow = pageIndex.nothing;
     this.params = browser.params;
-
-    this.setPageIndex = function(pageObject){
-        //console.log('set page : ' + pageObject);
-        switch(pageObject)
-        {
-            case cssSubPages.main:
-                this.pageNow = pageIndex.pageMain;
-                break;
-            case cssSubPages.register:
-                this.pageNow = pageIndex.pageRegister;
-                break;
-            case cssSubPages.myArticles:
-                this.pageNow = pageIndex.pageArticles;
-                break;
-            case cssSubPages.history:
-                this.pageNow = pageIndex.pageHistory;
-                break;
-            case cssSubPages.myAccount:
-            case nameSubPages.signin:
-                this.pageNow = pageIndex.pageAccount;
-                break;
-        }
-    };
 
     this.getMainPage = function(){
         browser.get(this.params.url.main);
-        this.setPageIndex(cssSubPages.main);
+        this.pageNow = pageIndex.main;
     };
-    this.getSubPageByName = function (pageName){
-        console.log('subpage name : ' + pageName);
 
-        element(by.binding(pageName)).click();
-        this.setPageIndex(pageName);
-    };
     this.getSubPageNonAngular = function(url){
         return browser.driver.get(this.params.url.main + url);
     };
 
-    this.getSubPageByCss = function(pageCss){
-        element(by.css(pageCss)).click();
-        this.setPageIndex(pageCss);
-    };
+    this.getSubPage = function(index){
 
-    this.getElementByBinding = function(bindName){
-        return element(by.binding(bindName));
+        switch(index)
+        {
+            case pageIndex.main:
+                element(by.css('.navbar-header')).element(by.css('.navbar-brand')).click();
+                break;
+            case pageIndex.register:
+            case pageIndex.articles:
+            case pageIndex.history:
+            case pageIndex.account:
+                console.log('index : ' + index);
+                //element.all(by.css('.nav li')).get(index-1).click();
+                element(by.css('.collapse')).$$('li').get(index-1).click();
+                break;
+        }
+        this.pageNow = index;
     };
 
     this.getElementsByRepeater = function(repeaterName){
@@ -317,8 +321,8 @@ var mainController = function() {
         this.getSubPageNonAngular('user').then(function(){
             browser.driver.findElement(by.tagName('pre')).then(function(ele){
                 ele.getText().then(function(string){
-                    console.log('user Info : ' + string);
-                    userInfo = new String(string);
+                    userInfo = string;
+                    console.log('user Info : ' + userInfo);
                 });
             });
         });
@@ -334,25 +338,27 @@ var testObject = function() {
     this.params = browser.params;
 
     this.testConnectMainpage = function(){
-        console.log('test connect to main page');
+        setCurLang();
+
+        console.log('Title : ' + stringCur.LOC_TITLE);
         this.mainCtrl.getMainPage();
-        expect(this.mainCtrl.getMainTitle()).toEqual(pageMain.title);
+        expect(this.mainCtrl.getMainTitle()).toEqual(stringCur.LOC_TITLE);
     };
 
     this.testClickSignin = function(){
         console.log('current page : ' + this.mainCtrl.pageNow);
-        if(this.mainCtrl.pageNow === pageIndex.pageNothing) {
+        if(this.mainCtrl.pageNow === pageIndex.nothing) {
             this.mainCtrl.getMainPage();
         }
 
-        this.mainCtrl.getSubPageByName(nameSubPages.signin);
+        this.mainCtrl.getSubPage(pageIndex.account);
         if(this.status === pageStatus.login)
         {
-            expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageAccount.title);
+            expect(element(by.css('.content-title')).element(by.css('.page-header')).getText()).toEqual(stringCur.LOC_ACCOUNT_LIST);
         }
         else
         {
-            expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageAccount.signinTitle);
+            expect(element(by.css('.content-title')).element(by.css('.page-header')).getText()).toEqual(stringCur.LOC_LOGIN_TITLE);
             this.status = pageStatus.login;
         }
     };
@@ -360,7 +366,7 @@ var testObject = function() {
     this.testCheckProviders = function(){
         console.log('expected count : ' + providers.maxProviderCount);
 
-        if(this.mainCtrl.pageNow !== pageIndex.pageAccount) {
+        if(this.mainCtrl.pageNow !== pageIndex.account) {
             this.testClickSignin();
         }
 
@@ -375,12 +381,19 @@ var testObject = function() {
         //this.mainCtrl.findElementById(by.id('allow')).click();
     };
 
-    this.testTwitterNickname = function(){
-        expect(this.mainCtrl.getElementByBinding(nameBinding.userName).getText()).toEqual(this.params.twitter.nickname + pageMain.mainString);
+    this.WordpressLogin = function(){
+        this.mainCtrl.findElementById(pageWordpressElementId.user).sendKeys(this.params.wordpress.user);
+        this.mainCtrl.findElementById(pageWordpressElementId.passwd).sendKeys(this.params.wordpress.passwd, protractor.Key.ENTER);
+
+        this.mainCtrl.findElementById(pageWordpressElementId.approve).click();
+    };
+
+    this.testHomeTitle = function() {
+        expect(element(by.css('.text-center')).element(by.css('.lead')).getText()).toEqual(stringCur.LOC_HOME_MESSAGE);
     };
 
     this.testLoginProvider = function(providerIndex){
-        if(this.mainCtrl.pageNow !== pageIndex.pageAccount) {
+        if(this.mainCtrl.pageNow !== pageIndex.account) {
             this.testClickSignin();
         }
         this.mainCtrl.getProviderByRow(providerIndex).click();
@@ -388,40 +401,54 @@ var testObject = function() {
             case providers.twitter:
                 this.TwitterLogin();
                 break;
+
+            case providers.wordpress:
+                this.WordpressLogin();
+                break;
+
             default:
                 console.log('not yet : ' + providerIndex);
                 break;
         }
     };
 
-    this.testUserProvider = function(){
-        expect(this.mainCtrl.getUserProviderByRow(0).getText()).toEqual('  twitter : ' + this.params.twitter.nickname);
+    this.testBlogLogedIn = function(blogName){
+        var stringBlog;
+        switch(blogName)
+        {
+            case 'twitter':
+                stringBlog = stringCur.LOC_twitter;
+                break;
+            case 'wordpress':
+                stringBlog = stringCur.LOC_Wordpress;
+                break;
+            default:
+                stringBlog ='none';
+                break;
+        }
+        expect(this.mainCtrl.getUserProviderByRow(0).getText()).toEqual('  ' + stringBlog + ' : ' +this.params.twitter.nickname);
     };
 
     this.testNicknameOnMain = function(){
-        this.mainCtrl.getSubPageByCss(cssSubPages.main);
-        this.testTwitterNickname();
+        this.mainCtrl.getSubPage(pageIndex.main);
+        this.testHomeTitle();
     };
 
     this.testUserGroups = function(){
-        this.mainCtrl.getSubPageByCss(cssSubPages.register);
-        expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageRegister.title);
+        this.mainCtrl.getSubPage(pageIndex.register);
+        expect(element(by.css('.page-header')).getText()).toEqual(stringCur.LOC_BLOG_GROUPS);
     };
 
     this.testCountOfArticles = function(count){
-        this.mainCtrl.getSubPageByCss(cssSubPages.myArticles);
+        this.mainCtrl.getSubPage(pageIndex.articles);
 
-        // Using the 'getElementByBinding' occurs WARNING when you execute this test. Because there are many binding name as 'title'.
-        expect(this.mainCtrl.getElementByBinding(nameBinding.title).getText()).toEqual(pageMyArticles.title);
-        //expect(element.all(by.binding(nameBinding.title)).get(0).getText()).toEqual(pageMyArticles.title);
-
-        expect(this.mainCtrl.getElementByBinding(nameBinding.posts).getText()).toEqual(nameBinding.posts + ' : ' + count);
+        expect(element(by.css('.content-title')).element(by.css('.page-header')).getText()).toEqual(stringCur.LOC_COLLECT_FEEDBACK);
+        expect(element(by.css('.lead')).getText()).toEqual(stringCur.LOC_POST_COUNT + ' : ' + count);
     };
 
     this.testGetCountOfArticles = function(){
-        this.mainCtrl.getSubPageByCss(cssSubPages.myArticles);
+        this.mainCtrl.getSubPage(pageIndex.articles);
 
-        //this.mainCtrl.getElementByBinding(pageRegister.postCount).getText().then(function(string){
         element(by.css('.lead')).getText().then(function(string){
             var stringArray = string.split(':');
             postCount = new Number(stringArray[1].trim());
@@ -430,23 +457,9 @@ var testObject = function() {
         });
     };
 
-    this.testMyArticle = function(index){
-        this.mainCtrl.getSubPageByCss(cssSubPages.myArticles);
-        var articles = this.mainCtrl.getElementsByRepeater(pageMyArticles.repeaterArticles).get(index);
-
-        expect(articles.getText()).toEqual('추천토렌트 사이트 http://t.co/ic68zXUakt 에 가입');
-    };
-
     this.testGetUserInfo = function(){
         this.mainCtrl.getUserInfo();
-    };
-
-    this.testOpenBlogs = function () {
         this.mainCtrl.getMainPage();
-        this.mainCtrl.getSubPageByCss(cssSubPages.register);
-        var button = this.mainCtrl.getElementByBinding(nameBinding.registerButton);
-        expect(button.getText()).toEqual(pageRegister.register);
-        //button.click(); // click 'create' button
     };
 
     this.testGetBlogCount = function (blogs) {
@@ -456,7 +469,7 @@ var testObject = function() {
         });
     };
 
-    this.testRegistBlogs = function(toBeRegisted){
+    this.testSetRegistBlogs = function(toBeRegisted){
         var blogs = this.mainCtrl.getElementsByRepeater(pageRegister.repeterSites);
 
         blogs.count().then(function(count){
@@ -467,72 +480,73 @@ var testObject = function() {
                 console.log('What\'s wrong???');
                 return;
             }
-            registedBlogs = new Array();
-            blogList = new Array();
-            blogIdList = new Array();
+            registedBlogs = [];
+            blogList = [];
+            blogIdList = [];
             registedCount = 0;
 
             console.log('list count : ' + toBeRegisted.length);
             console.log('blog count : ' + count);
             for(var idx = 0 ; idx < count ; idx++)
             {
-                blogs.get(idx).getText().then(function(string){
-                    (function(str){
-                        //console.log('To find blog name : ' + str);
-                        blogList.push(str);
-                        for(var i = 0 ; i<toBeRegisted.length; i++)
-                        {
-                            //console.log('org : ' + toBeRegisted[i]);
-                            if(str.indexOf(toBeRegisted[i]) !== -1)
-                            {
-                                console.log('regist blog :' + str);
-                                registedCount++;
-                                registedBlogs.push(str);
+                (function(idx) {
+                    blogs.get(idx).getText().then(function (string) {
+                        (function (str, index, ele) {
+                            //console.log('To find blog name : ' + str);
+                            blogList.push(str);
+                            for (var i = 0; i < toBeRegisted.length; i++) {
+                                console.log('org : ' + toBeRegisted[i]);
+                                if (str.indexOf(toBeRegisted[i]) !== -1) {
+                                    console.log('regist blog[' + index + ']:' + str);
+                                    registedCount++;
+                                    registedBlogs.push(str);
+                                    ele.click();
+                                }
                             }
-                        }
-                    })(string);
-                });
+                        })(string, idx, blogs.get(idx));
+                    });
 
-                var ele = element.all(by.css('.icon-blog'));
-
-                ele.getAttribute('id').then(function(idString){
-                    (function(id){
-                        console.log('id : '+ id);
-                        blogIdList.push(id);
-                    })(idString);
-                });
+                    blogs.get(idx).element(by.css('.icon-blog')).getAttribute('id').then(function(idString){
+                        (function(id){
+                            console.log('--> id : ' + id);
+                            blogIdList.push(id);
+                        })(idString);
+                    });
+                })(idx);
             }
         });
     };
 
-    this.testGetBlogList = function (blogs, count) {
-        var idx = 0;
+    this.testSetRegist = function() {
+        if (registedCount > 1) {
+            this.mainCtrl.getSubPage(pageIndex.register);
 
-        blogList = new Array();
-        for(idx=0 ; idx < count ; idx++){
-            console.log('index : ' + idx);
-            blogs.get(idx).getText().then(function (string) {
-                console.log('blog list : ' + string);
-                blogList.push(string);
-            });
+            var btnElement = element(by.binding(pageRegister.registerButton));
+            expect(btnElement.getText()).toEqual(stringCur.LOC_REGISTER);
+            btnElement.click();
+
         }
     };
 
     this.testSendPost =  function(blogName){
         var blogId;
-        var idx = 0;
         //console.log('registed list count : ' + registedBlogs.length);
 
-        for(idx = 0 ; idx < registedBlogs.length ; idx++)
+        for(var idx = 0 ; idx < registedBlogs.length ; idx++)
         {
             if(registedBlogs[idx].indexOf(blogName) !== -1)
             {
-                blogId = new String(blogIdList[idx]);
+                blogId = blogIdList[idx];
                 console.log('found blog ID : ' + blogId);
                 break;
             }
         }
-        //sendPostToTwitter(blogId);
+
+        if(idx < registedBlogs.length)
+        {
+            sendPost(blogName, blogId);
+        }
+
     }
 };
 
@@ -554,21 +568,29 @@ describe('Test web page on the BlogSync : ', function(){
             testObj.testCheckProviders();
         });
 
-        it('login Twitter', function () {
-            testObj.testLoginProvider(providers.twitter);
+        describe('Check login with Twitter', function() {
+            it('login Twitter', function () {
+                testObj.testLoginProvider(providers.twitter);
+            });
+
+            it('check Nickname', function () {
+                testObj.testHomeTitle();
+            });
+
+            it('check login status', function () {
+                testObj.testClickSignin();
+                testObj.testBlogLogedIn('twitter');
+            });
+
+            it('check main page again', function () {
+                testObj.testNicknameOnMain();
+            });
         });
 
-        it('check Nickname', function () {
-            testObj.testTwitterNickname();
-        });
-
-        it('check login status', function () {
-            testObj.testClickSignin();
-            testObj.testUserProvider();
-        });
-
-        it('check main page again', function () {
-            testObj.testNicknameOnMain();
+        describe('Check login with Wordpress', function(){
+            it('login Wordpress', function(){
+                testObj.testLoginProvider(providers.wordpress);
+            });
         });
 
         it('check register page', function () {
@@ -588,36 +610,34 @@ describe('Test web page on the BlogSync : ', function(){
         });
 
         describe('Check registing and get info on the regist page', function () {
-            it('Show blog list on register page', function () {
-                testObj.testOpenBlogs();
+            it('set blogs to be registed', function(){
+                testObj.testUserGroups();
+                var toBeRegisted = [];
+                toBeRegisted.push(stringCur.LOC_twitter);
+                toBeRegisted.push(stringCur.LOC_Wordpress);
+                testObj.testSetRegistBlogs(toBeRegisted);
             });
-
-            //it('Get Blog count', function () {
-            //    testObj.testGetBlogCount(blogs);
-            //});
-
-            //it('Get blog list', function(){
-            //    testObj.testGetBlogList(blogs, blogCountOnRegistPage);
-            //});
 
             it('regist blogs', function(){
-                var toBeRegisted = new Array();
-                toBeRegisted.push('twitter');
-                testObj.testRegistBlogs(toBeRegisted);
+                testObj.testSetRegist();
             });
         });
 
-        it('post simple article', function(){
-            testObj.testSendPost('twitter');
+        it('post simple article to twitter', function(){
+            testObj.testSendPost(stringCur.LOC_twitter);
         });
 
-        it('check count of my articles', function () {
-            testObj.testCountOfArticles(1);
+        it('post simple article to wordpress', function(){
+            testObj.testSendPost(stringCur.LOC_Wordpress);
         });
+
+        //it('check count of my articles', function () {
+        //    testObj.testCountOfArticles(1);
+        //});
     });
 
-    it('pause', function(){
-        browser.pause();
-    })
+    //it('pause', function(){
+    //    browser.pause();
+    //})
 
 });
