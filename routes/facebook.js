@@ -360,6 +360,14 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var apiUrl = FACEBOOK_API_URL+"/"+blogId;
     var postType = botPost.type;
+
+    if (botPost.content)  {
+        botPost.content = bC.removeHtmlTags(botPost.content);
+    }
+    if (botPost.description)  {
+        botPost.description = bC.removeHtmlTags(botPost.description);
+    }
+
     if (postType === 'text') {
         if (bC.isHtml(botPost.content)) {
             convertLinkPost = true;
@@ -419,7 +427,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
         log.silly(botPost.tags, meta);
     }
 
-    userMgr._findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
+    userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
