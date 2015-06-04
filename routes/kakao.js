@@ -399,7 +399,13 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
     var linkInfoUrl;
     linkInfoUrl = KAKAO_API_URL + "/v1/api/story/linkinfo";
     linkInfoUrl += "?";
-    linkInfoUrl += "url=" + rcvPost.url;
+    if (rcvPost.type === 'link') {
+        linkInfoUrl += "url=" + rcvPost.contentUrl;
+    }
+    else {
+        linkInfoUrl += "url=" + rcvPost.url;
+    }
+
     log.debug(linkInfoUrl, meta);
 
     _requestGet(linkInfoUrl, accessToken, function (err, response, body) {
@@ -409,6 +415,9 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
 
         var linkPost = {};
+        if (rcvPost.type === 'link') {
+            linkPost.content = bC.removeHtmlTags(rcvPost.description);
+        }
 
         try {
             linkPost.link_info = JSON.stringify(body);

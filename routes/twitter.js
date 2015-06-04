@@ -427,23 +427,23 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 var postUrl = 'https://twitter.com';
                 postUrl += '/' + blog_id + '/status';
 
-                var botPost = {};
+                var rcvBotPost = {};
                 var raw_post = JSON.parse(body);
 
                 try {
                     postUrl += '/' + raw_post.id_str;
 
-                    botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                    rcvBotPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
                         '', [], _convertBotTags(raw_post.entities.hashtags));
                 }
                 catch (e) {
                     log.error(e, meta);
-                    log.error(body, meta);
+                    log.error(newPost, meta);
                     res.status(500).send(e);
                     return;
                 }
 
-                botPostList.posts.push(botPost);
+                botPostList.posts.push(rcvBotPost);
                 log.debug(botPostList, meta);
                 res.send(botPostList);
             });
