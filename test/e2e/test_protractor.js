@@ -96,6 +96,7 @@
  });
  ****************************************************************/
 var request = require('request');
+var req = require('../../controllers/requestEx.js');
 var stringKo = require('../../public/views/strings/ko.json');
 var stringEn = require('../../public/views/strings/en.json');
 
@@ -156,6 +157,7 @@ var pageStatus = Object.freeze({
 });
 
 var userInfo;
+var postInfo = '';
 var blogCountOnRegistPage = 0;
 var blogList = [];
 var blogIdList = [];
@@ -163,6 +165,7 @@ var registedCount = 0;
 var registedBlogs = [];
 var postCount = 0;
 var stringCur;
+var sentBlogs = [];
 
 /***************************************
  * Global function
@@ -185,6 +188,42 @@ function setCurLang(seo)
     }
 }
 
+function getBlogString(blogName)
+{
+    var stringBlog;
+    switch(blogName) {
+        case stringCur.LOC_Wordpress:
+            stringBlog = 'wordpress';
+            break;
+
+        case stringCur.LOC_tistory:
+            stringBlog = 'tistory';
+            break;
+
+        case stringCur.LOC_google:
+            stringBlog = 'google';
+            break;
+
+        case stringCur.LOC_facebook:
+            stringBlog = 'facebook';
+            break;
+
+        case stringCur.LOC_tumblr:
+            stringBlog = 'tumblr';
+            break;
+
+        case stringCur.LOC_twitter:
+            stringBlog = 'twitter';
+            break;
+
+        case stringCur.LOC_kakao:
+            stringBlog = 'kakao';
+            break;
+    }
+
+    return stringBlog;
+}
+
 function sendPost(blogName, blogId)
 {
     "use strict";
@@ -194,35 +233,7 @@ function sendPost(blogName, blogId)
 
     //console.log('blogName : ' + blogName);
     //console.log('id : ' + user._id);
-    switch(blogName) {
-        case stringCur.LOC_Wordpress:
-            stringBlogNameEn = 'wordpress';
-            break;
-
-        case stringCur.LOC_tistory:
-            stringBlogNameEn = 'tistory';
-            break;
-
-        case stringCur.LOC_google:
-            stringBlogNameEn = 'google';
-            break;
-
-        case stringCur.LOC_facebook:
-            stringBlogNameEn = 'facebook';
-            break;
-
-        case stringCur.LOC_tumblr:
-            stringBlogNameEn = 'tumblr';
-            break;
-
-        case stringCur.LOC_twitter:
-            stringBlogNameEn = 'twitter';
-            break;
-
-        case stringCur.LOC_kakao:
-            stringBlogNameEn = 'kakao';
-            break;
-    }
+    stringBlogNameEn = getBlogString(blogName);
 
     //url = 'http://www.justwapps.com/{blogName}/bot_posts/new/{blogID}?userid={userId}';
     url = 'http://www.justwapps.com/' + stringBlogNameEn + '/bot_posts/new/';
@@ -234,27 +245,74 @@ function sendPost(blogName, blogId)
             title: '',
             modified: '',
             id: '3',
-            url: 'http://test.protractor.net',
+            url: '',
             categories: [],
             tags: [],
             type: 'text'
         }
     };
 
-    opt.form.modified = '';
-    opt.form.title = 'TEST MESSAGE';
-    opt.form.content = 'TEST CONTENT';
+    //opt.form.modified = '';
+    //opt.form.title = 'TEST MESSAGE';
+    //opt.form.content = 'TEST CONTENT';
 
-    //opt.form.modified = Date().toString();
-    //opt.form.title = 'TEST[' + blogName + '] - ' + opt.form.modified;
-    //opt.form.content = 'Content : ' + opt.form.title;
+    opt.form.modified = new Date().toISOString();
+    opt.form.title = 'TEST[' + stringBlogNameEn + '] - ' + opt.form.modified;
+    //opt.form.title = opt.form.modified;
+    opt.form.content = stringBlogNameEn +' - Content Date : ' + opt.form.modified;
+    //opt.form.content = opt.form.modified;
 
     console.log('URL : ' + url);
     console.log('title : ' + opt.form.title);
 
     request.post(url, opt, function (err, response, body) {
-        console.log('error : ' + err );
+        if(err)
+        {
+            console.log('error : ' + err );
+        }
     });
+
+    var sentInfo = {
+        name : blogName,
+        form : opt.form
+    };
+
+    sentBlogs.push(sentInfo);
+}
+
+function MakeUrlToGetPost(blogName, blogId, options)
+{
+    var url;
+    var user = JSON.parse(userInfo);
+    var stringBlogNameEn = getBlogString(blogName);
+
+    url = stringBlogNameEn + '/bot_posts/';
+    url += blogId;
+
+
+    if (options.post_id) {
+        url += "/" + options.post_id;
+    }
+
+    url += "?";
+
+    if (options.after) {
+        url += "after=" + options.after;
+        url += "&";
+    }
+    if (options.offset) {
+        url += "offset="+options.offset;
+        url += "&";
+    }
+    if (options.nextPageToken) {
+        url += "nextPageToken="+options.nextPageToken;
+        url += "&";
+    }
+
+    url += 'userid=' + user._id;
+    console.log('## Get post Info URL = ' + url);
+
+    return url;
 }
 
 /***************************************
@@ -323,6 +381,17 @@ var mainController = function() {
                 ele.getText().then(function(string){
                     userInfo = string;
                     console.log('user Info : ' + userInfo);
+                });
+            });
+        });
+    };
+
+    this.getPostInfo = function(url){
+        this.getSubPageNonAngular(url).then(function(){
+            browser.driver.findElement(by.tagName('pre')).then(function(ele){
+                ele.getText().then(function(string){
+                    postInfo = string;
+                    console.log('post Info : ' + postInfo);
                 });
             });
         });
@@ -547,12 +616,43 @@ var testObject = function() {
             sendPost(blogName, blogId);
         }
 
-    }
+    };
+
+    this.testCheckNewPost = function(blogName){
+        var blogId;
+
+        for(var idx = 0 ; idx < registedBlogs.length ; idx++)
+        {
+            if(registedBlogs[idx].indexOf(blogName) !== -1)
+            {
+                blogId = blogIdList[idx];
+                console.log('check new post : blogId = ' + blogId);
+                break;
+            }
+        }
+
+        for(var i = 0 ; i < sentBlogs.length ; i++)
+        {
+            if(sentBlogs[i].name === blogName)
+            {
+                console.log('check new post : blog name = ' + sentBlogs[i].name);
+                break;
+            }
+        }
+
+        if(i < sentBlogs.length)
+        {
+            var url = MakeUrlToGetPost(blogName, blogId, {"after": sentBlogs[i].form.modified});
+            this.mainCtrl.getPostInfo(url);
+        }
+    };
 };
 
 describe('Test web page on the BlogSync : ', function(){
 
+    var ptor;
     beforeEach(function (){
+        //ptor = protractor.getInstance();
         //browser.get('http://www.justwapps.com/');
     });
 
@@ -631,6 +731,31 @@ describe('Test web page on the BlogSync : ', function(){
             testObj.testSendPost(stringCur.LOC_Wordpress);
         });
 
+        it('check twitter post Info', function(){
+            browser.wait(function(){
+                testObj.testCheckNewPost(stringCur.LOC_twitter);
+
+                if(postInfo.match('Content Date :'))
+                {
+                    console.log('Found post !!!');
+                    postInfo = '';
+                    return true;
+                }
+            }, 6* 10*1000);
+        });
+
+        it('get wordpress post Info', function(){
+            browser.wait(function(){
+                testObj.testCheckNewPost(stringCur.LOC_Wordpress);
+
+                if(postInfo.match('Content Date :'))
+                {
+                    console.log('Found post !!!');
+                    postInfo = '';
+                    return true;
+                }
+            }, 6* 10*1000);
+        });
         //it('check count of my articles', function () {
         //    testObj.testCountOfArticles(1);
         //});
