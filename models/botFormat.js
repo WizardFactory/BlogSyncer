@@ -94,7 +94,7 @@ var BotFormat = {
      * @param {string} blog_id
      * @param {string} blog_title
      * @param {string} blog_url
-     * @param {Object[]} blog_url
+     * @param {Object[]} categories
      * @constructor
      */
     BotBlog:  function(blog_id, blog_title, blog_url, categories) {
@@ -178,6 +178,8 @@ var BotFormat = {
         this.contentUrl = contentUrl;
         this.title = title;
         this.description = description;
+        //it's botTeaser
+        this.teaser;
     },
     /**
      *
@@ -289,6 +291,24 @@ var BotFormat = {
         this.blogID = blogId;
         this.postID = postId;
         this.comments = [];
+    },
+    /**
+     *
+     * @param url
+     * @param host
+     * @param description
+     * @param [title]
+     * @param [image]
+     * @param [keywords]
+     * @constructor
+     */
+    BotTeaser: function (url, host, description, title, image, keywords) {
+        this.url = url;
+        this.host = host;
+        this.description = description;
+        this.title = title;
+        this.image = image;
+        this.keywords = keywords;
     }
 };
 
