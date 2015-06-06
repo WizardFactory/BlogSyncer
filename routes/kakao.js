@@ -333,7 +333,21 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            return res.send(botPostList);
+            if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'link') {
+                blogBot.getTeaser(botPostList.posts[0].contentUrl, function (err, botTeaser) {
+                    if (err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].teaser = botTeaser;
+                    }
+
+                    res.send(botPostList);
+                });
+            }
+            else {
+                res.send(botPostList);
+            }
         });
     });
 });
@@ -383,6 +397,13 @@ function _convertToURL(postId) {
 //    return callback(undefined, photoPost);
 //}
 
+/**
+ *
+ * @param [accessToken]
+ * @param rcvPost
+ * @param callback
+ * @private
+ */
 function _makeNotePost(accessToken, rcvPost, callback) {
     var notePost = {};
     bC.convertPostToPlainContent(rcvPost, KAKAO_CONTENT_MAX_LENGTH, bC.convertShortenUrl, function (content) {

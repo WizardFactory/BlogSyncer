@@ -70,9 +70,8 @@ var testData = {
         replies: [{'notes': 3}]
     },
 
-    convertTextResultOfLink : '<a href="' + 'https://docs.angularjs.org/tutorial/step_02' + '">' + 'https://docs.angularjs.org/tutorial/step_02' +'</a><p>' +
-           '<p class="ng-scope">In Angular, the<strong>view</strong>is a projection of the model through the HTML<strong>template </strong>. This means that whenever the model changes, Angu…</p>'+'</p>',
-    convertPlainTextOfLink : 'https://docs.angularjs.org/tutorial/step_02In Angular, theviewis a projection of the model through the HTMLtemplate . This means that whenever the model changes, Angu…',
+    convertTextResultOfLink : '<div><p><p class=\"ng-scope\">In Angular, the<strong>view</strong>is a projection of the model through the HTML<strong>template </strong>. This means that whenever the model changes, Angu…</p></p></div><div><a href=\"https://docs.angularjs.org/tutorial/step_02\">https://docs.angularjs.org/tutorial/step_02</a></div>',
+    convertPlainTextOfLink : 'In Angular, theviewis a projection of the model through the HTMLtemplate . This means that whenever the model changes, Angu…https://docs.angularjs.org/tutorial/step_02',
 
     testPhotoPost1: {
         id: '32332',
@@ -193,7 +192,10 @@ var testData = {
     },
     testShortenUrl: 'http://is.gd/N5CgDW',
     testNewLineString: 'kakao story line change test 20:40\nl\ni\nn\ne\n(Sticker) \n(Sticker) \n',
-    testBreakString: 'kakao story line change test 20:40<br>l<br>i<br>n<br>e<br>(Sticker) <br>(Sticker) <br>'
+    testBreakString: 'kakao story line change test 20:40<br>l<br>i<br>n<br>e<br>(Sticker) <br>(Sticker) <br>',
+    testTeaserUrl: 'http://www.slideshare.net/paparanga/ndc-2014-paytoskip',
+    testTeaserDescription: '[NDC 2015 강연] 최근 인공지능(AI) 기술은 급격히 발전하고 있으며,  인간의 고유영역으로 생각됐던 분야들마저 더 효율좋은 기계가 점점 대체하고 있습니다.  머지 않은 미래에 로봇으로 인한 인간의 일자리 감소와, 자본주의 시스템의 부의 편중 문제는 훨씬 심각해질 것입니다. 한…',
+    testTeaserContent: '<div><p><p class="ng-scope">In Angular, the<strong>view</strong>is a projection of the model through the HTML<strong>template </strong>. This means that whenever the model changes, Angu…</p></p></div><div><div><a target="_blank" href="http://www.slideshare.net/paparanga/ndc-2014-paytoskip"><img src="http://cdn.slidesharecdn.com/ss_thumbnails/ndc15-pay-to-skip-150520073529-lva1-app6892-thumbnail-4.jpg?cb=1432111145" controls style="max-width: 100%;"></img><span></span></a></div><div><a target="_blank" href="http://www.slideshare.net/paparanga/ndc-2014-paytoskip"><h2>NDC 2015 이은석 - pay-to-skip: 온라인 게임 속 로봇 경제와 내몰리는 인간</h2><span>[NDC 2015 강연] 최근 인공지능(AI) 기술은 급격히 발전하고 있으며,  인간의 고유영역으로 생각됐던 분야들마저 더 효율좋은 기계가 점점 대체하고 있습니다.  머지 않은 미래에 로봇으로 인한 인간의 일자리 감소와, 자본주의 시스템의 부의 편중 문제는 훨씬 심각해질 것입니다. 한…</span></a><h3><a target="_blank" href="http://www.slideshare.net">www.slideshare.net</a></h3></div>',
 };
 
 module.exports = testData;

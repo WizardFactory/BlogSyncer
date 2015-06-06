@@ -17,7 +17,6 @@ var blogConvert = {
      * @param {string} type
      * @param {string} url
      * @returns {string}
-     * @private
      */
     wrapMediaTag: function (type, url) {
         var str = "";
@@ -45,10 +44,48 @@ var blogConvert = {
             return;
         }
         var content = '';
-        content += '<a href="' + botLinkPost.contentUrl + '">';
-        content += botLinkPost.contentUrl;
-        content += '</a>';
-        content += '<p>' + botLinkPost.description + '</p>';
+        content += '<div><p>' + botLinkPost.description + '</p></div>';
+        if (botLinkPost.teaser) {
+            var botTeaser = botLinkPost.teaser;
+
+            content += '<div>';
+
+            if (botTeaser.image) {
+                content += '<div><a target="_blank" href="';
+                content += botTeaser.url;
+                content += '"><img src="';
+                content += botTeaser.image;
+                content += '" controls style="max-width: 100%;"></img><span></span></a></div>';
+            }
+            content += '<div><a target="_blank" href="';
+            content += botTeaser.url;
+            content += '">';
+
+            if (botTeaser.title)  {
+                content += '<h2>';
+                content += botTeaser.title;
+                content += '</h2>';
+            }
+            if (botTeaser.description)  {
+                content += '<span>';
+                content += botTeaser.description;
+                content += '</span>';
+            }
+            content += '</a>';
+            if (botTeaser.host)  {
+                content += '<h3><a target="_blank" href="http://';
+                content += botTeaser.host;
+                content += '">';
+                content += botTeaser.host;
+                content += '</a></h3>';
+            }
+            content += '</div>';
+        }
+        else {
+            content += '<div><a href="' + botLinkPost.contentUrl + '">';
+            content += botLinkPost.contentUrl;
+            content += '</a></div>';
+        }
 
         return new botFormat.BotTextPost(botLinkPost.id, content, botLinkPost.modified, botLinkPost.url,
                     botLinkPost.title, botLinkPost.categories, botLinkPost.tags, botLinkPost.replies);

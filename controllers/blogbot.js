@@ -12,6 +12,7 @@ var SiteDb = require('../models/blogdb');
 var GroupDb = require('../models/groupdb');
 var HistoryDb = require('../models/historydb');
 var PostDb = require('../models/postdb');
+var bF = require('../models/botFormat');
 
 /**
  *
@@ -1484,6 +1485,28 @@ BlogBot.getRepliesByInfo = function (user, providerName, blogID, postID, callbac
             //log.debug(sendData, meta);
             return callback(null, sendData);
         });
+};
+
+/**
+ *
+ * @param url
+ * @param callback
+ */
+BlogBot.getTeaser = function (url, callback) {
+    var MetaInspector = require('minimal-metainspector');
+    var client = new MetaInspector(url, {});
+
+    client.on("fetch", function(){
+        var botPreview = new bF.BotTeaser(client.url, client.host, client.description, client.title, client.image,
+                    client.keywords);
+        callback(undefined, botPreview);
+    });
+
+    client.on("error", function(err){
+        callback(err);
+    });
+
+    client.fetch();
 };
 
 module.exports = BlogBot;

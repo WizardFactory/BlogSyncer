@@ -5,6 +5,7 @@
 'use strict';
 
 var assert  = require('assert');
+var bB = require('../controllers/blogBot');
 var bC = require('../controllers/blogConvert');
 var bF = require('../models/botFormat');
 var tD = require('./test_data');
@@ -181,6 +182,15 @@ describe('blogConvert', function () {
             assert.equal(result, true, true, 'It is HTML');
             result = bC.isHtml(tD.convertPlainTextOfLink);
             assert.equal(result, false, true, 'It is not HTML');
+        });
+        it('link post to teaser text content', function (done) {
+            this.timeout(4000);
+            bB.getTeaser(tD.testTeaserUrl, function (err, botTeaser) {
+                botLinkPost.teaser = botTeaser;
+                var content = bC.convertBotPostToTextContent(botLinkPost);
+                assert.equal(content, tD.testTeaserContent, "Mismatch content of text post");
+                done();
+            });
         });
     });
 });

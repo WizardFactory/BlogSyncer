@@ -471,8 +471,21 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 log.error(response, meta);
                 return res.status(500).send(e);
             }
+            if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'link') {
+                blogBot.getTeaser(botPostList.posts[0].contentUrl, function (err, botTeaser) {
+                    if (err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].teaser = botTeaser;
+                    }
 
-            res.send(botPostList);
+                    res.send(botPostList);
+                });
+            }
+            else {
+                res.send(botPostList);
+            }
         });
     });
 });
