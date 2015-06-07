@@ -8,8 +8,9 @@
         <div style="clear: both;"></div>
     </div>
     <div class="content-inner-box hero-unit" ng-repeat="group in groups track by $index" ng-show="groupInfo===null">
+        <span class="icon-delete glyphicon glyphicon-remove-circle" aria-hidden="false" ng-show="button[0]===type.REGISTER_BUTTON.CONFIRM" ng-click="onClickGroup($index);"></span>
+        <span class="icon-check glyphicon  glyphicon-ok-circle" aria-hidden="false" ng-show="button[1]===type.REGISTER_BUTTON.CONFIRM" ng-click="onClickGroup($index);"></span>
         <p class="btn btn-default btn-blog" ng-repeat="site in group.group">
-            <span class="icon-delete glyphicon glyphicon-minus-sign" ng-show="button[0]===type.REGISTER_BUTTON.CONFIRM" ng-click="onClickGroup($parent.$index, $index);"></span>
             <img class="icon-blog" ng-src="views/imgs/{{site.provider.providerName}}.png"/>
             &nbsp;&nbsp;{{'LOC_'+site.provider.providerName | translate}} : {{site.blog.blog_title}}
         </p>
