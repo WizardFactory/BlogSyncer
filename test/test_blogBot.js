@@ -4,7 +4,7 @@
 'use strict';
 
 var assert  = require('assert');
-var bB = require('../controllers/blogBot');
+var bB = require('../controllers/blogbot');
 var tD = require('./test_data');
 if (!global.log) {
     global.log = require('winston');
