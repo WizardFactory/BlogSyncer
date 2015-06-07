@@ -37,5 +37,5 @@
   "LOC_ALERT_SUCCESS": "Success!",
   "LOC_ALERT_INFO": "Info!",
   "LOC_ALERT_WARNING": "Warning!",
-  "LOC_ALERT_Danger": "Error!"
+  "LOC_ALERT_DANGER": "Error!"
 }

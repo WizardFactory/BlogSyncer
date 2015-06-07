@@ -44,7 +44,7 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
             $scope.alertHeader = 'LOC_ALERT_WARNING';
         }
         else if (type === Type.ALERT.DANGER) {
-            $scope.alertHeader = 'LOC_ALERT_Danger';
+            $scope.alertHeader = 'LOC_ALERT_DANGER';
         }
     };
 

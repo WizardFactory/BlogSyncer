@@ -37,5 +37,5 @@
   "LOC_ALERT_SUCCESS": "성공!",
   "LOC_ALERT_INFO": "정보!",
   "LOC_ALERT_WARNING": "경고!",
-  "LOC_ALERT_Danger": "에러!"
+  "LOC_ALERT_DANGER": "에러!"
 }
