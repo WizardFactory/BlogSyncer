@@ -5,7 +5,7 @@
 'use strict';
 
 var assert  = require('assert');
-var bB = require('../controllers/blogbot');
+var bB = require('../controllers/blogBot');
 var bC = require('../controllers/blogConvert');
 var bF = require('../models/botFormat');
 var tD = require('./test_data');
