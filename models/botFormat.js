@@ -3,8 +3,8 @@
  * Created by aleckim on 2015. 5. 11..
  * object need to be sealed.
  */
-
 'use strict';
+
 /**
  *
  * @param {string} providerName

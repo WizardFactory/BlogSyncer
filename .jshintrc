@@ -27,11 +27,11 @@
                                 // 코드가 너무 제한적이 될까봐 일단 false로 함.  
     "indent":     4,            // Indentation: number - 들여쓰기 
     "quotmark":   false,        // Quotation marks: [false, true, single, double] 
-    "maxparams":  10,            // Max number of formal parameter in function: any
+    //"maxparams":  10,            // Max number of formal parameter in function: any
     //"maxdepth":   3,          // Max number of statements in function: any
     //"maxstatements": 10,      // Max number of statemnets in function: any
     //"maxcomplexity": 10,      //Max cyclomatic complexity throughout your code :any 
-    //"maxlen": 80,             //Max length of a line: any
+    "maxlen": 120,             //Max length of a line: any
 
     // Relaxing option
     "asi" : false,              // Suppress warnings about missing semicolons 

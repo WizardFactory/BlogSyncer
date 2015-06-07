@@ -2,6 +2,7 @@
  * Created by aleckim on 2014. 8. 9..
  * posts db는 각 사용자별로 하나씩 가지게 된다.
  */
+"use strict";
 
 var mongoose = require('mongoose');
 
@@ -40,7 +41,6 @@ var postSchema = mongoose.Schema({
  * @returns {*}
  */
 postSchema.methods.findPostById = function(postId) {
-    "use strict";
     var i;
     var meta = {};
 
@@ -66,7 +66,6 @@ postSchema.methods.findPostById = function(postId) {
  * @returns {*}
  */
 postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId) {
-    "use strict";
     var i;
     var j;
     var infos;
@@ -100,7 +99,6 @@ postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId
  * @returns {*}
  */
 postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
-    "use strict";
     var postInfo;
     var i;
     var meta = {};
@@ -154,7 +152,6 @@ postSchema.methods.addPostInfo = function(post, providerName, blogId, newPost) {
  * @returns {*}
  */
 postSchema.methods.findPostByTitle = function(title) {
-    "use strict";
     var i;
     var post;
     var meta = {};
@@ -186,7 +183,6 @@ postSchema.methods.findPostByTitle = function(title) {
  * @returns {boolean}
  */
 postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId) {
-    "use strict";
     var foundIt = false;
     var i;
     var infos;
@@ -225,7 +221,6 @@ postSchema.methods.isPostByPostIdOfBlog = function(providerName, blogId, postId)
  * @returns {*}
  */
 postSchema.methods.addPost = function(providerName, blogId, newPost) {
-    "use strict";
     var totalCount;
     var post = {};
     var postInfo;

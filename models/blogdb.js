@@ -1,6 +1,7 @@
 /**
  * Created by aleckim on 2014. 8. 13..
  */
+"use strict";
 
 var mongoose = require('mongoose');
 
@@ -36,7 +37,6 @@ var siteSchema = mongoose.Schema({
  * @returns {*}
  */
 siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
-    "use strict";
     var i;
     var sites = this.sites;
     var provider;
@@ -71,7 +71,6 @@ siteSchema.methods.findSiteByProvider = function(providerName, providerId) {
  * @returns {*|{blog_id: string, blog_title: string, blog_url: string}}
  */
 siteSchema.methods.findBlogFromSite = function(site, blogId) {
-    "use strict";
     var i;
     var meta = {};
 

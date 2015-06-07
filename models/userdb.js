@@ -1,6 +1,7 @@
 /**
  * Created by aleckim on 2014. 7. 11..
  */
+"use strict";
 
 var mongoose = require('mongoose');
 
@@ -23,7 +24,6 @@ var userSchema = mongoose.Schema({
  * @returns {*}
  */
 userSchema.methods.findProvider = function(providerName, providerId) {
-    "use strict";
     var i;
     var p;
     var tmp;

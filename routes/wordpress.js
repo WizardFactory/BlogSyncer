@@ -15,7 +15,7 @@ var userMgr = require('./../controllers/userManager');
 var botFormat = require('../models/botFormat');
 var bC = require('../controllers/blogConvert');
 
-var svcConfig = require('../models/svcConfig.json');
+var svcConfig = require('../config/all');
 
 var clientConfig = svcConfig.Wordpress;
 var wordpressStrategy = require('passport-wordpress').Strategy;
