@@ -241,6 +241,8 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
             continue;
         }
 
+        botPost.tags.push(bC.convertHashtagToTag(bC.getHashTags(rawPost.content)));
+
         posts.push(botPost);
     }
 }
@@ -418,6 +420,14 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         if (rcvPost.type === 'link') {
             linkPost.content = bC.removeHtmlTags(rcvPost.description);
         }
+
+        var tagString = '';
+        if (!bC.getHashTags(linkPost.content)) {
+
+            //have to add hashtags
+            tagString = rcvPost.tags.toString();
+        }
+        linkPost.content = bC.makeLimitString(2048, linkPost.content, tagString);
 
         try {
             linkPost.link_info = JSON.stringify(body);
