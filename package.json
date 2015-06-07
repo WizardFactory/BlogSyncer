@@ -28,7 +28,8 @@
     "start": "node ./bin/www"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "start": "node ./bin/www"
   },
   "dependencies": {
     "async": "^0.9.2",
