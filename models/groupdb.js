@@ -1,6 +1,7 @@
 /**
  * Created by alecKim on 2014. 9. 22..
  */
+"use strict";
 
 var mongoose = require('mongoose');
 
@@ -44,7 +45,6 @@ var groupSchema = mongoose.Schema({
  * @returns {Array}
  */
 groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
-    "use strict";
     var i;
     var j;
     var group;
@@ -84,7 +84,6 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
 };
 
 groupSchema.methods.getSyncInfoByBlogInfo = function(groupIndex, fromProviderName, fromBlogId, toProviderName, toBlogId) {
-    "use strict";
     var group;
     var blog;
     var provider;

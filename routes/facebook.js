@@ -14,7 +14,7 @@ var userMgr = require('./../controllers/userManager');
 var botFormat = require('../models/botFormat');
 var bC = require('../controllers/blogConvert');
 
-var svcConfig = require('../models/svcConfig.json');
+var svcConfig = require('../config/all');
 
 var clientConfig = svcConfig.facebook;
 var FacebookStrategy = require('passport-facebook').Strategy;

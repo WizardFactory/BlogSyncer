@@ -2,7 +2,6 @@
  *
  * Created by aleckim on 2014. 8. 13..
  */
-
 "use strict";
 
 var request = require('./requestEx');
