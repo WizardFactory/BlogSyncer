@@ -77,8 +77,7 @@ bs.factory('Site', function SiteList($http) {
                     cb(undefined, sites);
                 })
                 .error(function (data) {
-                    var errStr = 'Error: ' + data;
-                    cb(errStr);
+                    cb(data);
                 });
         }
     };
@@ -135,7 +134,7 @@ bs.constant("Type", {
         BLOG_REGISTER: 1,
         COLLECT_FEEDBACK: 2,
         HISTORY : 3,
-        LOGIN : 4
+        SIGNIN : 4
     },
     PROVIDER: {
         WORDPRESS: 'Wordpress',
@@ -167,5 +166,12 @@ bs.constant("Type", {
         OFF: "false",
         NONE: 'none',
         ON: 'true'
+    },
+    ALERT: {
+        NONE: '',
+        SUCCESS: 'alert-success',
+        INFO: 'alert-info',
+        WARNING: 'alert-warning',
+        DANGER : 'alert-danger'
     }
 });

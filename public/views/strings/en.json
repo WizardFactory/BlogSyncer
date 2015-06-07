@@ -26,11 +26,16 @@
   "LOC_LOGIN_TITLE": "Please Sign In",
   "LOC_ACCOUNT_LIST": "Account List",
   "LOC_LOGOUT": "Logout",
+  "LOC_LOGIN_ERROR": "You have to login first!",
   "LOC_Wordpress": "wordpress",
   "LOC_tistory": "tistory",
   "LOC_google": "google",
   "LOC_facebook": "facebook",
   "LOC_tumblr": "tumblr",
   "LOC_twitter": "twitter",
-  "LOC_kakao": "kakao"
+  "LOC_kakao": "kakao",
+  "LOC_ALERT_SUCCESS": "Success!",
+  "LOC_ALERT_INFO": "Info!",
+  "LOC_ALERT_WARNING": "Warning!",
+  "LOC_ALERT_DANGER": "Error!"
 }

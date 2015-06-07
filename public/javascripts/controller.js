@@ -4,6 +4,9 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
     $scope.user = Data.getUser();
     $scope.signstat = 'LOC_LOGIN';
     $scope.menuType = Type.MENU;
+    $scope.alertType = Type.ALERT.NONE;
+    $scope.alertHeader = '';
+    $scope.alertMessage = '';
 
     console.log('Start mainCtrl');
 
@@ -24,9 +27,32 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
                 }
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
             });
     }
+
+    $scope.showAlert = function(type, message) {
+        $scope.alertType = type;
+        $scope.alertMessage = message;
+        if (type === Type.ALERT.SUCCESS) {
+            $scope.alertHeader = 'LOC_ALERT_SUCCESS';
+        }
+        else if (type === Type.ALERT.INFO) {
+            $scope.alertHeader = 'LOC_ALERT_INFO';
+        }
+        else if (type === Type.ALERT.WARNING) {
+            $scope.alertHeader = 'LOC_ALERT_WARNING';
+        }
+        else if (type === Type.ALERT.DANGER) {
+            $scope.alertHeader = 'LOC_ALERT_DANGER';
+        }
+    };
+
+    $scope.hideAlert = function() {
+        $scope.alertType = Type.ALERT.NONE;
+        $scope.alertHeader = '';
+        $scope.alertMessage = '';
+    };
 });
 
 bs.controller('homeCtrl', function ($q, $scope) {
@@ -153,7 +179,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                 console.log(data);
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
             });
     }
 
@@ -239,7 +265,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                 $scope.info = "";
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
                 $scope.info = data;
             });
     }
@@ -467,7 +493,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
     function init() {
         var user = $scope.user;
         if (!user._id) {
-            console.log('you have to signin~');
+            $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
             return;
         }
 
@@ -475,7 +501,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
         if (!$scope.sites) {
             Site.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
-                    window.alert(err);
+                    $scope.showAlert(Type.ALERT.DANGER, err);
                 }
                 $scope.sites = rcvSites;
             });
@@ -488,7 +514,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                 $scope.groups = data.groups;
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
             });
 
         disselectAllBlog();
@@ -498,7 +524,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
     init();
 });
 
-bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
+bs.controller('blogHistoryCtrl', function ($scope, $http, Data, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
@@ -508,7 +534,8 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
     var user = $scope.user;
 
     if (user._id === undefined) {
-        console.log('you have to signin~');
+        $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
+        return;
     }
 
     $http.get('/blogs/histories')
@@ -516,11 +543,11 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, Data) {
             $scope.histories = data.histories;
         })
         .error(function (data) {
-            window.alert('Error: ' + data);
+            $scope.showAlert(Type.ALERT.DANGER, data);
         });
 });
 
-bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $timeout) {
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, Type, $timeout) {
     "use strict";
 
     var reqStartNum;
@@ -577,7 +604,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
                         $scope.posts[indexes.postIndex].infos[indexes.infoIndex].replies = data.replies;
                     })
                     .error(function (data) {
-                        window.alert('Error: ' + data);
+                        $scope.showAlert(Type.ALERT.DANGER, data);
                     });
             }
         }
@@ -599,7 +626,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
                 $scope.posts[indexes.postIndex].infos[indexes.infoIndex].comments = data.comments;
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
             });
     };
 
@@ -625,7 +652,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
                 }, 0);
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
                 $scope.waiting = false;
             });
     };
@@ -652,7 +679,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
         var user = $scope.user;
 
         if (user._id === undefined) {
-            console.log('you have to signin~');
+            $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
             return;
         }
 
@@ -660,7 +687,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
         if (!sites) {
             Site.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
-                    window.alert(err);
+                    $scope.showAlert(Type.ALERT.DANGER, err);
                 }
                sites = rcvSites;
             });
@@ -684,7 +711,7 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, $t
                 getReplies(data);
             })
             .error(function (data) {
-                window.alert('Error: ' + data);
+                $scope.showAlert(Type.ALERT.DANGER, data);
             });
     }
 
@@ -698,11 +725,20 @@ bs.controller('signinCtrl', function ($scope, $http, Data, Site, Type) {
 
     function init() {
         $scope.user = Data.getUser();
+        if ($scope.user._id) {
+            $scope.title = 'LOC_ACCOUNT_LIST';
+        }
+        else {
+            $scope.title = 'LOC_LOGIN_TITLE';
+            $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
+            return;
+        }
+
         $scope.sites = Site.getSiteList();
         if (!$scope.sites) {
             Site.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
-                    window.alert(err);
+                    $scope.showAlert(Type.ALERT.DANGER, err);
                 }
                 $scope.sites = rcvSites;
             });
@@ -723,13 +759,6 @@ bs.controller('signinCtrl', function ($scope, $http, Data, Site, Type) {
                 }
             }
         };
-
-        if ($scope.user._id) {
-            $scope.title = 'LOC_ACCOUNT_LIST';
-        }
-        else {
-            $scope.title = 'LOC_LOGIN_TITLE';
-        }
     }
 
     init();
