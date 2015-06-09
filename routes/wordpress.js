@@ -260,7 +260,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":WORDPRESS_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var blogId = req.params.blog_id;
     var offSet = req.query.offset;
@@ -310,7 +310,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                     }
 
                     var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), " ", rawPost.modified, rawPost.URL,
-                                rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags));
+                                rawPost.title, _convertBotCategories(rawPost.categories),
+                                _convertBotTags(rawPost.tags));
 
                     botPostList.posts.push(botPost);
                 }
@@ -363,8 +364,9 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 replies.push({"comment": rawPost.comment_count});
                 replies.push({"like": rawPost.like_count});
 
-                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
-                    rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags), replies);
+                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified,
+                            rawPost.URL, rawPost.title, _convertBotCategories(rawPost.categories),
+                            _convertBotTags(rawPost.tags), replies);
 
                 botPostList.posts.push(botPost);
             }
@@ -424,8 +426,9 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             try {
                 var rawPost = body;
-                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified, rawPost.URL,
-                    rawPost.title, _convertBotCategories(rawPost.categories), _convertBotTags(rawPost.tags));
+                var botPost = new botFormat.BotTextPost(rawPost.ID.toString(), rawPost.content, rawPost.modified,
+                            rawPost.URL, rawPost.title, _convertBotCategories(rawPost.categories),
+                            _convertBotTags(rawPost.tags));
 
                 botPostList.posts.push(botPost);
             }

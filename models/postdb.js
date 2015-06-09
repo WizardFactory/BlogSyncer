@@ -27,7 +27,7 @@ var postinfoSechema = mongoose.Schema({
 });
 
 /**
- * type : text, link, photo, video
+ * text, link, photo, video
  */
 var postSchema = mongoose.Schema({
     userId: Object,

@@ -378,7 +378,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":TUMBLR_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var blog_id = req.params.blog_id;
     var offset = req.query.offset;
@@ -540,9 +540,16 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
         }
         else if (postType === "link") {
-            options.url = botPost.contentUrl;
-            if (botPost.title) {options.title = botPost.title;}
-            if (botPost.description) {options.description = botPost.description;}
+            if (botPost.teaser) {
+                botTextPost = bC.convertPostLinkToText(botPost);
+                options.body = botTextPost.content;
+                postType = 'text';
+            }
+            else {
+                options.url = botPost.contentUrl;
+                if (botPost.title) {options.title = botPost.title;}
+                if (botPost.description) {options.description = botPost.description;}
+            }
         }
         else if (postType === "audio") {
             if (botPost.audio_source_url) {

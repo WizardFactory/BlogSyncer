@@ -223,7 +223,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":GOOGLE_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var blogId = req.params.blog_id;
     var offset = req.query.offset;
@@ -265,7 +265,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
     /* &에 대한 예외처리를 안하기 위해서 추가함. */
     apiUrl += "status=live";
-    log.info("apiUrl=" + apiUrl, meta);
+    log.silly("apiUrl=" + apiUrl, meta);
 
     userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
@@ -371,7 +371,7 @@ router.get('/bot_comments/:blogId/:postId', function (req, res) {
     apiUrl += "/" + postId;
     apiUrl += "/comments";
 
-    log.debug("apiUrl=" + apiUrl, meta);
+    log.silly("apiUrl=" + apiUrl, meta);
 
     userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
@@ -420,7 +420,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     apiUrl += "/blogs";
     apiUrl += "/" + blogId;
     apiUrl += "/posts";
-    log.info("apiUrl=" + apiUrl, meta);
+    log.silly("apiUrl=" + apiUrl, meta);
 
     userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
@@ -459,8 +459,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             try {
                 var rawPost = body;
-                var botPost = new botFormat.BotTextPost(rawPost.id, " ", rawPost.updated, rawPost.url, rawPost.title, [],
-                            rawPost.labels);
+                var botPost = new botFormat.BotTextPost(rawPost.id, " ", rawPost.updated, rawPost.url, rawPost.title,
+                            [], rawPost.labels);
                 botPostList.posts.push(botPost);
             }
             catch(e) {
@@ -515,7 +515,8 @@ function _updateAccessToken(user, provider, callback) {
         }
 
         log.info(body);
-        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token, body.expires_in);
+        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token,
+                    body.expires_in);
         return callback(null, newProvider);
     });
 }

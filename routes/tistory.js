@@ -298,7 +298,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":TISTORY_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var target_url = req.params.blog_id;
     var offset = req.query.offset;
@@ -455,8 +455,9 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                         }
                     }
 
-                    var botPost = new botFormat.BotTextPost(item.id, entities.decode(item.content), item.date, item.postUrl,
-                        item.title, _getCategoryNameById(category, item.categoryId), tags, replies);
+                    var botPost = new botFormat.BotTextPost(item.id, entities.decode(item.content), item.date,
+                                item.postUrl, item.title, _getCategoryNameById(category, item.categoryId),
+                                tags, replies);
                     botPostList.posts.push(botPost);
                 }
                 catch(e) {

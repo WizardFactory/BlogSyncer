@@ -141,7 +141,6 @@ router.get('/bot_bloglist', function (req, res) {
             }
             catch(e) {
                 log.error(e, meta);
-                log.silly(body, meta);
                 res.status(500).send(e);
             }
 
@@ -186,7 +185,6 @@ router.get('/bot_post_count/:blog_id', function (req, res) {
             }
             catch(e) {
                 log.error(e, meta);
-                log.silly(body, meta);
                 res.status(500).send(e);
                 return;
             }
@@ -228,7 +226,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":TWITTER_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var provider_id = req.query.providerid;
     var blog_id = req.params.blog_id;
@@ -268,7 +266,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
             catch(e) {
                 log.error(e, meta);
-                log.silly(body, meta);
                 res.status(500).send(e);
                 return;
             }
@@ -373,18 +370,58 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 replies.push({"retweet": raw_post.retweet_count});
                 replies.push({"like": raw_post.favorite_count});
 
-                botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
-                    '', [], _convertBotTags(raw_post.entities.hashtags), replies);
+                if (raw_post.entities.media && raw_post.entities.media.length) {
+                    var media = raw_post.entities.media[0];
+                    if (media.type === 'photo') {
+                        var mediaUrls = [];
+                        raw_post.entities.media.forEach(function(media) {
+                            mediaUrls.push(media.media_url);
+                        });
+                        botPost = new botFormat.BotPhotoPost(raw_post.id_str, mediaUrls, raw_post.created_at, postUrl,
+                                '', raw_post.text);
+                    }
+                    else {
+                        log.error('Unknown media.type = '+media.type + ' media.id='+raw_post.id_str);
+                        //It will be made to BotTextPost
+                    }
+                }
+                else if (raw_post.entities.urls && raw_post.entities.urls.length) {
+                    botPost = new botFormat.BotLinkPost(raw_post.id_str, raw_post.entities.urls[0].expanded_url,
+                                raw_post.created_at, postUrl, '', raw_post.text);
+                }
+
+                if (!botPost) {
+                    botPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
+                        '');
+                }
+
+                botPost.categories = [];
+                botPost.tags = _convertBotTags(raw_post.entities.hashtags);
+                botPost.replies = replies;
             }
             catch (e) {
                 log.error(e, meta);
-                log.error(body, meta);
                 res.status(500).send(e);
                 return;
             }
+
             botPostList.posts.push(botPost);
 
-            res.send(botPostList);
+            if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'link') {
+                blogBot.getTeaser(botPostList.posts[0].contentUrl, function (err, botTeaser) {
+                    if (err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].teaser = botTeaser;
+                    }
+
+                    res.send(botPostList);
+                });
+            }
+            else {
+                res.send(botPostList);
+            }
         });
     });
 });
@@ -402,9 +439,6 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var newPost = {};
 
-    //todo convert tags to hashTags;
-    //var hashTags = _makeHashTags(newPost.tags);
-
     bC.convertPostToPlainContent(botPost, 140, bC.convertShortenUrl, function (content) {
         newPost.content = content;
 
@@ -415,10 +449,10 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             //log.debug(encodedPost, meta);
 
             var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
-            objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json', function (error, body, response) {
+            objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json',
+                        function (error, body) {
                 if(error) {
                     log.error(error, meta);
-                    log.error(response, meta);
                     res.status(error.statusCode).send(error);
                     return;
                 }
