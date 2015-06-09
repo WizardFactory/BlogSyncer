@@ -36,9 +36,9 @@ passport.use(new FacebookStrategy({
         passReqToCallback : true
     },
     function(req, accessToken, refreshToken, profile, done) {
-//        log.debug("accessToken:" + accessToken);
-//        log.debug("refreshToken:" + refreshToken);
-//        log.debug("profile:" + JSON.stringify(profile));
+        log.silly("accessToken:" + accessToken);
+        log.silly("refreshToken:" + refreshToken);
+        log.silly("profile:" + JSON.stringify(profile));
 
         var provider = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.displayName,
             accessToken, refreshToken);
@@ -75,8 +75,8 @@ passport.use(new FacebookStrategy({
 ));
 
 router.get('/authorize',
-    passport.authenticate('facebook', {scope: ['user_status', 'user_about_me', 'user_posts', 'user_photos',
-                'user_website', 'publish_actions', 'manage_pages']})
+    passport.authenticate('facebook', {scope: ['user_about_me', 'user_actions.video', 'user_likes', 'user_photos',
+                'user_posts','user_status', 'user_videos', 'user_website', 'publish_actions', 'manage_pages']})
 );
 
 router.get('/authorized',
@@ -319,7 +319,7 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
 
             var botPostList = new botFormat.BotPostList(FACEBOOK_PROVIDER, blogId);
             var rawPost = body;
-
+            var objectId;
             try {
                 var comment_count = 0;
                 if (rawPost.comments) {
@@ -335,8 +335,42 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 replies.push({"comment":comment_count});
                 replies.push({"like":like_count});
 
-                var botPost = new botFormat.BotTextPost(rawPost.id, rawPost.message, rawPost.updated_time, rawPost.link,
-                            '', [], bC.convertHashtagToTag(bC.getHashTags(rawPost.message)), replies);
+                var botPost;
+                var title;
+                if (rawPost.name) {
+                    title = rawPost.name;
+                }
+                else {
+                    title = '';
+                }
+                if (rawPost.object_id) {
+                    objectId = rawPost.object_id;
+                }
+
+                if (rawPost.type === 'link') {
+                    botPost = new botFormat.BotLinkPost(rawPost.id, rawPost.link, rawPost.updated_time,
+                                rawPost.actions[0].link, title, rawPost.message);
+                }
+                else if (rawPost.type === 'photo') {
+                    var mediaUrls = [];
+                    mediaUrls.push(rawPost.picture);
+                    botPost = new botFormat.BotPhotoPost(rawPost.id, mediaUrls, rawPost.updated_time,
+                                rawPost.actions[0].link, title, rawPost.message);
+                }
+                else if (rawPost.type === 'video') {
+                    botPost = new botFormat.BotVideoPost(rawPost.id, rawPost.source, '', rawPost.updated_time,
+                                rawPost.actions[0].link, title, rawPost.message);
+                }
+
+                if (!botPost) {
+                    botPost = new botFormat.BotTextPost(rawPost.id, rawPost.message, rawPost.updated_time,
+                                rawPost.actions[0].link, title);
+                }
+
+                botPost.categories = [];
+                botPost.tags = bC.convertHashtagToTag(bC.getHashTags(rawPost.message));
+                botPost.replies = replies;
+
                 botPostList.posts.push(botPost);
             }
             catch(e) {
@@ -345,7 +379,44 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
                 return res.status(500).send(e);
             }
 
-            res.send(botPostList);
+            if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'link') {
+                blogBot.getTeaser(botPostList.posts[0].contentUrl, function (err, botTeaser) {
+                    if (err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].teaser = botTeaser;
+                    }
+                    res.send(botPostList);
+                });
+            }
+            else if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'photo') {
+                apiUrl = FACEBOOK_API_URL+"/"+objectId;
+                _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
+                    if(err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].mediaUrls[0] = body.source;
+                    }
+                    res.send(botPostList);
+                });
+            }
+            else if (botPostList.posts.length > 0 && botPostList.posts[0].type === 'video') {
+                apiUrl = FACEBOOK_API_URL+"/"+objectId;
+                _requestGet(apiUrl, provider.accessToken, function(err, response, body) {
+                    if(err) {
+                        log.error(err, meta);
+                    }
+                    else {
+                        botPostList.posts[0].videoUrl = body.source;
+                    }
+                    res.send(botPostList);
+                });
+            }
+            else {
+                res.send(botPostList);
+            }
         });
     });
 });
