@@ -422,26 +422,26 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
     apiUrl += "/posts";
     log.silly("apiUrl=" + apiUrl, meta);
 
+    var newPost = {};
+
+    newPost.kind = 'blogger#post';
+    if (botPost.tags && botPost.tags.length > 0) {
+        newPost.labels = botPost.tags;
+    }
+    if(botPost.title) {
+        newPost.title = botPost.title;
+    }
+    else {
+        newPost.title = bC.makeTitle(botPost);
+    }
+    newPost.content = bC.convertBotPostToTextContent(botPost);
+    newPost.content = bC.convertNewLineToBreakTag(newPost.content);
+
     userMgr.findProviderByUserId(userId, GOOGLE_PROVIDER, undefined, function (err, user, provider) {
         if (err) {
             log.error(err, meta);
             return res.status(500).send(err);
         }
-
-        var newPost = {};
-
-        newPost.kind = 'blogger#post';
-       if (botPost.tags && botPost.tags.length > 0) {
-            newPost.labels = botPost.tags;
-        }
-        if(botPost.title) {
-            newPost.title = botPost.title;
-        }
-        else {
-            newPost.title = bC.makeTitle(botPost);
-        }
-        newPost.content = bC.convertBotPostToTextContent(botPost);
-        newPost.content = bC.convertNewLineToBreakTag(newPost.content);
 
         request.postEx(apiUrl, {
             json: true,

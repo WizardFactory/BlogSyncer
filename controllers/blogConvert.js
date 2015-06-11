@@ -186,11 +186,15 @@ var blogConvert = {
     makeTitle: function (botPost) {
         var title = "";
         if (botPost.type === 'text') {
-            title = botPost.content;
+            if (botPost.content) {
+                title = botPost.content;
+            }
         }
         else if (botPost.type === 'photo' || botPost.type === 'video' || botPost.type === 'audio' ||
                     botPost.type === 'link') {
-            title = botPost.description;
+            if (botPost.description) {
+                title = botPost.description;
+            }
         }
 
         title = title.replace(/<\/?[^>]+(>|$)/g, ""); //remove html tag
@@ -214,7 +218,13 @@ var blogConvert = {
      * @return {string}
      */
     removeHtmlTags: function (content) {
-        var plain = content;
+        var plain = '';
+        if (content) {
+            plain = content;
+        }
+        else {
+            log.error((new Error('content is invalid')).stack);
+        }
         plain = plain.replace(/<\/?[^>]+(>|$)/g, ""); //remove html tag
         plain = plain.replace(/^\s*/, ""); //remove blank from start of string
         plain = plain.replace(/\s*$/, ""); //remove blank from end of string

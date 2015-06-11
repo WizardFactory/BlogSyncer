@@ -52,7 +52,7 @@ var BotFormat = {
      */
     ProviderOauth1: function (providerName, providerId, displayName, token, tokenSecret) {
         if (!providerName || !providerId || !token || !tokenSecret || !displayName) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         PureProvider.apply(this, arguments);
         this.token = token;
@@ -69,8 +69,8 @@ var BotFormat = {
      * @constructor
      */
     ProviderOauth2: function (providerName, providerId, displayName, accessToken, refreshToken, tokenExpireTime) {
-        if (!providerName || !providerId || !accessToken || !refreshToken || !displayName) {
-            log.error('arguments are undefined');
+        if (!providerName || !providerId || !accessToken || !displayName) {
+            log.error((new Error('arguments are undefined')).stack);
         }
         PureProvider.apply(this, arguments);
         this.accessToken = accessToken;
@@ -84,7 +84,7 @@ var BotFormat = {
      */
     BotBlogList: function (provider) {
         if (!provider) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.provider = provider;
         this.blogs = [];
@@ -99,7 +99,7 @@ var BotFormat = {
      */
     BotBlog:  function(blog_id, blog_title, blog_url, categories) {
         if (!blog_id || !blog_title || !blog_url) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.blog_id = blog_id;
         this.blog_title = blog_title;
@@ -115,7 +115,7 @@ var BotFormat = {
      */
     BotPostCount: function (provider_name, blog_id, post_count) {
         if (!provider_name || !blog_id || !post_count) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.provider_name = provider_name;
         this.blog_id = blog_id;
@@ -130,7 +130,7 @@ var BotFormat = {
      */
     BotPostList: function (provider_name, blog_id, nextPageToken) {
         if (!provider_name || !blog_id) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.provider_name = provider_name;
         this.blog_id = blog_id;
@@ -151,7 +151,7 @@ var BotFormat = {
      */
     BotTextPost: function (id, content, modified, postUrl, title, categories, tags, replies ) {
         if(!id || !content || !modified) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         BotPost.call(this, 'text', id, modified, postUrl, categories, tags, replies);
         this.content = content;
@@ -172,7 +172,7 @@ var BotFormat = {
      */
     BotLinkPost: function (id, contentUrl, modified, postUrl, title, description, categories, tags, replies ) {
         if (!id || !contentUrl || !modified || !postUrl) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         BotPost.call(this, 'link', id, modified, postUrl, categories, tags, replies);
         this.contentUrl = contentUrl;
@@ -196,7 +196,7 @@ var BotFormat = {
      */
     BotPhotoPost: function (id, mediaUrls, modified, postUrl, title, description, categories, tags, replies ) {
         if (!id || !mediaUrls || mediaUrls.length === 0 || !modified) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         BotPost.call(this, 'photo', id, modified, postUrl, categories, tags, replies);
         this.mediaUrls = mediaUrls;
@@ -222,10 +222,10 @@ var BotFormat = {
     BotAudioPost: function (id, audioUrl, audioSourceUrl, embed, modified, postUrl, title, description, categories,
                                     tags, replies ) {
         if (!id || !modified || !postUrl) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         if (!audioUrl && !audioSourceUrl && !embed) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         BotPost.call(this, 'audio', id, modified, postUrl, categories, tags, replies);
         this.audioUrl = audioUrl;
@@ -250,10 +250,10 @@ var BotFormat = {
      */
     BotVideoPost: function (id, videoUrl, embed, modified, postUrl, title, description, categories, tags, replies ) {
         if (!id || !modified) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         if (!videoUrl && !embed) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         BotPost.call(this, 'video', id, modified, postUrl, categories, tags, replies);
         this.videoUrl = videoUrl;
@@ -270,7 +270,7 @@ var BotFormat = {
      */
     BotComment: function (content, URL, date) {
         if (!content) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.content = content;
         this.URL = URL;
@@ -285,7 +285,7 @@ var BotFormat = {
      */
     BotCommentList: function(providerName, blogId, postId) {
         if (!providerName || !blogId || !postId) {
-            log.error('arguments are undefined');
+            log.error((new Error('arguments are undefined')).stack);
         }
         this.providerName = providerName;
         this.blogID = blogId;
