@@ -83,7 +83,8 @@ groupSchema.methods.findGroupByBlogInfo = function(providerName, blogId) {
     return newGroups;
 };
 
-groupSchema.methods.getSyncInfoByBlogInfo = function(groupIndex, fromProviderName, fromBlogId, toProviderName, toBlogId) {
+groupSchema.methods.getSyncInfoByBlogInfo = function(groupIndex, fromProviderName, fromBlogId, toProviderName,
+                                                     toBlogId) {
     var group;
     var blog;
     var provider;

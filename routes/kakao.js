@@ -241,7 +241,7 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
             continue;
         }
 
-        botPost.tags.push(bC.convertHashtagToTag(bC.getHashTags(rawPost.content)));
+        botPost.tags = bC.convertHashtagToTag(bC.getHashTags(rawPost.content));
 
         posts.push(botPost);
     }
@@ -253,7 +253,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":KAKAO_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var blogId = req.params.blog_id;
     var lastId = req.query.offset;
@@ -455,7 +455,7 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
         catch(e) {
             log.error(e, meta);
-            log.error(body, meta);
+            log.silly(body, meta);
             return callback(e);
         }
 

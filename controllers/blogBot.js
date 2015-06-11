@@ -249,7 +249,7 @@ BlogBot._getAndPush = function(user) {
             //if this blog was not grouped pass
             groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
             if (groups.length === 0) {
-               log.info("It has not group provider="+sites[i].provider.providerName +
+               log.verbose("It has not group provider="+sites[i].provider.providerName +
                         " blog="+sites[i].blogs[j].blog_id, meta);
                continue;
             }
@@ -339,8 +339,8 @@ BlogBot.task = function() {
     log.info("Start users=" + this.users.length, meta);
     for (i=0; i<this.users.length; i+=1)  {
         user = this.users[i].user;
-        BlogBot._getAndPush(user);
         BlogBot._updateAccessToken(user);
+        BlogBot._getAndPush(user);
     }
 };
 
@@ -611,7 +611,8 @@ BlogBot.combineUser = function (user, delUser) {
     //            for (j = userInfo.postDb.posts.length - 1; j >= 0; j -= 1) {
     //                //title is not key any more.
     //                if (userInfo.postDb.posts[j].title === delUserInfo.postDb.posts[i].title) {
-    //                    userInfo.postDb.posts[j].infos = userInfo.postDb.posts[j].infos.concat(delUserInfo.postDb.posts[i].infos);
+    //                    userInfo.postDb.posts[j].infos =
+    //                                      userInfo.postDb.posts[j].infos.concat(delUserInfo.postDb.posts[i].infos);
     //                    isAdded = true;
     //                    break;
     //                }

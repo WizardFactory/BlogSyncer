@@ -223,7 +223,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         return;
     }
     var meta = {"cName":FACEBOOK_PROVIDER, "userId":userId, "url":req.url};
-    log.info("+", meta);
+    log.verbose("+", meta);
 
     var blogId = req.params.blog_id;
     var limit = req.query.limit;
@@ -251,7 +251,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             apiUrl += "__paging_token" + pagingToken + "&";
         }
 
-        log.info("apiUrl=" + apiUrl);
+        log.silly("apiUrl=" + apiUrl);
 
         _requestGet(apiUrl, provider.accessToken, function (err, response, body) {
             if (err) {
@@ -459,7 +459,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             }
             catch(e) {
                 log.error(e, meta);
-                log.error(body, meta);
+                log.silly(body, meta);
                 return res.status(500).send(e);
             }
 

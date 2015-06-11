@@ -9,7 +9,7 @@ var botFormat = require('../models/botFormat');
 
 /**
  *
- * @type {{wrapMediaTag: Function, convertPostLinkToText: Function, convertPostMediaToText: Function, makeTitle: Function}}
+ * @type {{wrapMediaTag: Function, convertPostLinkToText: Function, convertPostMediaToText: Function, convertBotPostToTextContent: Function, convertNewLineToBreakTag: Function, makeTitle: Function, removeHtmlTags: Function, maxShortenUrlLen: number, convertShortenUrl: Function, convertPostToPlainContent: Function, addCategoriesToTags: Function, addTagsToCategories: Function, mergeTagsCategories: Function, isHtml: Function, makeLimitString: Function, convertTagToHashtag: Function, convertHashtagToTag: Function, getHashTags: Function}}
  */
 var blogConvert = {
     /**
@@ -24,7 +24,8 @@ var blogConvert = {
             str = '<img src=\"' + url + '\" style="max-width: 100%;">';
         }
         else if (type === 'audio') {
-            str = '<audio controls style="max-width: 100%;"><source src=\"' + url + '\">Your browser does not support the audio element.</audio>';
+            str = '<audio controls style="max-width: 100%;"><source src=\"' + url +
+                        '\">Your browser does not support the audio element.</audio>';
         }
         else if (type === 'video') {
             str = '<video width="500" controls style="max-width: 100%;"><source src=\"';
@@ -277,7 +278,13 @@ var blogConvert = {
             }
         }
 
-        var hashTags = blogConvert.convertTagToHashtag(botPost.tags);
+        var hashTags;
+        if (botPost.tags) {
+            hashTags = blogConvert.convertTagToHashtag(botPost.tags);
+        }
+        else {
+            hashTags = [];
+        }
 
         if (!urls.length) {
             content = blogConvert.makeLimitString(maxLen, content, hashTags.toString());
@@ -302,7 +309,7 @@ var blogConvert = {
             }
             var hashTagString = '';
             if (!blogConvert.getHashTags(content)) {
-                //have to add hashtags
+                //have to add hashTags
                 hashTagString = hashTags.toString();
             }
 
@@ -379,7 +386,7 @@ var blogConvert = {
      * @param maxLen
      * @param content
      * @param tagString
-     * @param urls
+     * @param [urls]
      * @returns {*}
      */
     makeLimitString: function(maxLen, content, tagString, urls) {
@@ -397,6 +404,10 @@ var blogConvert = {
                 }
             });
         }
+        else {
+            urls = [];
+        }
+
         cutLen -= maxLen;
 
         if (cutLen <= 0) {
@@ -421,6 +432,11 @@ var blogConvert = {
 
         return content + tagString + urls.toString();
     },
+    /**
+     *
+     * @param tags
+     * @returns {Array}
+     */
     convertTagToHashtag: function(tags) {
         var hashTags = [];
         tags.forEach(function (element) {
@@ -429,6 +445,11 @@ var blogConvert = {
         });
         return hashTags;
     },
+    /**
+     *
+     * @param hastags
+     * @returns {Array}
+     */
     convertHashtagToTag: function (hastags) {
         var tags = [];
         hastags.forEach(function (element) {
@@ -436,6 +457,11 @@ var blogConvert = {
         });
         return tags;
     },
+    /**
+     *
+     * @param content
+     * @returns {Array}
+     */
     getHashTags: function(content) {
         var hashTags = [];
 
