@@ -32,6 +32,7 @@ var testData = {
         blog_id: "777373",
         blog_title: "wzdfac",
         blog_url: "www.wzdfac22.com",
+        accessToken: "xxxdfd",
         categories: [{'id':2, 'name':"company"}],
         postCount: 4
     },

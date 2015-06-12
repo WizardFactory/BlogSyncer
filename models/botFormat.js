@@ -94,16 +94,23 @@ var BotFormat = {
      * @param {string} blog_id
      * @param {string} blog_title
      * @param {string} blog_url
-     * @param {Object[]} categories
+     * @param {string} [accessToken]
+     * @param {Object[]} [categories]
      * @constructor
      */
-    BotBlog:  function(blog_id, blog_title, blog_url, categories) {
+    BotBlog:  function(blog_id, blog_title, blog_url, accessToken, categories) {
         if (!blog_id || !blog_title || !blog_url) {
             log.error((new Error('arguments are undefined')).stack);
         }
+
+        if (typeof accessToken === 'object') {
+            categories = accessToken;
+        }
+
         this.blog_id = blog_id;
         this.blog_title = blog_title;
         this.blog_url = blog_url;
+        this.accessToken = accessToken;
         this.categories = categories;
     },
     /**

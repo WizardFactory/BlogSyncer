@@ -22,6 +22,7 @@ var siteSchema = mongoose.Schema({
             blog_id: String,
             blog_title: String,
             blog_url: String,
+            accessToken: String,
             categories: [{
                 id: String,
                 name: String

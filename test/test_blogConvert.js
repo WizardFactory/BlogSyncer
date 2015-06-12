@@ -219,7 +219,7 @@ describe('blogConvert', function () {
             assert.equal(hashTags.toString(), tD.testStringForHashTagsResult3, true, "Mismatch hashtags");
         });
         it('link post to teaser text content', function (done) {
-            this.timeout(4000);
+            this.timeout(5000);
             bB.getTeaser(tD.testTeaserUrl, function (err, botTeaser) {
                 botLinkPost.teaser = botTeaser;
                 var content = bC.convertBotPostToTextContent(botLinkPost);

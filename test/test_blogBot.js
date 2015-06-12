@@ -10,6 +10,22 @@ if (!global.log) {
     global.log = require('winston');
 }
 
+var testUserId = 'xxxxx';
+
+bB.users = [{
+    user: {
+        _id: testUserId,
+        providers: [tD.testProvider1, tD.testProvider2]
+    },
+    blogDb: {
+        sites: [{
+            provider: tD.testProvider1,
+            blogs: [tD.testBlog1, tD.testBlog2]
+        }]
+    }
+}];
+
+
 describe('blogBot', function () {
     describe('botTeaser', function () {
         it('get botTeaser', function (done) {
@@ -21,4 +37,14 @@ describe('blogBot', function () {
             });
         });
     });
+    describe('botGetBlogInUser', function () {
+        it('get blog in user', function() {
+            var user = {
+                _id: testUserId
+            };
+            var blog  = bB.getBlogInUser(user, tD.testProvider1, tD.testBlog2.blog_id);
+            assert.equal(blog.accessToken, tD.testBlog2.accessToken, "Mismatch access token");
+        });
+    });
 });
+
