@@ -101,7 +101,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
     };
 
     $scope.onClickNewGroup = function() {
-        if ($scope.newGroup === true) {
+        if ($scope.newGroup === true || $scope.sites.length === 0) {
             return;
         }
 
@@ -171,7 +171,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
             return;
         }
 
-        if (isExistBlogGroup(group) === true) {
+        if (isExistBlogGroup(group, $scope.groupIndex) === true) {
             $scope.showAlert(Type.ALERT.DANGER, 'LOC_EXIST_ERROR');
             return;
         }
@@ -285,11 +285,11 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
         }
     }
 
-    function isExistBlogGroup(group) {
+    function isExistBlogGroup(group, groupIndex) {
         var i, j, k, isExist;
 
         for (i = 0; i < $scope.groups.length; i += 1) {
-            if ($scope.groups[i].group.length !== group.length) {
+            if (i === groupIndex || $scope.groups[i].group.length !== group.length) {
                 continue;
             }
 
