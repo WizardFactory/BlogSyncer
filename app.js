@@ -38,14 +38,19 @@ var twitter = require('./routes/twitter');
 var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
-
-var Logger = require('./controllers/log');
-global.log  = new Logger(__dirname + "/debug.log");
+var blogBot = require('./controllers/blogBot');
 
 var svcConfig = require('./config/all');
+var Logger = require('./controllers/log');
 
 var app = express();
-var blogBot = require('./controllers/blogBot');
+
+if (app.get('env') === 'development') {
+    global.log = new Logger(__dirname + "/debug.log");
+}
+else {
+    global.log = new Logger();
+}
 
 var connectInfo = svcConfig.db;
 
@@ -59,20 +64,20 @@ blogBot.load();
 setInterval(function() {
 
     blogBot.task();
-}, 1000*30); //1 min
+}, 1000*60); //1 min
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 app.use(favicon(__dirname + '/public/views/imgs/favicon.ico'));
 
-if (process.env.NODE_ENV === 'development') {
+if (app.get('env') === 'development') {
     // Enable logger (morgan)
     app.use(morgan('dev'));
 
     // Disable views cache
     app.set('view cache', false);
-} else if (process.env.NODE_ENV === 'production') {
+} else {
     app.locals.cache = 'memory';
 }
 
