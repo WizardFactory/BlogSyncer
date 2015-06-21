@@ -68,157 +68,225 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
     $scope.user = Data.getUser();
     $scope.title = 'LOC_BLOG_GROUPS';
     $scope.type = Type;
-    $scope.button = [Type.REGISTER_BUTTON.DELETE, Type.REGISTER_BUTTON.DETAIL_SETTING, Type.REGISTER_BUTTON.REGISTER, Type.REGISTER_BUTTON.CLOSE];
+    $scope.sites = [];
+    $scope.inSites = [];
+    $scope.outSites = [];
     $scope.groups = [];
-    $scope.group = null;
     $scope.groupInfo = null;
     $scope.groupInfoType = Type.GROUP_INFO.POLYGONS;
-    $scope.sites = [];
-    $scope.selected = [];
-    $scope.info = "";
+    $scope.groupIndex = -1;
+    $scope.newGroup = false;
+    $scope.initGroupInfo = false;
+    $scope.detailSetting = false;
     var graph, paper, circles, links, selectCircle;
 
-    $scope.onClickButton = function(button) {
-        if (button === Type.REGISTER_BUTTON.DELETE) {
-            if ($scope.groups.length > 0) {
-                $scope.button[0] = Type.REGISTER_BUTTON.CONFIRM;
-                $scope.button[1] = '';
-            }
-        } else if (button === Type.REGISTER_BUTTON.DETAIL_SETTING) {
-            if ($scope.groups.length > 0) {
-                $scope.button[0] = '';
-                $scope.button[1] = Type.REGISTER_BUTTON.CONFIRM;
-            }
-        } else if (button === Type.REGISTER_BUTTON.CONFIRM) {
-            if ($scope.button[0] === '') {
-                updateDetailSetting();
-            } else if ($scope.button[1] === '') {
-                updateBlogGroup();
-            }
-            $scope.button[0] = Type.REGISTER_BUTTON.DELETE;
-            $scope.button[1] = Type.REGISTER_BUTTON.DETAIL_SETTING;
-        } else if (button === Type.REGISTER_BUTTON.CREATE) {
-            disselectAllBlog();
-            $scope.button[2] = Type.REGISTER_BUTTON.REGISTER;
-        } else if (button === Type.REGISTER_BUTTON.CLOSE) {
-            $scope.button[2] = Type.REGISTER_BUTTON.CREATE;
-        } else if (button === Type.REGISTER_BUTTON.REGISTER) {
-            registerBlogGroup();
+    $scope.onClickGroup = function(index) {
+        if ($scope.groupIndex === index) {
+            return;
+        }
+
+        $scope.groupIndex = index;
+        $scope.newGroup = false;
+        $scope.inSites = [];
+
+        var group = $scope.groups[index];
+        for (var i = 0; i < group.group.length; i += 1) {
+            $scope.inSites.push(group.group[i]);
+        }
+        createOutSites();
+
+        $scope.groupInfo = null;
+        $scope.initGroupInfo = false;
+        $scope.detailSetting = false;
+    };
+
+    $scope.onClickNewGroup = function() {
+        if ($scope.newGroup === true) {
+            return;
+        }
+
+        $scope.groupIndex = -1;
+        $scope.newGroup = true;
+        $scope.inSites = [];
+        createOutSites();
+
+        $scope.groupInfo = null;
+        $scope.initGroupInfo = true;
+        $scope.detailSetting = false;
+    };
+
+    $scope.onClickSite = function(isInSite, index) {
+        if ($scope.groupIndex === -1 && $scope.newGroup === false) {
+            return;
+        }
+
+        if (isInSite === true) {
+            $scope.inSites.splice(index, 1);
+        }
+        else {
+            $scope.inSites.push($scope.outSites[index]);
+        }
+        createOutSites();
+        $scope.initGroupInfo = true;
+    };
+
+    $scope.onClickDetailSetting = function($event) {
+        if ($scope.groupIndex === -1 && $scope.newGroup === false) {
+            return;
+        }
+
+        createGroupInfo();
+        showDetailSetting();
+        $event.stopPropagation();
+    };
+
+    $scope.onClickDelete = function($event) {
+        if ($scope.groupIndex === -1 && $scope.newGroup === false) {
+            return;
+        }
+
+        deleteBlogGroup($scope.groupIndex);
+        $scope.groupIndex = -1;
+        $scope.newGroup = false;
+        $scope.inSites = [];
+        $scope.outSites = [];
+        $scope.groupInfo = null;
+        $scope.initGroupInfo = false;
+        $event.stopPropagation();
+    };
+
+    $scope.onClickConfirm = function($event) {
+        if ($scope.groupIndex === -1 && $scope.newGroup === false) {
+            return;
+        }
+
+        var group = [];
+        var i, j;
+        for (i = 0; i < $scope.inSites.length; i += 1) {
+            group.push($scope.inSites[i]);
+        }
+
+        if (group.length <= 1) {
+            $scope.showAlert(Type.ALERT.DANGER, 'LOC_COUNT_ERROR');
+            return;
+        }
+
+        if (isExistBlogGroup(group) === true) {
+            $scope.showAlert(Type.ALERT.DANGER, 'LOC_EXIST_ERROR');
+            return;
+        }
+
+        if ($scope.newGroup === true) {
+            registerBlogGroup(group);
+        }
+        else {
+            updateBlogGroup(group);
+        }
+
+        $scope.groupIndex = -1;
+        $scope.newGroup = false;
+        $scope.inSites = [];
+        $scope.outSites = [];
+        $scope.groupInfo = null;
+        $scope.initGroupInfo = false;
+
+        hideDetailSetting();
+        $event.stopPropagation();
+    };
+
+    $scope.onClickCancel = function($event) {
+        if ($scope.groupIndex === -1 && $scope.newGroup === false) {
+            return;
+        }
+
+        if ($scope.detailSetting === false) {
+            $scope.groupIndex = -1;
+            $scope.newGroup = false;
+            $scope.inSites = [];
+            $scope.outSites = [];
+            $scope.initGroupInfo = false;
+        }
+        $scope.groupInfo = null;
+
+        hideDetailSetting();
+        $event.stopPropagation();
+    };
+
+    $scope.onClickGroupInfo = function(fromIndex, toIndex) {
+        var info = $scope.groupInfo[fromIndex][toIndex];
+        if (info.syncEnable === Type.SYNC_ENABLE.OFF) {
+            info.syncEnable = Type.SYNC_ENABLE.ON;
+        } else if (info.syncEnable === Type.SYNC_ENABLE.ON) {
+            info.syncEnable = Type.SYNC_ENABLE.OFF;
         }
     };
 
-    $scope.onClickGroup = function(group_index) {
-        if ($scope.button[0] === '' && $scope.button[1] === Type.REGISTER_BUTTON.CONFIRM) {
-            var group = $scope.groups[group_index];
-            var count = group.group.length;
-            var index = 0;
+    function createOutSites() {
+        $scope.outSites = [];
 
-            $scope.group = group.group;
+        var isAdd = false;
+        for (var i = 0; i < $scope.sites.length; i += 1) {
+            isAdd = false;
+            for (var j = 0; j < $scope.inSites.length; j += 1) {
+                if ($scope.sites[i].provider.providerId === $scope.inSites[j].provider.providerId &&
+                    $scope.sites[i].blog.blog_id === $scope.inSites[j].blog.blog_id) {
+                    isAdd = true;
+                    break;
+                }
+            }
+            if (isAdd === false) {
+                $scope.outSites.push($scope.sites[i]);
+            }
+        }
+    }
+
+    function createGroupInfo() {
+        var group = null;
+        var count = 0;
+        var index = 0;
+
+        if ($scope.initGroupInfo === true) {
+            group = $scope.inSites;
+            count = $scope.inSites.length;
+        }
+        else {
+            if ($scope.groupInfo === null) {
+                group = $scope.groups[$scope.groupIndex];
+                count = group.group.length;
+            }
+        }
+
+        if (group !== null) {
             $scope.groupInfo = new Array(count);
             for (var i = 0; i < count; i += 1) {
                 $scope.groupInfo[i] = new Array(count);
                 for (var j = 0; j < count; j += 1) {
-                    //if group didn't have groupinfo, postType is set to post. It's for legacy groupDb
-                    if (!$scope.groups[group_index].groupInfo[index]) {
+                    if ($scope.initGroupInfo === true) {
                         if (i === j) {
                             $scope.groupInfo[i][j] = {"syncEnable": Type.SYNC_ENABLE.NONE, "postType": Type.POST.NONE};
                         } else {
                             var fromProvider = group[i].provider.providerName;
                             var toProvider = group[j].provider.providerName;
-                            $scope.groupInfo[i][j] = {"syncEnable": Type.SYNC_ENABLE.ON, "postType": Data.getPostType(fromProvider, toProvider)};
+                            $scope.groupInfo[i][j] = {
+                                "syncEnable": Type.SYNC_ENABLE.ON,
+                                "postType": Data.getPostType(fromProvider, toProvider)
+                            };
                         }
                     }
                     else {
-                        $scope.groupInfo[i][j] = $scope.groups[group_index].groupInfo[index];
+                        $scope.groupInfo[i][j] = {
+                            "syncEnable": group.groupInfo[index].syncEnable,
+                            "postType": group.groupInfo[index].postType
+                        };
                     }
                     index += 1;
                 }
             }
-
-            drawDetailSetting();
-        } else if ($scope.button[0] === Type.REGISTER_BUTTON.CONFIRM && $scope.button[1] === '') {
-            $scope.groups.splice(group_index, 1);
-            if ($scope.groups.length === 0) {
-                updateBlogGroup();
-                $scope.button[0] = Type.REGISTER_BUTTON.DELETE;
-                $scope.button[1] = Type.REGISTER_BUTTON.DETAIL_SETTING;
-            }
-        }
-    };
-
-    $scope.onClickGroupInfo = function(fromIndex, toIndex) {
-        if ($scope.button[0] === '' && $scope.button[1] === Type.REGISTER_BUTTON.CONFIRM) {
-            var info = $scope.groupInfo[fromIndex][toIndex];
-            if (info.syncEnable === Type.SYNC_ENABLE.OFF) {
-                info.syncEnable = Type.SYNC_ENABLE.ON;
-            } else if (info.syncEnable === Type.SYNC_ENABLE.ON) {
-                info.syncEnable = Type.SYNC_ENABLE.OFF;
-            }
-        }
-    };
-
-    $scope.onClickBlog = function(index) {
-        if ($scope.selected[index] !== true) {
-            $scope.selected[index] = true;
-        } else {
-            $scope.selected[index] = false;
-        }
-    };
-
-    function disselectAllBlog() {
-        if ($scope.sites && $scope.sites.length) {
-            for (var i = 0; i < $scope.sites.length; i += 1) {
-                $scope.selected[i] = false;
-            }
         }
     }
 
-    function updateBlogGroup() {
-        $http.put("/blogs/groups",{"groups":$scope.groups})
-            .success(function (data) {
-                console.log(data);
-            })
-            .error(function (data) {
-                $scope.showAlert(Type.ALERT.DANGER, data);
-            });
-    }
-
-    function updateDetailSetting() {
-        if ($scope.groupInfo !== null) {
-            $scope.groups.groupInfo = [];
-            for (var i = 0; i < $scope.groupInfo.length; i += 1) {
-                for (var j = 0; j < $scope.groupInfo[i].length; j += 1) {
-                    $scope.groups.groupInfo.push($scope.groupInfo[i][j]);
-                }
-            }
-            updateBlogGroup();
-            $scope.group = null;
-            $scope.groupInfo = null;
-
-            if ($scope.groupInfoType === Type.GROUP_INFO.POLYGONS) {
-                $('#paper').hide();
-                graph.clear();
-                circles = [];
-                links = [];
-                selectCircle = null;
-            }
-        }
-    }
-
-    function registerBlogGroup() {
-        var group = [];
+    function isExistBlogGroup(group) {
         var i, j, k, isExist;
-        for (i = 0; i < $scope.sites.length; i += 1) {
-            if ($scope.selected[i] === true) {
-                $scope.selected[i] = false;
-                group.push($scope.sites[i]);
-            }
-        }
-
-        if (group.length <= 1) {
-            $scope.info = 'LOC_COUNT_ERROR';
-            return;
-        }
 
         for (i = 0; i < $scope.groups.length; i += 1) {
             if ($scope.groups[i].group.length !== group.length) {
@@ -239,38 +307,76 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                 }
             }
             if (isExist) {
-                $scope.info = 'LOC_EXIST_ERROR';
-                return;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function registerBlogGroup(group) {
+        if ($scope.groupInfo === null) {
+            createGroupInfo();
+        }
+
+        var i, j;
+        var groupInfo = [];
+        for (i = 0; i < $scope.groupInfo.length; i += 1) {
+            for (j = 0; j < $scope.groupInfo[i].length; j += 1) {
+                groupInfo.push($scope.groupInfo[i][j]);
             }
         }
 
-        var groupInfo = [];
-        var fromProvider, toProvider;
-        for (i = 0; i < group.length; i += 1) {
-            fromProvider = group[i].provider.providerName;
-            for (j = 0; j < group.length; j += 1) {
-                toProvider = group[j].provider.providerName;
-                if (i === j) {
-                    groupInfo.push({"syncEnable": Type.SYNC_ENABLE.NONE, "postType": Type.POST.NONE});
-                } else {
-                    groupInfo.push({"syncEnable": Type.SYNC_ENABLE.ON, "postType": Data.getPostType(fromProvider, toProvider)});
-                }
-            }
-        }
         $scope.groups.push({"group":group, "groupInfo":groupInfo});
         console.log(group);
         $http.post("/blogs/group", {"group":group, "groupInfo":groupInfo})
             .success(function (data) {
                 console.log(data);
-                $scope.info = "";
             })
             .error(function (data) {
                 $scope.showAlert(Type.ALERT.DANGER, data);
-                $scope.info = data;
             });
     }
 
-    function drawDetailSetting() {
+    function updateBlogGroup(group) {
+        if ($scope.detailSetting === false) {
+            createGroupInfo();
+        }
+
+        var i, j;
+        var groupInfo = [];
+        for (i = 0; i < $scope.groupInfo.length; i += 1) {
+            for (j = 0; j < $scope.groupInfo[i].length; j += 1) {
+                groupInfo.push($scope.groupInfo[i][j]);
+            }
+        }
+
+        $scope.groups[$scope.groupIndex].group = group;
+        $scope.groups[$scope.groupIndex].groupInfo = groupInfo;
+
+        $http.put("/blogs/groups",{"groups":$scope.groups})
+            .success(function (data) {
+                console.log(data);
+            })
+            .error(function (data) {
+                $scope.showAlert(Type.ALERT.DANGER, data);
+            });
+    }
+
+    function deleteBlogGroup(groupIndex) {
+        $scope.groups.splice(groupIndex , 1);
+
+        $http.put("/blogs/groups",{"groups":$scope.groups})
+            .success(function (data) {
+                console.log(data);
+            })
+            .error(function (data) {
+                $scope.showAlert(Type.ALERT.DANGER, data);
+            });
+    }
+
+    function showDetailSetting() {
+        $scope.detailSetting = true;
+
         if ($scope.groupInfoType !== Type.GROUP_INFO.POLYGONS) {
             return;
         }
@@ -313,12 +419,12 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
         var centerX = 225;
         var centerY = 225;
         var i, j, x, y;
-        var count = $scope.group.length;
+        var count = $scope.inSites.length;
 
         for (i = 1; i <= count;i += 1) {
             x = centerX + size * Math.cos(i * 2 * Math.PI / count + Math.PI / 2);
             y = centerY - size * Math.sin(i * 2 * Math.PI / count + Math.PI / 2);
-            circles.push(circle(x, y, $scope.group[i-1].blog.blog_title));
+            circles.push(circle(x, y, $scope.inSites[i-1].blog.blog_title));
         }
         for (i = 0; i < count; i += 1) {
             for (j = 0; j < count; j += 1) {
@@ -328,6 +434,18 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                     links.push(element);
                 }
             }
+        }
+    }
+
+    function hideDetailSetting() {
+        $scope.detailSetting = false;
+
+        if ($scope.groupInfoType === Type.GROUP_INFO.POLYGONS) {
+            $('#paper').hide();
+            graph.clear();
+            circles = [];
+            links = [];
+            selectCircle = null;
         }
     }
 
@@ -396,7 +514,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
 
         paper.on('cell:pointerup', function(cellView, evt, x, y) {
             var i, j, k;
-            var count = $scope.group.length;
+            var count = $scope.inSites.length;
             var circle, link, info;
 
             var normalCircle = function (element) {
@@ -472,7 +590,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                                 if (link.get('source').id === selectCircle.id) {
                                     setArrowheads(link, $scope.groupInfo[j][i], $scope.groupInfo[i][j], 'target');
                                 }
-                            else if (link.get('target').id === selectCircle.id) {
+                                else if (link.get('target').id === selectCircle.id) {
                                     setArrowheads(link, $scope.groupInfo[j][i], $scope.groupInfo[i][j], 'source');
                                 }
                                 else {
@@ -517,7 +635,6 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
                 $scope.showAlert(Type.ALERT.DANGER, data);
             });
 
-        disselectAllBlog();
         initDetailSetting();
     }
 
@@ -559,7 +676,8 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, Ty
             for (var j=0; j<$scope.posts[i].infos.length; j += 1) {
                 var info = $scope.posts[i].infos[j];
                 //console.log(info);
-                if (info.provider_name === providerName && info.blog_id === blogID && info.post_id === postID.toString()) {
+                if (info.provider_name === providerName && info.blog_id === blogID &&
+                    info.post_id === postID.toString()) {
                     return {"postIndex":i, "infoIndex":j};
                 }
             }

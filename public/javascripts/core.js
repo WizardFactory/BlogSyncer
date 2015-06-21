@@ -150,14 +150,6 @@ bs.constant("Type", {
         POST: 'post',
         LINK: 'link'
     },
-    REGISTER_BUTTON: {
-        DELETE: 'LOC_DELETE',
-        DETAIL_SETTING: 'LOC_DETAIL_SETTING',
-        REGISTER: 'LOC_REGISTER',
-        CLOSE: 'LOC_CLOSE',
-        CREATE: 'LOC_CREATE',
-        CONFIRM: 'LOC_CONFIRM'
-    },
     GROUP_INFO: {
         POLYGONS: 0,
         TABLE: 1

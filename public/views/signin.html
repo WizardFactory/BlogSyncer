@@ -2,21 +2,26 @@
     <h1 class="page-header">{{title | translate}}</h1>
 </div>
 <div class="content-body">
-    <div class="content-box">
-        <a class="btn btn-default btn-blog" ng-repeat="provider in user.providers">
-            <img class="icon-blog" ng-src="views/imgs/{{provider.providerName}}.png"/>
-            &nbsp;&nbsp;{{'LOC_'+provider.providerName | translate}} : {{provider.displayName}}
-            <span ng-bind="getBlogTitle(provider)"></span>
-        </a>
-    </div>
     <div class="content-box" ng-if="user._id">
-        <a href="/logout">{{'LOC_LOGOUT' | translate}}</a>
+        <div class="group-box selected">
+            <a class="btn btn-default btn-blog" ng-repeat="provider in user.providers">
+                <img class="icon-blog" ng-src="views/imgs/{{provider.providerName}}.png"/>
+                &nbsp;&nbsp;{{'LOC_'+provider.providerName | translate}} : {{provider.displayName}}
+                <span ng-bind="getBlogTitle(provider)"></span>
+            </a>
+            <hr>
+            <ul class="pager">
+                <li><a href="/logout">{{'LOC_LOGOUT' | translate}}</a></li>
+            </ul>
+        </div>
     </div>
     <div class="content-box">
-        <a class="btn btn-default btn-blog" ng-href="/{{provider}}/authorize" ng-repeat="provider in providers">
-            <img class="icon-blog" ng-src="views/imgs/{{provider}}.png"/>
-            &nbsp;&nbsp;{{'LOC_'+provider | translate}}
-        </a>
+        <div class="group-box selected">
+            <a class="btn btn-default btn-blog" ng-href="/{{provider}}/authorize" ng-repeat="provider in providers">
+                <img class="icon-blog" ng-src="views/imgs/{{provider}}.png"/>
+                &nbsp;&nbsp;{{'LOC_'+provider | translate}}
+            </a>
+        </div>
     </div>
 </div>
 
