@@ -18,23 +18,68 @@ body {
     text-align: center;
 }
 .content-body {
-    max-width: 360px;
     margin-left: auto;
     margin-right: auto;
     text-align: left;
 }
 .content-box {
-    padding: 10px;
+    text-align: center;
 }
-.content-inner-box {
+.group-box {
+    display: inline-block;
     margin: 10px;
     padding: 10px;
-    background-color: #eeeeee;
+    border-radius: 5px;
+    color: #333333;
+    border: #cccccc solid 1px;
+    background-color: #ffffff;
+}
+.group-box hr {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.group-box table {
+    min-width: 300px;
+    max-width: 300px;
+    text-align: center;
+    background-color: #ffffff;
+}
+.group-box .pager {
+    margin: 10px 0 0 0;
+}
+.group-box .pager li>a:hover {
+    border-color: #adadad;
+    background-color: #ffeeee;
+    cursor:pointer;
+}
+.group-box:hover, .group-box.selected {
+    border-color: #adadad;
+    background-color: #ebebeb;
+}
+.group-box:hover {
+    cursor:pointer;
+}
+.group-box.selected {
+    cursor:Default;
+}
+.group-box.selected hr {
+    border-color: #adadad;
+}
+.group-box.selected .btn-blog:hover {
+    border-color: #adadad;
+    background-color: #ffeeee;
+}
+.group-box:hover .btn-default, .group-box.selected .btn-default {
+    border-color: #cccccc;
+    background-color: #ffffff;
 }
 .btn-blog {
+    min-width: 300px;
+    max-width: 300px;
     margin-bottom: 5px;
     display: block;
     text-align: left;
+    vertical-align: middle;
 }
 .btn-blog:last-child {
     margin-bottom: 0px;
@@ -50,13 +95,12 @@ body {
     width: 15px;
     height: 15px;
 }
-.icon-delete, .icon-check {
+.icon-minus, .icon-plus {
     width: 16px;
     height: 16px;
-    position: relative;
-    top: -16px;
-    right: -16px;
     float: right;
+    position: relative;
+    top: 8px;
 }
 .error-msg {
     color: #ff0000;
@@ -72,7 +116,4 @@ body {
 }
 a {
     color: #df8523;
-}
-table {
-    text-align: center
 }
