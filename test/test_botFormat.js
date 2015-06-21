@@ -36,8 +36,17 @@ describe('blogFormat', function () {
             assert.equal(Array.isArray(botBlogList.blogs), true, "Fail to make blogs Array of botBlogList");
         });
         it('make botBlog', function () {
-            var botBlog = new botFormat.BotBlog(testBlog1.blog_id, testBlog1.blog_title, testBlog1.blog_url);
-            assert.equal(botBlog.blog_id, testBlog1.blog_id, "Mismatch blog_id of botBlog");
+            var botBlog = new botFormat.BotBlog(testBlog1.blog_id, testBlog1.blog_title, testBlog1.blog_url,
+                        testBlog1.categories);
+            assert.equal(botBlog.categories, testBlog1.categories, "Mismatch blog_id of botBlog");
+
+            var botBlog = new botFormat.BotBlog(tD.testBlog2.blog_id, tD.testBlog2.blog_title, tD.testBlog2.blog_url,
+                    tD.testBlog2.accessToken);
+            assert.equal(botBlog.accessToken, tD.testBlog2.accessToken, "Mismatch blog_id of botBlog");
+
+            var botBlog = new botFormat.BotBlog(tD.testBlog2.blog_id, tD.testBlog2.blog_title, tD.testBlog2.blog_url,
+                    tD.testBlog2.accessToken, tD.testBlog2.categories);
+            assert.equal(botBlog.categories, tD.testBlog2.categories, "Mismatch blog_id of botBlog");
         });
         it('make botPostCount', function () {
             var botPostCount = new botFormat.BotPostCount(testProvider1.providerName, testBlog1.blog_id, testBlog1.postCount);

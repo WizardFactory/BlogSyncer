@@ -117,6 +117,24 @@ router.get('/me', function (req, res) {
     });
 });
 
+function _getBotBlog(id, accessToken, callback) {
+    var url = FACEBOOK_API_URL+"/"+ id;
+    _requestGet(url, accessToken, function(err, response, body) {
+        if (err)  {
+            callback(err);
+        }
+
+        var botBlog;
+        try {
+            botBlog = new botFormat.BotBlog(body.id, body.name, body.link, accessToken);
+        }
+        catch(e) {
+            callback(e);
+        }
+        callback(null, botBlog);
+    });
+}
+
 router.get('/bot_bloglist', function (req, res) {
     var userId = userMgr.getUserId(req, res);
     if (!userId) {
@@ -150,13 +168,12 @@ router.get('/bot_bloglist', function (req, res) {
                 return res.status(err.statusCode).send(err);
             }
 
-            var blogIds = [];
-            blogIds.push(provider.providerId); //account's feed
+            var accounts = [];
 
             try {
                 for (var i = 0; i < body.data.length; i += 1) {
                     var item = body.data[i];
-                    blogIds.push(item.id); //page id
+                    accounts.push({id: item.id, accessToken: item.access_token}); //page id
                 }
             }
             catch(e) {
@@ -168,30 +185,22 @@ router.get('/bot_bloglist', function (req, res) {
             var async = require('async');
             var asyncTasks = [];
 
-            blogIds.forEach(function (blogId) {
-              asyncTasks.push(function (callback) {
-                  var url = FACEBOOK_API_URL+"/"+ blogId;
-                  _requestGet(url, provider.accessToken, function(err, response, body) {
-                      if (err)  {
-                          log.error(err, meta);
-                          callback(err);
-                      }
+            asyncTasks.push(function (callback) {
+                _getBotBlog(provider.providerId, provider.accessToken, callback);
+            });
 
-                      var botBlog;
-                      try {
-                          botBlog = new botFormat.BotBlog(body.id, body.name, body.link);
-                      }
-                      catch(e) {
-                          log.error(e, meta);
-                          callback(e);
-                      }
-                      callback(null, botBlog);
-                  });
+            accounts.forEach(function (account) {
+              asyncTasks.push(function (callback) {
+                  _getBotBlog(account.id, account.accessToken, callback);
               });
             });
 
             var botBlogList = new botFormat.BotBlogList(provider);
             async.parallel(asyncTasks, function (err, blogList) {
+                if (err) {
+                    log.error(err.stack);
+                    return res.status(err.statusCode).send(e);
+                }
                 blogList.forEach(function (botBlog) {
                   botBlogList.blogs.push(botBlog) ;
                 });
@@ -508,10 +517,13 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
             log.error(err, meta);
             return res.status(500).send(err);
         }
+
+        var blog = blogBot.getBlogInUser(user, provider, blogId);
+
         request.postEx(apiUrl, {
             json: true,
             headers: {
-                "authorization": "Bearer " + provider.accessToken
+                "authorization": "Bearer " + blog.accessToken
             },
             body: fbPost
         }, function (err, response, body) {

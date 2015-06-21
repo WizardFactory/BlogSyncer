@@ -637,10 +637,10 @@ BlogBot.combineUser = function (user, delUser) {
 /**
  *
  * @param {User} user
- * @param {{provider: object, blogs: [{blogId: string, blogTitle: string, blogUrl: string}]}} recvBlogs
+ * @param {{provider: object, blogs: [{blogId: string, blogTitle: string, blogUrl: string}]}} rcvBlogs
  * @private
  */
-BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
+BlogBot._cbAddBlogsToDb = function (user, rcvBlogs) {
     var provider;
     var blogs;
     var blogDb;
@@ -653,12 +653,12 @@ BlogBot._cbAddBlogsToDb = function (user, recvBlogs) {
     meta.fName = "_cbAddBlogsToDb";
     meta.userId = user._id.toString();
 
-    provider = recvBlogs.provider;
+    provider = rcvBlogs.provider;
     if (!provider) {
         log.error("Provider is undefined", meta);
         return;
     }
-    blogs = recvBlogs.blogs;
+    blogs = rcvBlogs.blogs;
 
     log.debug(provider, meta);
     log.info(blogs, meta);
@@ -1514,6 +1514,35 @@ BlogBot.getTeaser = function (url, callback) {
     });
 
     client.fetch();
+};
+
+/**
+ *
+ * @param user
+ * @param provider
+ * @param blogId
+ * @returns {*}
+ */
+BlogBot.getBlogInUser = function (user, provider, blogId) {
+    var blogDb = this._findDbByUser(user, "blog");
+    var sites = blogDb.sites;
+    var botBlog;
+
+    for (var i=0; i<sites.length; i+=1) {
+        var p = sites[i].provider;
+        if (p.providerName === provider.providerName && p.providerId === provider.providerId) {
+            for (var j = 0; j < sites[i].blogs.length; j += 1) {
+                var blog = sites[i].blogs[j];
+                if (blog.blog_id === blogId) {
+                    botBlog = blog;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    return botBlog;
 };
 
 module.exports = BlogBot;
