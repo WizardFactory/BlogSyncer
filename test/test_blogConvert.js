@@ -106,7 +106,7 @@ describe('blogConvert', function () {
         var MAX_PLAIN_TEXT_LENGTH = 140;
 
         it('make limit length string', function () {
-            var hashTagString = bC.convertTagToHashtag(tD.testPainTextPost1.tags).toString();
+            var hashTagString = bC.convertTagToHashtag(tD.testPainTextPost1.tags).join(' ');
             var str;
             var urls = [];
 
@@ -217,6 +217,9 @@ describe('blogConvert', function () {
 
             hashTags = bC.getHashTags(tD.testStringForHashTags3);
             assert.equal(hashTags.toString(), tD.testStringForHashTagsResult3, true, "Mismatch hashtags");
+
+            hashTags = bC.getHashTags(undefined);
+            assert.equal(Array.isArray(hashTags), true, true, "Mismatch hashtags");
         });
         it('link post to teaser text content', function (done) {
             this.timeout(5000);

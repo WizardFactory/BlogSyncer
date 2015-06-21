@@ -61,6 +61,13 @@ describe('postDb', function () {
             retPost = postDb.addPost("newProvider", "328422", newPost);
             assert.equal(retPost.title, newPost.title, "Fail to add post");
         });
+        it('get info from postInfo', function () {
+
+            var postInfo = postDb.findPostByTitle(testPostInfo.title);
+            var info = postDb.getInfoFromPostInfo(postInfo, testPostInfo.infos[0].provider_name,
+                        testPostInfo.infos[0].blog_id);
+            assert.equal(info.url, testPostInfo.infos[0].url, "Fail to match url");
+        });
     });
 });
 

@@ -11,8 +11,6 @@ if (!global.log) {
     global.log = require('winston');
 }
 
-var testHistory = tD.testHistory;
-
 describe('historyDb', function () {
     describe('Function', function () {
         var historyDb;
@@ -21,8 +19,8 @@ describe('historyDb', function () {
             assert.notEqual(typeof historyDb, "undefined", "Fail to create historyDb");
         });
         it('add historyDb', function () {
-            historyDb.histories.push(testHistory);
-            assert.equal(historyDb.histories[0].src.title, testHistory.src.title, "Fail to add historyDb");
+            historyDb.histories.push(tD.testHistory);
+            assert.equal(historyDb.histories[0].title, tD.testHistory.title, "Fail to add historyDb");
         });
     });
 });

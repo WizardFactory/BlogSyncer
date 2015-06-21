@@ -42,8 +42,8 @@ passport.use(new KakaoStrategy({
         //log.debug("refreshToken:" + refreshToken, meta);
         //log.debug("params:"+JSON.stringify(params), meta);
         //log.debug("profile:" + JSON.stringify(profile), meta);
-        var provider  = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.username, accessToken,
-                    refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
+        var provider  = new botFormat.ProviderOauth2(profile.provider, profile.id.toString(), profile.username,
+                    accessToken, refreshToken, userMgr.makeTokenExpireTime(params.expires_in));
 
         userMgr.updateOrCreateUser(req, provider, function(err, user, isNewProvider, delUser) {
             if (err) {
@@ -221,9 +221,18 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
                 break;
             case 'PHOTO':
                 var mediaUrls=[];
-                for (var j=0; j<rawPost.media.length; j+=1) {
-                   mediaUrls.push(rawPost.media[j].original);
+
+                //profile photo 변경시에는 PHOTO type인데 media가 없음.
+                if (!rawPost.media || !rawPost.media.length) {
+                    log.error("this post didn't have media so it is skipped! rawPost.id="+rawPost.id+
+                                ' url='+rawPost.url);
+                    continue;
                 }
+
+                for (var j=0; j<rawPost.media.length; j+=1) {
+                    mediaUrls.push(rawPost.media[j].original);
+                }
+
                 botPost = new botFormat.BotPhotoPost(rawPost.id, mediaUrls, rawPost.created_at, rawPost.url, '',
                             rawPost.content, [], [], replies);
                 break;
@@ -283,7 +292,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
                 _pushPostsFromKakao(botPostList.posts, body, after);
             }
             catch(e) {
-                log.error(e, meta);
+                log.error(e.stack, meta);
                 log.error(body, meta);
                 return res.status(500).send(e);
             }
@@ -323,14 +332,14 @@ router.get('/bot_posts/:blog_id/:post_id', function (req, res) {
             }
 
             var botPostList = new botFormat.BotPostList(KAKAO_PROVIDER, blogId);
-            log.info(body, meta);
+            log.debug(body, meta);
             try {
                 var rawPosts = [];
                 rawPosts.push(body);
                 _pushPostsFromKakao(botPostList.posts, rawPosts);
             }
             catch(e) {
-                log.error(e, meta);
+                log.error(e.stack, meta);
                 log.error(body, meta);
                 return res.status(500).send(e);
             }
@@ -438,17 +447,24 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
         }
 
         var linkPost = {};
-        if (rcvPost.type === 'link') {
-            linkPost.content = bC.removeHtmlTags(rcvPost.description);
+        linkPost.content = '';
+
+        if (rcvPost.content) {
+            linkPost.content += bC.removeHtmlTags(rcvPost.content);
+        }
+        if (rcvPost.description) {
+            linkPost.content += bC.removeHtmlTags(rcvPost.description);
         }
 
-        var tagString = '';
-        if (!bC.getHashTags(linkPost.content)) {
-
-            //have to add hashtags
-            tagString = rcvPost.tags.toString();
+        var hashTags;
+        if (rcvPost.tags) {
+            hashTags = bC.convertTagToHashtag(rcvPost.tags);
         }
-        linkPost.content = bC.makeLimitString(2048, linkPost.content, tagString);
+        else {
+            hashTags = [];
+        }
+
+        linkPost.content = bC.makeLimitString(2048, linkPost.content, hashTags.join(' '));
 
         try {
             linkPost.link_info = JSON.stringify(body);
@@ -646,7 +662,9 @@ function _updateAccessToken(user, provider, callback) {
         }
         log.info(body);
 
-        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token, body.expires_in);
+        var newProvider = userMgr.updateAccessToken(user, provider, body.access_token, body.refresh_token,
+                    body.expires_in);
+
         return callback(null, newProvider);
     });
 }

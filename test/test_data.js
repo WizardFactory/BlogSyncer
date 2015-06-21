@@ -63,15 +63,15 @@ var testData = {
 
     testPainTextPost1: {
         id: '333',
-        content: '지난주 있었던 Y Combinator의 demo day 1에서 나온 수십개 startup중 소비자에게 어필할만한 몇개를 추려봤습니다. 빨래 픽업/배달 서비스 http://www.getcleanly.com 출퇴근 교통 솔루션. 출발지 목적지를 쓰면 미니밴이 와서 픽업. 가까운 미래에 구글 무인자동차와 이 서비스가 결합하여 버스나 택시 등 기존 수단을 대체할 것으로 보입니다. https://www.chariotsf.com 이제 더 이상 노트북이나 데스크톱을 살 필요가 없다? 클라우드 컴퓨터 https://paperspace.io 가방무게도 알수있고, 여행 기록도 볼수있으며, 가방과 멀어지면 경고도 보내주어 분실을 방지해주는 스마트 여행가방. 게다가 알루미늄 박스 가방에 비하면 저렴한 가격. http://bluesmart.com 컴퓨터 코딩을 배워 본다고 Udemy를 종종 사용했는데 그것과 유사한 서비스. 아쉬운 점은 이런 서비스 대부분이 영어로 강의를 하기때문에 비영어권 접근이 쉽지 않습니다. 20세기보다 영어가 더 절실해지는 상황.. https://courses.platzi.com 이제 요리한다고 불 앞에 서서 땀흘리고 기름냄새 맡을 일이 없습니다. 스마트 하게 세팅만 해주면 알아서 요리해주는 머신 https://cindercooks.com 이메일 내용을 파악해서 똑똑한 비서처럼 정리해준다는데.. 안써봐서 어느정도로 스마트한지는 모르겠습니다 http://www.slidemailapp.com/#tmhmdj:E4Og 자전거를 타고 가다가 뒤에 뭐가 있나 뒤돌아 보거나 거울을 보고 계시나요? 모르는 길을 갈때 스마트폰 지도앱 네비게이션을 중간중간 확인 하나요? 이 스마트 자전거는 물체가 근접하면 경고음을 내고 지도앱 내비게이션과 연동해서 운전손잡이에 방향 지시등이 들어 온답니다. 게다가 슬릭한 디자인. https://vanhawks.com 앞으로도 이런 자료를 보고 싶다면 odd things 페북 페이지에 가서 like! https://facebook.com/oddthingsLLC',
+        content: '지난주 있었던 Y Combinator의 demo day 1에서 나온 수십개 startup중 소비자에게 어필할만한 몇개를 추려봤습니다. 빨래 픽업/배달 서비스 http://www.getcleanly.com 출퇴근 교통 솔루션. 출발지 목적지를 쓰면 미니밴이 와서 픽업. 가까운 미래에 구글 무인자동차와 이 서비스가 결합하여 버스나 택시 등 기존 수단을 대체할 것으로 보입니다. https://www.chariotsf.com 이제 더 이상 노트북이나 데스크톱을 살 필요가 없다? 클라우드 컴퓨터 https://paperspace.io 가방무게도 알수있고, 여행 기록도 볼수있으며, 가방과 멀어지면 경고도 보내주어 분실을 방지해주는 스마트 여행가방. 게다가 알루미늄 박스 가방에 비하면 저렴한 가격. http://bluesmart.com 컴퓨터 코딩을 배워 본다고 Udemy를 종종 사용했는데 그것과 유사한 서비스. 아쉬운 점은 이런 서비스 대부분이 영어로 강의를 하기때문에 비영어권 접근이 쉽지 않습니다. 20세기보다 영어가 더 절실해지는 상황.. https://courses.platzi.com 이제 요리한다고 불 앞에 서서 땀흘리고 기름냄새 맡을 일이 없습니다. 스마트 하게 세팅만 해주면 알아서 요리해주는 머신 https://cindercooks.com 이메일 내용을 파악해서 똑똑한 비서처럼 정리해준다는데.. 안써봐서 어느정도로 스마트한지는 모르겠습니다 http://www.slidemailapp.com/tmhmdj:E4Og 자전거를 타고 가다가 뒤에 뭐가 있나 뒤돌아 보거나 거울을 보고 계시나요? 모르는 길을 갈때 스마트폰 지도앱 네비게이션을 중간중간 확인 하나요? 이 스마트 자전거는 물체가 근접하면 경고음을 내고 지도앱 내비게이션과 연동해서 운전손잡이에 방향 지시등이 들어 온답니다. 게다가 슬릭한 디자인. https://vanhawks.com 앞으로도 이런 자료를 보고 싶다면 odd things 페북 페이지에 가서 like! https://facebook.com/oddthingsLLC',
         modified: d,
         post_url: 'http://is.gd/N5CgDW',
         title: '',
         tags: ['oddthings', 'startup', '스타트업', 'ycombinator', '유용한정보', '유용한어플', '아이오티', 'ioT' ],
         replies: [{'notes': 99}]
     },
-    testPainTextLimitStringResult1: '지난주 있었던 Y Combinator의 demo day 1에서 나온 수십개 startup중 소비자에 #oddthings,#startup,#스타트업,#ycombinator,#유용한정보,#유용한어플,#아이오티,#ioT http://is.gd/N5CgDW',
-    testPainTextLimitStringResult2: '#oddthings,#startup,#스타트업,#ycombinator http://is.gd/N5CgDW',
+    testPainTextLimitStringResult1: '지난주 있었던 Y Combinator의 demo day 1에서 나온 수십개 startup중 소비자에 #oddthings #startup #스타트업 #ycombinator #유용한정보 #유용한어플 #아이오티 #ioT http://is.gd/N5CgDW',
+    testPainTextLimitStringResult2: '#oddthings #startup #스타트업 #ycombinator http://is.gd/N5CgDW',
     testLinkPost1: {
         id: '3333333',
         url: 'https://docs.angularjs.org/tutorial/step_02',
