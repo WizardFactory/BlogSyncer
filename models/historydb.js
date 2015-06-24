@@ -10,11 +10,19 @@ historySchema = mongoose.Schema({
     histories: [{
         tryTime: Date,
         status: String,
+        title: String,
+        description: String,
         src: {
-            title: String, id: String, url: String
+            providerName: String,
+            blogId: String,
+            postId: String,
+            url: String
         },
         dst: {
-            id: String,  url: String
+            providerName: String,
+            blogId: String,
+            postId: String,
+            url: String
         }
     }]
 });

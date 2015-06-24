@@ -52,6 +52,8 @@ BlogBot._findDbByUser = function (user, dbName) {
                     return this.users[i].historyDb;
                 case "post":
                     return this.users[i].postDb;
+                case "retry":
+                    return this.users[i].retryDb;
                 case "all":
                     return this.users[i];
                 default:
@@ -70,41 +72,41 @@ BlogBot._findDbByUser = function (user, dbName) {
  * @private
  */
 BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
-    var groupDb;
-    var blogId;
-    var providerName;
-    var post;
-    var groups;
-    var i;
     var group;
-    var j;
     var targetBlog;
     var provider;
-    var meta = {};
 
     //callback일때 this가 undefined인 상태임 by aleckim
+    var meta = {};
     meta.cName = "BlogBot";
     meta.fName = "_cbSendPostToBlogs";
     meta.userId = user._id.toString();
 
-    groupDb = BlogBot._findDbByUser(user, "group");
-    blogId = rcvPosts.blog_id;
-    providerName = rcvPosts.provider_name;
-    post = rcvPosts.posts[0];
-    groups = groupDb.findGroupByBlogInfo(providerName, blogId);
+    var groupDb = BlogBot._findDbByUser(user, "group");
+    var postDb = BlogBot._findDbByUser(user, "post");
+
+    var blogId = rcvPosts.blog_id;
+    var providerName = rcvPosts.provider_name;
+    var post = rcvPosts.posts[0];
+    var groups = groupDb.findGroupByBlogInfo(providerName, blogId);
+
+    var postInfo = postDb.getPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, post.id.toString());
+    if (!postInfo) {
+       log.error("Fail to get postInfo providerName="+rcvPosts.provider_name+" blogId="+rcvPosts.blog_id+ " postId=" +
+                    post.id.toString());
+    }
 
     log.debug(providerName, meta);
 
-    for (i = 0; i<groups.length; i+=1) {
+    for (var i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
 
-        for (j=0; j<group.length; j+=1) {
+        for (var j=0; j<group.length; j+=1) {
             targetBlog = group[j].blog;
             provider = group[j].provider;
 
-            if (targetBlog.blog_id === blogId && provider.providerName === providerName) {
-                log.debug('Skip current blog id='+blogId+' provider='+providerName, meta);
-                //skip current blog
+            if (postDb.getInfoFromPostInfo(postInfo, provider.providerName, targetBlog.blog_id)) {
+                log.debug('Skip current provider='+provider.providerName+' blog='+blogId, meta);
                 continue;
             }
 
@@ -121,24 +123,21 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
                 //postType is decided by system(depend type of source post
                 //postType = syncInfo.postType;
             }
+
             {
                 var bC = require('./blogConvert');
                 bC.mergeTagsCategories(post.categories, targetBlog.categories, post.tags);
             }
 
             //syncInfo.postType에 따라 post 처리
-            BlogBot._requestPostContent(user, post, provider.providerName, targetBlog.blog_id,
+            BlogBot._requestPostContent(user, rcvPosts, provider.providerName, targetBlog.blog_id,
                 function(err, user, newPosts) {
                     if(err) {
                         log.error("Fail to post content", meta);
                         return;
                     }
 
-                    var oPostInfo = {};
-                    oPostInfo.providerName = rcvPosts.provider_name;
-                    oPostInfo.blogId = rcvPosts.blog_id;
-                    oPostInfo.postId = rcvPosts.posts[0].id.toString();
-                    BlogBot._cbAddPostInfoToDb(user, newPosts, oPostInfo);
+                    BlogBot._cbAddPostInfoToDb(user, newPosts, postInfo);
                 }
             );
         }
@@ -146,7 +145,7 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
 };
 
 /**
- *
+ * postList를 받아서 연결된 blog에 전달한다.
  * @param user
  * @param rcvPosts
  * @private
@@ -171,17 +170,24 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
         return;
     }
 
+    var postInfo;
+
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<rcvPosts.posts.length;i+=1) {
         newPost = rcvPosts.posts[i];
-        if (postDb.isPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString())) {
-            log.debug("This post was already saved - provider=" +
-                    rcvPosts.provider_name + " blog=" + rcvPosts.blog_id + " post=" + newPost.id, meta);
-            continue;
+
+        postInfo = postDb.getPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString());
+        if (!postInfo) {
+            postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, newPost);
+            postDbIsUpdated = true;
+
+            postInfo = postDb.getPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, newPost.id.toString());
+            if(!postInfo) {
+                log.error("Fail to get postInfo providerName="+rcvPosts.provider_name+" blogId="+rcvPosts.blog_id+
+                    " postId="+newPost.id.toString());
+            }
         }
 
-        postDb.addPost(rcvPosts.provider_name, rcvPosts.blog_id, newPost);
-        postDbIsUpdated = true;
         //get only one post for send to dstBlog
         BlogBot._requestGetPosts(user, rcvPosts.provider_name, rcvPosts.blog_id, {"post_id":newPost.id},
             function(err, user, rcvPosts) {
@@ -328,6 +334,42 @@ BlogBot._updateAccessToken = function (user) {
 
 /**
  *
+ * @param user
+ * @param botRetry
+ * @private
+ */
+BlogBot._retryPost = function (user, botRetry) {
+    //check new post of dst that's because it was posted already.
+
+    log.info("retry post user="+user._id+" srcBotPosts="+botRetry.srcBotPosts.toString()+" dstBotPosts="+
+                botRetry.dstBotPosts.toString());
+
+    BlogBot._requestPostContent(user, botRetry.srcBotPosts, botRetry.dstBotPosts.providerName,
+                botRetry.dstBotPosts.blogId, function(err, user, newPosts) {
+            if(err) {
+                log.error("Fail to post content");
+                return;
+            }
+
+            BlogBot._cbAddPostInfoToDb(user, newPosts);
+        }
+    );
+};
+
+/**
+ *
+ * @param user
+ * @private
+ */
+BlogBot._retryPostings = function (user) {
+    var retryDb = BlogBot._findDbByUser(user, "retry");
+    while(retryDb.queue.length) {
+       BlogBot._retryPost(user, retryDb.queue.pop());
+    }
+};
+
+/**
+ *
  */
 BlogBot.task = function() {
     var i;
@@ -341,6 +383,7 @@ BlogBot.task = function() {
         user = this.users[i].user;
         BlogBot._updateAccessToken(user);
         BlogBot._getAndPush(user);
+        BlogBot._retryPostings(user);
     }
 };
 
@@ -474,6 +517,9 @@ BlogBot.start = function (user) {
             log.info("Make new postDb", meta);
         }
     });
+
+    userInfo.retryDb = {};
+    userInfo.retryDb.queue = [];
 
     this.users.push(userInfo);
 };
@@ -816,12 +862,11 @@ BlogBot.getGroups = function(user) {
  *
  * @param user
  * @param rcvPosts
- * @param oPostInfo
+ * @param postInfo
  * @private
  */
-BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, oPostInfo) {
+BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, postInfo) {
     var postDb;
-    var post;
     var meta={};
 
     meta.cName = "BlogBot";
@@ -833,19 +878,20 @@ BlogBot._cbAddPostInfoToDb = function (user, rcvPosts, oPostInfo) {
         return;
     }
 
-    if (!rcvPosts.posts[0].title) {
-        log.debug("Fail to find title !!", meta);
+    if (!postInfo) {
+        postInfo = BlogBot.
+                    _findDbByUser(user, "post").
+                    getPostByPostIdOfBlog(rcvPosts.provider_name,
+                    rcvPosts.blog_id, rcvPosts.posts[0].id.toString());
+        if (!postInfo) {
+            log.error("Fail to get postInfo providerName="+rcvPosts.provider_name+" blogId="+rcvPosts.blog_id+
+                        " postId="+rcvPosts.posts[0].id.toString());
+        }
     }
 
     postDb = BlogBot._findDbByUser(user, "post");
-    post = postDb.getPostByPostIdOfBlog(oPostInfo.providerName, oPostInfo.blogId, oPostInfo.postId);
-    if (!post) {
-        log.error("Fail to found post by providerName="+oPostInfo.providerName+" blogId="+oPostInfo.blogId+
-                " postId="+oPostInfo.postId, meta);
-        return;
-    }
 
-    postDb.addPostInfo(post, rcvPosts.provider_name, rcvPosts.blog_id, rcvPosts.posts[0]);
+    postDb.addPostInfo(postInfo, rcvPosts.provider_name, rcvPosts.blog_id, rcvPosts.posts[0]);
     postDb.save(function (err) {
         if (err) {
             log.error("Fail to save postDb", meta);
@@ -885,7 +931,7 @@ BlogBot._cbAddPostsToDb = function(user, rcvPosts) {
         var rcvPost = rcvPosts.posts[i];
 
         //check there is post
-        if (postDb.isPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost.id.toString())) {
+        if (postDb.getPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, rcvPost.id.toString())) {
             log.verbose("This post was already saved - provider=" + rcvPosts.provider_name + " blog=" +
                     rcvPosts.blog_id + " post=" + rcvPost.id, meta);
             continue;
@@ -1236,43 +1282,59 @@ BlogBot.getHistories = function (user) {
     }
 };
 
+BlogBot._addRetryPosting = function (user, botRetry) {
+    var retryDb = BlogBot._findDbByUser(user, "retry");
+    retryDb.queue.push(botRetry);
+};
+
 /**
  *
  * @param user
- * @param srcPost
+ * @param srcBotPosts
  * @param postStatus
- * @param dstPost
+ * @param dstBotPosts
  * @private
  */
-BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
-    var history;
-    var historyDb;
+BlogBot._addHistory = function(user, srcBotPosts, postStatus, dstBotPosts) {
     var src;
     var dst;
     var meta={};
-
     meta.cName = this.name;
     meta.fName = "_addHistory";
     meta.userId = user._id.toString();
 
     log.debug(" ", meta);
-    historyDb = BlogBot._findDbByUser(user, "history");
+    var historyDb = BlogBot._findDbByUser(user, "history");
 
-    if (srcPost) {
+    if (srcBotPosts) {
         src = {};
-        src.title = srcPost.title;
-        src.id = srcPost.id;
-        src.url = srcPost.url;
-    }
-    if (dstPost) {
-        dst = {};
-        dst.id = dstPost.id;
-        dst.url = dstPost.url;
+        src.providerName = srcBotPosts.providerName;
+        src.blogId = srcBotPosts.blogId;
+        src.id = srcBotPosts.posts[0].id;
+        src.url = srcBotPosts.posts[0].url;
     }
 
-    history = {};
+    if (dstBotPosts) {
+        dst = {};
+        dst.providerName = dstBotPosts.providerName;
+        dst.blogId = dstBotPosts.blogId;
+        if (dstBotPosts.posts) {
+            dst.id = dstBotPosts.posts[0].id;
+            dst.url = dstBotPosts.posts[0].url;
+        }
+        else {
+            BlogBot._addRetryPosting(user, {srcBotPosts:srcBotPosts, dstBotPosts:dstBotPosts});
+        }
+    }
+    else {
+        log.error("You have to send dstBotPosts for retrying post");
+    }
+
+    var history = {};
     history.tryTime = new Date();
     history.status = postStatus;
+    history.title = srcBotPosts.title;
+    history.description = "";
     history.src = src;
     history.dst = dst;
 
@@ -1287,13 +1349,13 @@ BlogBot._addHistory = function(user, srcPost, postStatus, dstPost) {
 /**
  *
  * @param user
- * @param post
+ * @param botPosts
  * @param providerName
  * @param blogId
  * @param callback
  * @private
  */
-BlogBot._requestPostContent = function (user, post, providerName, blogId, callback) {
+BlogBot._requestPostContent = function (user, botPosts, providerName, blogId, callback) {
     var meta={};
 
     meta.cName = this.name;
@@ -1308,13 +1370,14 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
     //url += "&";
     //url += "postType=" + postType;
 
-    var opt = { form: post };
+    var opt = { form: botPosts.posts[0] };
 
     log.debug("Post url="+url, meta);
     request.postEx(url, opt, function (err, response, body) {
         if (err)  {
             log.error(err, meta);
-            BlogBot._addHistory(user, post, err.statusCode);
+            //addHistory에 blog정보 추가 해야 함.
+            BlogBot._addHistory(user, botPosts, err.statusCode, {providerName: providerName, blogId: blogId});
             return callback(err);
         }
 
@@ -1325,19 +1388,18 @@ BlogBot._requestPostContent = function (user, post, providerName, blogId, callba
         catch(e) {
             e.exMessage = "Fail to parse body";
             e.statusCode = 500;
-            log.error(e, meta);
-            log.error(body, meta);
-            BlogBot._addHistory(user, post, err.statusCode);
+            log.error(e.stack, meta);
+            BlogBot._addHistory(user, botPosts, err.statusCode, {providerName: providerName, blogId: blogId});
             return callback(e);
         }
 
         callback(null, user, rcvPosts);
 
         if (rcvPosts.posts) {
-            BlogBot._addHistory(user, post, response.statusCode, rcvPosts.posts[0]);
+            BlogBot._addHistory(user, botPosts, response.statusCode, rcvPosts);
         }
         else {
-            BlogBot._addHistory(user, post, response.statusCode);
+            BlogBot._addHistory(user, botPosts, response.statusCode, {providerName: providerName, blogId: blogId});
         }
     });
 };

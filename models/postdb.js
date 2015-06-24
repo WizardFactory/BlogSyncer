@@ -87,7 +87,7 @@ postSchema.methods.getPostByPostIdOfBlog = function(providerName, blogId, postId
         }
     }
 
-    log.error('Fail to find providerName='+providerName+' blogId='+blogId+ ' post id=' + postId, meta);
+    log.silly('Fail to find providerName='+providerName+' blogId='+blogId+' post id='+postId, meta);
 };
 
 /**
@@ -286,6 +286,25 @@ postSchema.methods.addPost = function(providerName, blogId, newPost) {
 
     log.silly("Total=" + this.posts.length, meta);
     return this.posts[totalCount];
+};
+
+/**
+ *
+ * @param postInfo
+ * @param providerName
+ * @param blogId
+ */
+postSchema.methods.getInfoFromPostInfo = function(postInfo, providerName, blogId) {
+    for (var i=0; i<postInfo.infos.length; i+=1) {
+        var info = postInfo.infos[i];
+        if (info.provider_name === providerName && info.blog_id === blogId) {
+            return info;
+        }
+    }
+
+    log.verbose("Fail to get info");
+    log.verbose(postInfo);
+    log.verbose("providerName="+providerName+" blogId="+blogId);
 };
 
 module.exports = mongoose.model('Post', postSchema);
