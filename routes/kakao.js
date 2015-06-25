@@ -161,8 +161,10 @@ router.get('/bot_bloglist', function (req, res) {
             }
 
             var nickName;
+            var id;
 
             try {
+                id = body.id;
                 nickName = body.properties.nickname;
             }
             catch(e) {
@@ -173,7 +175,7 @@ router.get('/bot_bloglist', function (req, res) {
 
             var blogUrl = "stroy.kakao.com/" + nickName;
             var botBlogList = new botFormat.BotBlogList(provider);
-            var botBlog = new botFormat.BotBlog(nickName, nickName, blogUrl);
+            var botBlog = new botFormat.BotBlog(id, nickName, blogUrl);
             botBlogList.blogs.push(botBlog);
 
             res.send(botBlogList);
@@ -202,9 +204,8 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
         if (after) {
             var postDate = new Date(rawPost.created_at);
             var afterDate = new Date(after);
-
             if (postDate < afterDate) {
-                //log.debug('post is before', meta);
+                log.silly('post is before url='+rawPost.url+' date='+postDate.toUTCString());
                 continue;
             }
         }
@@ -273,6 +274,9 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         apiUrl += "last_id=" + lastId;
     }
     log.debug(apiUrl, meta);
+    if (after) {
+        log.debug('after='+after, meta);
+    }
 
     userMgr.findProviderByUserId(userId, KAKAO_PROVIDER, undefined, function (err, user, provider) {
         if (err) {

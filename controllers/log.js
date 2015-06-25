@@ -30,7 +30,7 @@ module.exports = function(filename) {
         logger = new winston.Logger({
             transports: [
                 new winston.transports.Console({
-                    level      : 'debug',
+                    level      : 'verbose',
                     colorize   : true
                 })
             ]
