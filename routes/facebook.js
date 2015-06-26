@@ -199,7 +199,7 @@ router.get('/bot_bloglist', function (req, res) {
             async.parallel(asyncTasks, function (err, blogList) {
                 if (err) {
                     log.error(err.stack);
-                    return res.status(err.statusCode).send(e);
+                    return res.status(err.statusCode).send(err);
                 }
                 blogList.forEach(function (botBlog) {
                   botBlogList.blogs.push(botBlog) ;
@@ -235,8 +235,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
     log.verbose("+", meta);
 
     var blogId = req.params.blog_id;
-    var limit = req.query.limit;
-    var until = req.query.until;
+    var after = req.query.after;
+
     var pagingToken = req.query.__paging_token;
 
     userMgr.findProviderByUserId(userId, FACEBOOK_PROVIDER, undefined, function (err, user, provider) {
@@ -246,18 +246,8 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         }
 
         var apiUrl = FACEBOOK_API_URL+"/"+blogId+"/posts";
-        apiUrl += "?limit=25&";
-        /*
-        if (limit) {
-            apiUrl += "limit="+limit+"&";
-        }
-        */
-        if (until) {
-            apiUrl += "until=" + until + "&";
-        }
-
         if (pagingToken) {
-            apiUrl += "__paging_token" + pagingToken + "&";
+            apiUrl += "?__paging_token" + pagingToken;
         }
 
         log.silly("apiUrl=" + apiUrl);
@@ -279,6 +269,16 @@ router.get('/bot_posts/:blog_id', function (req, res) {
 
                 for (var i = 0; i<body.data.length; i+=1) {
                     var rawPost = body.data[i];
+                    if (after) {
+                        var postDate = new Date(rawPost.updated_time);
+                        var afterDate = new Date(after);
+
+                        if (postDate < afterDate) {
+                            log.silly('post is before url='+rawPost.link+' date='+postDate.toUTCString());
+                            continue;
+                        }
+                    }
+
                     var botPost = {};
                     if (rawPost.message) {
                         botPost = new botFormat.BotTextPost(rawPost.id, ' ', rawPost.updated_time, rawPost.link, '', [],

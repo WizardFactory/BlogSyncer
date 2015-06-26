@@ -636,8 +636,6 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
     api_url += "&targetUrl=" + target_api_url; //조회할 티스토리 주소
     api_url += "&output=json";
 
-    log.debug("url="+api_url);
-
     get(api_url, null, function (err, response, body) {
         if (err) {
             log.error(err);

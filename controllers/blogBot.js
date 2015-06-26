@@ -687,70 +687,64 @@ BlogBot.combineUser = function (user, delUser) {
  * @private
  */
 BlogBot._cbAddBlogsToDb = function (user, rcvBlogs) {
-    var provider;
-    var blogs;
-    var blogDb;
-    var i;
-    var site;
-    var blog;
     var meta = {};
-
     meta.cName = "BlogBot";
     meta.fName = "_cbAddBlogsToDb";
     meta.userId = user._id.toString();
 
-    provider = rcvBlogs.provider;
+    var provider = rcvBlogs.provider;
     if (!provider) {
         log.error("Provider is undefined", meta);
         return;
     }
-    blogs = rcvBlogs.blogs;
+    var blogs = rcvBlogs.blogs;
 
     log.debug(provider, meta);
     log.info(blogs, meta);
 
-    blogDb = BlogBot._findDbByUser(user, "blog");
+    var blogDb = BlogBot._findDbByUser(user, "blog");
     if (!blogDb) {
         log.error("Fail to find blogDb", meta);
         return;
     }
 
-    site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
+    var i;
+    var newBlogList = [];
+
+    var site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
     if (site) {
         for (i=0; i<blogs.length; i+=1) {
-            blog = blogDb.findBlogFromSite(site, blogs[i].blog_id.toString());
+            var blog = blogDb.findBlogFromSite(site, blogs[i].blog_id.toString());
             if (!blog) {
                 site.blogs.push(blogs[i]);
-                BlogBot._requestGetPostCount(user, site.provider.providerName, blogs[i].blog_id,
-                    function (err, user, rcvPostCount) {
-                        if (err) {
-                            log.error(err, meta);
-                            return;
-                        }
-                        BlogBot._cbAddPostsFromNewBlog(user, rcvPostCount);
-                    });
+                newBlogList.push(blogs[i]);
             }
         }
     }
     else {
         blogDb.sites.push({"provider": provider, "blogs": blogs});
-        for (i=0; i<blogs.length; i+=1) {
-            BlogBot._requestGetPostCount(user, provider.providerName, blogs[i].blog_id,
-                function (err, user, rcvPostCount) {
-                    if (err) {
-                        log.error(err, meta);
-                        return;
-                    }
-                    BlogBot._cbAddPostsFromNewBlog(user, rcvPostCount);
-                });
-        }
+        newBlogList = blogs;
     }
+
     blogDb.save(function(err) {
         if (err) {
             log.error(err, meta);
         }
     });
+
     log.debug("Provider Name=" + provider.providerName + " Id=" + provider.providerId, meta);
+
+    //we will do when collect feedback milestone
+    //for (i=0; i<newBlogList.length; i+=1) {
+    //    BlogBot._requestGetPostCount(user, provider.providerName, newBlogList[i].blog_id,
+    //        function (err, user, rcvPostCount) {
+    //            if (err) {
+    //                log.error(err, meta);
+    //                return;
+    //            }
+    //            BlogBot._cbAddPostsFromNewBlog(user, rcvPostCount);
+    //        });
+    //}
 };
 
 /**
@@ -1235,7 +1229,7 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
 
     url += "userid=" + user._id;
 
-    log.debug("Url=" + url, meta);
+    log.verbose("Url=" + url, meta);
 
     request.getEx(url, null, function (err, response, body) {
         if (err)  {
@@ -1364,7 +1358,7 @@ BlogBot._requestPostContent = function (user, botPosts, providerName, blogId, ca
 
     var url = "http://www.justwapps.com/"+providerName + "/bot_posts";
     url += "/new";
-    url += "/"+encodeURIComponent(blogId);
+    url += "/"+blogId;
     url += "?";
     url += "userid=" + user._id;
     //url += "&";
@@ -1372,7 +1366,7 @@ BlogBot._requestPostContent = function (user, botPosts, providerName, blogId, ca
 
     var opt = { form: botPosts.posts[0] };
 
-    log.debug("Post url="+url, meta);
+    log.verbose("Post url="+url, meta);
     request.postEx(url, opt, function (err, response, body) {
         if (err)  {
             log.error(err, meta);
@@ -1452,7 +1446,7 @@ BlogBot.getPosts = function (user, startNum, totalNum) {
     meta.userId = user._id.toString();
 
     postDb = BlogBot._findDbByUser(user, "post");
-    log.debug("Total posts length="+postDb.posts.length, meta);
+    log.verbose("Total posts length="+postDb.posts.length, meta);
     parsedPostDb = BlogBot._getParsedPostDb(postDb, Number(startNum), Number(totalNum));
 
     log.debug("startNum=" + startNum + ", totalNum=" + totalNum, meta);

@@ -240,8 +240,6 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             return;
         }
 
-        log.debug(provider, meta);
-
         var count = 20;
         var api_url = TWITTER_API_URL+"/statuses/user_timeline.json?screen_name="+ provider.providerId +
                             "&count=" + count;
