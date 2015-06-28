@@ -302,9 +302,9 @@ postSchema.methods.getInfoFromPostInfo = function(postInfo, providerName, blogId
         }
     }
 
-    log.verbose("Fail to get info");
-    log.verbose(postInfo);
+    log.verbose("Fail to get postInfo");
     log.verbose("providerName="+providerName+" blogId="+blogId);
+    log.verbose(postInfo.infos.toString());
 };
 
 module.exports = mongoose.model('Post', postSchema);
