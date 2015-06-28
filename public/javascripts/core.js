@@ -124,7 +124,8 @@ bs.config(function ($translateProvider) {
         prefix: 'views/strings/',
         suffix: '.json'
     });
-    $translateProvider.preferredLanguage('en');
+    var lang = navigator.language.split("-"); //ko, ko-kr 둘 다 ko로 설정
+    $translateProvider.preferredLanguage(lang[0]);
 });
 
 

@@ -10,9 +10,6 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
 
     console.log('Start mainCtrl');
 
-    var lang = navigator.language.split("-"); //ko, ko-kr 둘 다 ko로 설정
-    $translate.use(lang[0]);
-
     if (!$scope.user._id) {
         $http.get('/user')
             .success(function (data) {
