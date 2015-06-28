@@ -427,6 +427,38 @@ function _makeNotePost(accessToken, rcvPost, callback) {
     });
 }
 
+/**
+ *
+ * @param content
+ * @param description
+ * @param tags
+ * @returns {{}}
+ * @private
+ */
+function _genLinkPost(content, description, tags) {
+    var linkPost = {};
+    linkPost.content = '';
+
+    if (content) {
+        linkPost.content += bC.removeHtmlTags(content);
+    }
+    if (description) {
+        linkPost.content += bC.removeHtmlTags(description);
+    }
+
+    var hashTags;
+    if (tags) {
+        hashTags = bC.convertTagToHashtag(tags);
+    }
+    else {
+        hashTags = [];
+    }
+
+    linkPost.content = bC.makeLimitString(2048, linkPost.content, hashTags.join(' '));
+
+    return linkPost;
+}
+
 function _makeLinkPost(accessToken, rcvPost, callback) {
     var meta={};
     meta.cName = KAKAO_PROVIDER;
@@ -445,43 +477,64 @@ function _makeLinkPost(accessToken, rcvPost, callback) {
     log.debug(linkInfoUrl, meta);
 
     _requestGet(linkInfoUrl, accessToken, function (err, response, body) {
+
         if (err) {
-            log.error(err, meta);
-            return callback(err);
-        }
+            var errBody;
+            if (err.body) {
+                errBody = JSON.parse(err.body);
+            }
 
-        var linkPost = {};
-        linkPost.content = '';
+            if (err.statusCode === 400 && errBody && errBody.code === -604) {
+                log.verbose(err.body, meta);
 
-        if (rcvPost.content) {
-            linkPost.content += bC.removeHtmlTags(rcvPost.content);
-        }
-        if (rcvPost.description) {
-            linkPost.content += bC.removeHtmlTags(rcvPost.description);
-        }
+                blogBot.getTeaser(rcvPost.contentUrl, function (err, botPreview) {
+                    if (err) {
+                        log.error(err.stack, meta);
+                        return callback(err);
+                    }
+                    var linkPost = _genLinkPost(rcvPost.content, rcvPost.description, rcvPost.tags);
+                    var images = [];
 
-        var hashTags;
-        if (rcvPost.tags) {
-            hashTags = bC.convertTagToHashtag(rcvPost.tags);
+                    //image parameter must be a result of upload images API of kakao.
+                    //if (botPreview.image) {
+                    //    images.push(botPreview.image);
+                    //}
+
+                    /*
+                     * refer : https://developers.kakao.com/docs/restapi#카카오스토리-포스팅-링크
+                     */
+                    linkPost.link_info = JSON.stringify({url: botPreview.url,
+                                        requested_url: botPreview.contentUrl,
+                                        host: botPreview.host,
+                                        title: botPreview.title,
+                                        image: images,
+                                        description: botPreview.description,
+                                        site_name: '',
+                                        section: ''});
+
+                    log.info(linkPost, meta);
+                    return callback(undefined, linkPost);
+                });
+            }
+            else {
+                log.error(err, meta);
+                return callback(err);
+            }
         }
         else {
-            hashTags = [];
+            var linkPost = _genLinkPost(rcvPost.content, rcvPost.description, rcvPost.tags);
+            try {
+                linkPost.link_info = JSON.stringify(body);
+            }
+            catch(e) {
+                log.error(e, meta);
+                log.silly(body, meta);
+                return callback(e);
+            }
+
+            log.debug(linkPost, meta);
+            return callback(undefined, linkPost);
         }
-
-        linkPost.content = bC.makeLimitString(2048, linkPost.content, hashTags.join(' '));
-
-        try {
-            linkPost.link_info = JSON.stringify(body);
-        }
-        catch(e) {
-            log.error(e, meta);
-            log.silly(body, meta);
-            return callback(e);
-        }
-
-        log.debug(linkPost, meta);
-
-        return callback(undefined, linkPost);
     });
 }
 
