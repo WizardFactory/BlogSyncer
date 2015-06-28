@@ -39,6 +39,7 @@ var Wordpress = require('./routes/wordpress');
 var tistory = require('./routes/tistory');
 var blogRoutes = require('./routes/blogRoutes');
 var blogBot = require('./controllers/blogBot');
+var userMgr = require('./controllers/userManager');
 
 var svcConfig = require('./config/all');
 var Logger = require('./controllers/log');
@@ -98,15 +99,46 @@ app.use('/Wordpress', Wordpress);
 app.use('/tistory', tistory);
 app.use('/blogs', blogRoutes);
 
-app.use('/user', function (req, res) {
-   if (!req.user) {
-        res.write('NAU');
-   }
-   else {
-       res.write(JSON.stringify(req.user));
-   }
-   res.end();
-});
+app.route('/user')
+    .get(function(req, res) {
+        if (!req.user) {
+            res.write('NAU');
+        }
+        else {
+            res.write(JSON.stringify(req.user));
+        }
+        res.end();
+    });
+
+app.route('/user/:reqProviderIndex')
+    .delete(function (req, res) {
+        if (!req.user) {
+            res.write('NAU');
+        }
+
+        var providerIndex = req.params.reqProviderIndex;
+        var provider = req.user.providers[providerIndex];
+
+        userMgr.deleteProvider(req.user, providerIndex, function(err, user) {
+                if (err) {
+                    log.error(err);
+                    return res.status(err.statusCode).send(err);
+            }
+            blogBot.deleteSitesOfProvider(user, provider, function(err, sites) {
+                if (err) {
+                    log.error(err);
+                    return res.status(err.statusCode).send(err);
+                }
+                log.debug(sites);
+                req.logIn(user, function(error) {
+                    if (!error) {
+                        // successfully serialized user to session
+                        res.end();
+                    }
+                });
+            });
+        });
+    });
 
 app.use('/logout', function (req, res) {
     req.logout();

@@ -1,4 +1,4 @@
-bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
+bs.controller('mainCtrl', function ($scope, $translate, Data, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
@@ -10,22 +10,17 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
 
     console.log('Start mainCtrl');
 
-    if (!$scope.user._id) {
-        $http.get('/user')
-            .success(function (data) {
-                if (data === 'NAU') {
-                    console.log('NAU');
-                }
-                else {
-                    var user = data;
-                    Data.setUser(user);
-                    $scope.signstat = "LOC_MY_ACCOUNT";
-                    console.log('Change username, signstat');
-                }
-            })
-            .error(function (data) {
-                $scope.showAlert(Type.ALERT.DANGER, data);
-            });
+    if (!$scope.user) {
+        Data.pullUserFromServer(function setUser(err, rcvUser) {
+            if (err) {
+                $scope.showAlert(Type.ALERT.DANGER, err);
+            }
+            else {
+                $scope.user = rcvUser;
+                $scope.signstat = "LOC_MY_ACCOUNT";
+                console.log('Change username, signstat');
+            }
+        });
     }
 
     $scope.showAlert = function(type, message) {
@@ -52,14 +47,14 @@ bs.controller('mainCtrl', function ($q, $scope, $http, $translate, Data, Type) {
     };
 });
 
-bs.controller('homeCtrl', function ($q, $scope) {
+bs.controller('homeCtrl', function ($scope) {
     "use strict";
 
     console.log('Start homeCtrl');
     $scope.title = 'LOC_BLOG_SYNC';
 });
 
-bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
+bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Type) {
     "use strict";
 
     $scope.user = Data.getUser();
@@ -158,7 +153,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
         }
 
         var group = [];
-        var i, j;
+        var i;
         for (i = 0; i < $scope.inSites.length; i += 1) {
             group.push($scope.inSites[i]);
         }
@@ -509,7 +504,7 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
         links = [];
         selectCircle = null;
 
-        paper.on('cell:pointerup', function(cellView, evt, x, y) {
+        paper.on('cell:pointerup', function(cellView) {
             var i, j, k;
             var count = $scope.inSites.length;
             var circle, link, info;
@@ -607,14 +602,14 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
 
     function init() {
         var user = $scope.user;
-        if (!user._id) {
+        if (!user) {
             $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
             return;
         }
 
-        $scope.sites = Site.getSiteList();
+        $scope.sites = Data.getSiteList();
         if (!$scope.sites) {
-            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+            Data.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
                     $scope.showAlert(Type.ALERT.DANGER, err);
                 }
@@ -622,15 +617,15 @@ bs.controller('blogRegisterCtrl', function ($scope, $http, Data, Site, Type) {
             });
         }
 
-        console.log("init: blogs/groups");
-        $http.get("/blogs/groups")
-            .success(function (data) {
-                console.log(data);
-                $scope.groups = data.groups;
-            })
-            .error(function (data) {
-                $scope.showAlert(Type.ALERT.DANGER, data);
+        $scope.groups = Data.getGroups();
+        if (!$scope.groups) {
+            Data.pullGroupsFromServer(function setGroups(err, rcvGroups) {
+                if (err) {
+                    $scope.showAlert(Type.ALERT.DANGER, err);
+                }
+                $scope.groups = rcvGroups;
             });
+        }
 
         initDetailSetting();
     }
@@ -647,7 +642,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, Data, Type) {
 
     var user = $scope.user;
 
-    if (user._id === undefined) {
+    if (!user) {
         $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
         return;
     }
@@ -661,7 +656,7 @@ bs.controller('blogHistoryCtrl', function ($scope, $http, Data, Type) {
         });
 });
 
-bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, Type, $timeout) {
+bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Type, $timeout) {
     "use strict";
 
     var reqStartNum;
@@ -793,14 +788,14 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, Ty
         var url;
         var user = $scope.user;
 
-        if (user._id === undefined) {
+        if (!user) {
             $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
             return;
         }
 
-        sites = Site.getSiteList();
+        sites = Data.getSiteList();
         if (!sites) {
-            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+            Data.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
                     $scope.showAlert(Type.ALERT.DANGER, err);
                 }
@@ -833,25 +828,77 @@ bs.controller('blogCollectFeedbackCtrl', function ($scope, $http, Data, Site, Ty
     init();
 });
 
-bs.controller('signinCtrl', function ($scope, $http, Data, Site, Type) {
+bs.controller('signinCtrl', function ($scope, $http, Data, Type) {
     "use strict";
 
     $scope.providers = Data.getProviderType();
 
+    $scope.getBlogTitle = function(provider) {
+        if (!$scope.sites) {
+            return;
+        }
+
+        if (provider.providerName !== Type.PROVIDER.WORDPRESS) {
+            return;
+        }
+
+        for (var i = 0; i < $scope.sites.length; i += 1) {
+            if ($scope.sites[i].provider.providerId === provider.providerId) {
+                return "(" + $scope.sites[i].blog.blog_title + ")";
+            }
+        }
+    };
+
+    $scope.onClickSite = function(index) {
+        if (index === -1 || $scope.user.providers.length <= 1) {
+            return;
+        }
+
+        var i, j;
+        var provider = $scope.user.providers[index];
+        for (i = 0; i < $scope.groups.length; i += 1) {
+            for (j = 0; j < $scope.groups[i].group.length; j += 1) {
+                if ($scope.groups[i].group[j].provider.providerName === provider.providerName &&
+                    $scope.groups[i].group[j].provider.providerId === provider.providerId) {
+                    $scope.showAlert(Type.ALERT.DANGER, 'LOC_DELETE_ERROR');
+                    return;
+                }
+            }
+        }
+
+        $http.delete("/user/"+index)
+            .success(function (data) {
+                console.log(data);
+                Data.pullUserFromServer(function setUser(err, rcvUser) {
+                    if (!err) {
+                        $scope.user = rcvUser;
+                    }
+                });
+                Data.pullSitesFromServer(function setSites(err, rcvSites) {
+                    if (!err) {
+                        $scope.sites = rcvSites;
+                    }
+                });
+            })
+            .error(function (data) {
+                $scope.showAlert(Type.ALERT.DANGER, data);
+            });
+    };
+
     function init() {
         $scope.user = Data.getUser();
-        if ($scope.user._id) {
-            $scope.title = 'LOC_ACCOUNT_LIST';
-        }
-        else {
+        if (!$scope.user) {
             $scope.title = 'LOC_LOGIN_TITLE';
             $scope.showAlert(Type.ALERT.WARNING, 'LOC_LOGIN_ERROR');
             return;
         }
+        else {
+            $scope.title = 'LOC_ACCOUNT_LIST';
+        }
 
-        $scope.sites = Site.getSiteList();
+        $scope.sites = Data.getSiteList();
         if (!$scope.sites) {
-            Site.pullSitesFromServer(function setSites(err, rcvSites) {
+            Data.pullSitesFromServer(function setSites(err, rcvSites) {
                 if (err) {
                     $scope.showAlert(Type.ALERT.DANGER, err);
                 }
@@ -859,21 +906,15 @@ bs.controller('signinCtrl', function ($scope, $http, Data, Site, Type) {
             });
         }
 
-        $scope.getBlogTitle = function(provider) {
-            if (!$scope.sites) {
-                return;
-            }
-
-            if (provider.providerName !== Type.PROVIDER.WORDPRESS) {
-                return;
-            }
-
-            for (var i = 0; i < $scope.sites.length; i += 1) {
-                if ($scope.sites[i].provider.providerId === provider.providerId) {
-                    return "(" + $scope.sites[i].blog.blog_title + ")";
+        $scope.groups = Data.getGroups();
+        if (!$scope.groups) {
+            Data.pullGroupsFromServer(function setGroups(err, rcvGroups) {
+                if (err) {
+                    $scope.showAlert(Type.ALERT.DANGER, err);
                 }
-            }
-        };
+                $scope.groups = rcvGroups;
+            });
+        }
     }
 
     init();

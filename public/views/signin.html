@@ -4,11 +4,12 @@
 <div class="content-body">
     <div class="content-box" ng-if="user._id">
         <div class="group-box selected">
-            <a class="btn btn-default btn-blog" ng-repeat="provider in user.providers">
+            <p class="btn btn-default btn-blog" ng-repeat="provider in user.providers" ng-click="onClickSite($index);">
                 <img class="icon-blog" ng-src="views/imgs/{{provider.providerName}}.png"/>
                 &nbsp;&nbsp;{{'LOC_'+provider.providerName | translate}} : {{provider.displayName}}
                 <span ng-bind="getBlogTitle(provider)"></span>
-            </a>
+                <span class="icon-minus glyphicon glyphicon-minus-sign" ng-if="user.providers.length>1"></span>
+            </p>
             <hr>
             <ul class="pager">
                 <li><a href="/logout">{{'LOC_LOGOUT' | translate}}</a></li>

@@ -29,6 +29,7 @@
   "LOC_ACCOUNT_LIST": "Account List",
   "LOC_LOGOUT": "Logout",
   "LOC_LOGIN_ERROR": "You have to login first!",
+  "LOC_DELETE_ERROR": "Remove this account in blog groups!!",
   "LOC_Wordpress": "wordpress",
   "LOC_tistory": "tistory",
   "LOC_google": "google",

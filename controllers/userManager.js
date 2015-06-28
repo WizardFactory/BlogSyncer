@@ -162,6 +162,41 @@ UserMgr.combineUser = function (user, delUser, callback) {
 
 /**
  *
+ * @param user
+ * @param delProvider
+ * @param callback
+ */
+UserMgr.deleteProvider = function (user, delProviderIndex, callback) {
+    var meta = {};
+
+    meta.cName = "UserMgr";
+    meta.fName = "deleteProvider";
+
+    if (user || delProviderIndex !== -1) {
+        UserDb.findById(user._id, function (err, reqUser) {
+            if (err) {
+                log.error(err.toString(), meta);
+                return callback(err);
+            }
+            if (!reqUser) {
+                log.error("Fail to get user id="+req.user._id, meta);
+                log.error(err.toString(), meta);
+                return callback(err);
+            }
+
+            reqUser.providers.splice(delProviderIndex, 1);
+            reqUser.save(function (err) {
+                if (err) {
+                    return callback(err);
+                }
+                return callback(null, reqUser);
+            });
+        });
+    }
+};
+
+/**
+ *
  * @param req
  * @param res
  * @returns {*}

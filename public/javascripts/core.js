@@ -4,10 +4,12 @@
 var bs = angular.module("BlogSyncer", ['ngRoute', 'ngSanitize', 'ui.bootstrap', 'pascalprecht.translate']);
 
 // define service
-bs.factory('Data', function (Type) {
+bs.factory('Data', function (Type, $http) {
     "use strict";
 
-    var user = {};
+    var user = null;
+    var sites = null;
+    var groups = null;
     var providerType = [Type.PROVIDER.FACEBOOK, Type.PROVIDER.GOOGLE, Type.PROVIDER.KAKAO,
         Type.PROVIDER.TISTORY, Type.PROVIDER.TUMBLR, Type.PROVIDER.TWITTER, Type.PROVIDER.WORDPRESS];
     var postType = [
@@ -25,8 +27,63 @@ bs.factory('Data', function (Type) {
         getUser: function () {
             return user;
         },
-        setUser: function (usr) {
-            user = usr;
+        setUser: function (user) {
+            user = user;
+        },
+        pullUserFromServer: function (cb) {
+            console.log("pullUserFromServer: user");
+
+            $http.get('/user')
+                .success(function (data) {
+                    if (data === 'NAU') {
+                        console.log('NAU');
+                    }
+                    else {
+                        user = data;
+                        cb(undefined, user);
+                    }
+                })
+                .error(function (data) {
+                    cb(data);
+                });
+        },
+        getSiteList: function () {
+            return sites;
+        },
+        pullSitesFromServer: function (cb) {
+            console.log("pullSitesFromServer: blogs/sites");
+
+            sites = [];
+            $http.get("/blogs/sites")
+                .success(function (data) {
+                    console.log(data);
+                    for (var i = 0; i < data.sites.length; i += 1) {
+                        for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
+                            var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
+                            sites.push(site);
+                        }
+                    }
+                    cb(undefined, sites);
+                })
+                .error(function (data) {
+                    cb(data);
+                });
+        },
+        getGroups: function () {
+            return groups;
+        },
+        pullGroupsFromServer: function (cb) {
+            console.log("pullGroupsFromServer: blogs/groups");
+
+            $http.get("/blogs/groups")
+                .success(function (data) {
+                    console.log(data);
+                    groups = data.groups;
+                    cb(undefined, groups);
+                })
+                .error(function (data) {
+                    cb(data);
+                });
         },
         getProviderType: function() {
             return providerType;
@@ -50,36 +107,6 @@ bs.factory('Data', function (Type) {
 //            port = prt;
 //            console.log('port='+port);
 //        }
-    };
-});
-
-bs.factory('Site', function SiteList($http) {
-   "use strict";
-    var sites;
-
-    return {
-        getSiteList: function getSiteList() {
-            return sites;
-        },
-        pullSitesFromServer: function pullSitesFromServer(cb) {
-            console.log("pullSitesFromServer: blogs/sites");
-
-            sites = [];
-            $http.get("/blogs/sites")
-                .success(function (data) {
-                    console.log(data);
-                    for (var i = 0; i < data.sites.length; i += 1) {
-                        for (var j = 0; j < data.sites[i].blogs.length; j += 1) {
-                            var site = {'provider' : data.sites[i].provider, 'blog' : data.sites[i].blogs[j]};
-                            sites.push(site);
-                        }
-                    }
-                    cb(undefined, sites);
-                })
-                .error(function (data) {
-                    cb(data);
-                });
-        }
     };
 });
 

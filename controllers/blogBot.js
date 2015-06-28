@@ -792,6 +792,36 @@ BlogBot.getSites = function (user) {
 };
 
 /**
+ * @param user
+ * @param provider
+ * @param callback
+ */
+BlogBot.deleteSitesOfProvider = function(user, provider, callback) {
+    var siteDb;
+    var meta={};
+
+    meta.cName = this.name;
+    meta.fName = "_deleteSitesOfProvider";
+    meta.userId = user._id.toString();
+
+    siteDb = BlogBot._findDbByUser(user, "blog");
+    for (var i = siteDb.sites.length - 1; i >= 0; i -= 1) {
+        if (siteDb.sites[i].provider.providerName === provider.providerName &&
+            siteDb.sites[i].provider.providerId === provider.providerId) {
+            siteDb.sites.splice(i, 1);
+        }
+    }
+
+    siteDb.save(function (err) {
+        if (err)  {
+            log.error("Fail to save sites", meta);
+            return callback(err);
+        }
+        callback(null, siteDb.sites);
+    });
+};
+
+/**
  *
  * @param user
  * @param group
