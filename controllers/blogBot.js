@@ -463,7 +463,9 @@ BlogBot._retryPostings = function (user, callback) {
 
     log.info('-', meta);
     //just call to notify to finish async function.
-    return callback(undefined, undefined);
+    if (callback) {
+        callback(undefined, undefined);
+    }
 };
 
 /**
