@@ -61,11 +61,10 @@ mongoose.connect(connectInfo);
 
 blogBot.load();
 
-/* server마다 시간 오차가 있을 수 있음. 원래는 그래도 상관없을 수 있으나, 정확한 분석이 필요. */
-setInterval(function() {
 
+setTimeout(function() {
     blogBot.task();
-}, 1000*60); //1 min
+}, 1000*30); //30 secs
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
