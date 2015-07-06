@@ -13,6 +13,8 @@ var HistoryDb = require('../models/historydb');
 var PostDb = require('../models/postdb');
 var bF = require('../models/botFormat');
 
+var async = require('async');
+
 /**
  *
  * @constructor
@@ -69,9 +71,10 @@ BlogBot._findDbByUser = function (user, dbName) {
  *
  * @param user
  * @param rcvPosts
+ * @param callback
  * @private
  */
-BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
+BlogBot._cbSendPostToBlogs = function (user, rcvPosts, callback) {
     var group;
     var targetBlog;
     var provider;
@@ -90,13 +93,15 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
     var post = rcvPosts.posts[0];
     var groups = groupDb.findGroupByBlogInfo(providerName, blogId);
 
+    log.debug('+ provider='+providerName+' blog='+blogId, meta);
+
     var postInfo = postDb.getPostByPostIdOfBlog(rcvPosts.provider_name, rcvPosts.blog_id, post.id.toString());
     if (!postInfo) {
        log.error("Fail to get postInfo providerName="+rcvPosts.provider_name+" blogId="+rcvPosts.blog_id+ " postId=" +
                     post.id.toString());
     }
 
-    log.debug(providerName, meta);
+    var postList = [];
 
     for (var i = 0; i<groups.length; i+=1) {
         group = groups[i].group;
@@ -129,28 +134,47 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts) {
                 bC.mergeTagsCategories(post.categories, targetBlog.categories, post.tags);
             }
 
+            postList.push({rcvPosts: rcvPosts, targetProviderName: provider.providerName,
+                        targetBlogId: targetBlog.blog_id});
+
+        }
+    }
+
+    async.mapSeries(postList,
+        function (post, cB) {
             //syncInfo.postType에 따라 post 처리
-            BlogBot._requestPostContent(user, rcvPosts, provider.providerName, targetBlog.blog_id,
+            BlogBot._requestPostContent(user, post.rcvPosts, post.targetProviderName, post.targetBlogId,
                 function(err, user, newPosts) {
                     if(err) {
-                        log.error("Fail to post content", meta);
-                        return;
+                        log.warn("Fail to post content", meta);
+                        return cB(err);
                     }
 
                     BlogBot._cbAddPostInfoToDb(user, newPosts, postInfo);
+                    cB(undefined, newPosts);
                 }
             );
+        },
+        function (err, postingResultList) {
+            if(err) {
+                log.error(err.stack);
+                return callback(err);
+            }
+            log.silly(postingResultList);
+            log.debug('-', meta);
+            return callback(undefined, postingResultList);
         }
-    }
+    );
 };
 
 /**
  * postList를 받아서 연결된 blog에 전달한다.
  * @param user
  * @param rcvPosts
+ * @param callback
  * @private
  */
-BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
+BlogBot._cbPushPostsToBlogs = function(user, rcvPosts, callback) {
     var postDb;
     var i;
     var newPost;
@@ -163,6 +187,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
 
     postDb = BlogBot._findDbByUser(user, "post");
 
+    log.debug('+', meta);
     log.silly(rcvPosts.posts, meta);
 
     if(!rcvPosts.posts) {
@@ -171,6 +196,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
     }
 
     var postInfo;
+    var simplePostInfoList = [];
 
 //TODO: if post count over max it need to extra update - aleckim
     for(i=0; i<rcvPosts.posts.length;i+=1) {
@@ -188,19 +214,40 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
             }
         }
 
-        //get only one post for send to dstBlog
-        BlogBot._requestGetPosts(user, rcvPosts.provider_name, rcvPosts.blog_id, {"post_id":newPost.id},
-            function(err, user, rcvPosts) {
-                if (err)  {
-                    log.error(err, meta);
-                    return;
-                }
+        simplePostInfoList.push({providerName: rcvPosts.provider_name, blogId: rcvPosts.blog_id, postId: newPost.id});
 
-                BlogBot._cbSendPostToBlogs(user, rcvPosts);
-            }
-        );
         //push post to others blog and addPostInfo
     }
+
+    async.mapSeries(simplePostInfoList,
+        function (simplePostInfo, cB) {
+            log.debug(simplePostInfo);
+
+            //get only one post for send to dstBlog
+            BlogBot._requestGetPosts(user, simplePostInfo.providerName, simplePostInfo.blogId,
+                        {"post_id":simplePostInfo.postId},
+                function(err, user, rcvPosts) {
+                    if (err)  {
+                        log.warn(err, meta);
+                        return cB(err);
+                    }
+
+                    BlogBot._cbSendPostToBlogs(user, rcvPosts, function(err, data) {
+                        return cB(err, data);
+                    });
+                }
+            );
+        },
+        function (err, listOfNewPosts) {
+            if(err) {
+                log.error(err.stack);
+                return callback(err);
+            }
+            log.silly(listOfNewPosts);
+            log.debug('-', meta);
+            return callback(undefined, listOfNewPosts);
+        }
+    );
 
     //log.info(postDb.posts, meta);
     if (postDbIsUpdated) {
@@ -218,59 +265,77 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts) {
 /**
  *
  * @param user
+ * @param callback
+ * @returns {*}
  * @private
  */
-BlogBot._getAndPush = function(user) {
-    var blogDb;
-    var postDb;
-    var groupDb;
-    var sites;
-    var after;
-    var i;
-    var j;
-    var groups;
-    var meta = {};
+BlogBot._getAndPush = function(user, callback) {
 
+    var meta = {};
     meta.cName = this.name;
     meta.fName = "_getAndPush";
     meta.userId = user._id.toString();
 
-    log.info(" ", meta);
-    blogDb = BlogBot._findDbByUser(user, "blog");
-    postDb = BlogBot._findDbByUser(user, "post");
-    groupDb = BlogBot._findDbByUser(user, "group");
+    log.info('+', meta);
+
+    var blogDb = BlogBot._findDbByUser(user, "blog");
+    var postDb = BlogBot._findDbByUser(user, "post");
+    var groupDb = BlogBot._findDbByUser(user, "group");
 
     if (!blogDb || !postDb || !groupDb) {
-        log.error("Fail to find blogDb or postDb or groupDb", meta);
-        return;
+        var err = new Error("Fail to find blogDb or postDb or groupDb");
+        log.error(err.stack, meta);
+        return callback(err);
     }
 
-    sites = blogDb.sites;
-    after = postDb.lastUpdateTime.toISOString();
+    var sites = blogDb.sites;
+    var after = postDb.lastUpdateTime.toISOString();
     //log.debug(after, meta);
 
-    for (i=0; i<sites.length; i+=1) {
-        for (j=0; j<sites[i].blogs.length; j+=1) {
+    var blogInfoList = [];
+
+    for (var i=0; i<sites.length; i+=1) {
+        for (var j=0; j<sites[i].blogs.length; j+=1) {
 
             //if this blog was not grouped pass
-            groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
+            var groups = groupDb.findGroupByBlogInfo(sites[i].provider.providerName, sites[i].blogs[j].blog_id);
             if (groups.length === 0) {
                log.verbose("It has not group provider="+sites[i].provider.providerName +
                         " blog="+sites[i].blogs[j].blog_id, meta);
                continue;
             }
-
-            BlogBot._requestGetPosts(user, sites[i].provider.providerName, sites[i].blogs[j].blog_id,
-                {"after": after}, function(err, user, rcvPosts) {
-                    if (err) {
-                        log.error(err, meta);
-                        return;
-                    }
-                    BlogBot._cbPushPostsToBlogs(user, rcvPosts);
-                });
+            blogInfoList.push({provierName: sites[i].provider.providerName, blogId: sites[i].blogs[j].blog_id});
         }
     }
+
+    //if updateTime is updated late, miss catch new post sometimes
+    /* updateTime을 늦게 갱신한다면, 놓치는 post가 생긴다. */
     postDb.lastUpdateTime = new Date();
+
+    async.mapSeries(blogInfoList,
+        function (blogInfo, cB) {
+            log.debug(blogInfo);
+            BlogBot._requestGetPosts(user, blogInfo.provierName, blogInfo.blogId,
+                {"after": after}, function (err, user, rcvPosts) {
+                    if (err) {
+                        log.warn(err, meta);
+                        return cB(err);
+                    }
+                    BlogBot._cbPushPostsToBlogs(user, rcvPosts, function (err, listOfNewPosts) {
+                        return cB(err, listOfNewPosts);
+                    });
+                });
+        },
+        function (err, data) {
+            if(err) {
+                log.error(err.stack);
+                return callback(err);
+            }
+            log.silly(data);
+            log.info('-', meta);
+            return callback(undefined, data);
+        }
+    );
 };
 
 BlogBot._updateProviderInfo = function (user, provider) {
@@ -288,11 +353,15 @@ BlogBot._updateProviderInfo = function (user, provider) {
     }
 };
 
-BlogBot._updateAccessToken = function (user) {
+BlogBot._updateAccessToken = function (user, callback) {
     var meta = {};
     meta.cName = this.name;
     meta.fName = "_updateAccessToken";
     meta.userId = user._id.toString();
+
+    log.info('+', meta);
+
+    var urlList = [];
 
     //check sign up time for update token
     for (var j=0; j<user.providers.length; j+=1) {
@@ -314,22 +383,38 @@ BlogBot._updateAccessToken = function (user) {
         var url = "http://www.justwapps.com/"+provider.providerName + "/bot_posts/updateToken";
         url += "?";
         url += "userid=" + user._id;
-        request.postEx(url, null, function (err, response, body) {
-            if (err)  {
-                log.error(err, meta);
-                //BlogBot._addHistory(user, post, err.statusCode);
-                return;
-            }
-            log.debug(body, meta);
-            //you can't direct update though provider
-            var newProvider;
-            newProvider = JSON.parse(body);
-            newProvider.signUpTime = new Date(newProvider.signUpTime);
-            newProvider.tokenExpireTime = new Date(newProvider.tokenExpireTime);
 
-            BlogBot._updateProviderInfo(user, newProvider);
-        });
+        urlList.push(url);
     }
+
+    async.mapSeries(urlList,
+        function(url, cB) {
+            request.postEx(url, null, function (err, response, body) {
+                if (err)  {
+                    log.warn(err, meta);
+                    //BlogBot._addHistory(user, post, err.statusCode);
+                    return cB(err);
+                }
+                log.debug(body, meta);
+                //you can't direct update though provider
+                var newProvider;
+                newProvider = JSON.parse(body);
+                newProvider.signUpTime = new Date(newProvider.signUpTime);
+                newProvider.tokenExpireTime = new Date(newProvider.tokenExpireTime);
+
+                BlogBot._updateProviderInfo(user, newProvider);
+                return cB(null, newProvider);
+            });
+        },
+        function(err, result) {
+            if(err) {
+                log.warn('Fail to update access token');
+                return callback(err);
+            }
+            log.info('-', meta);
+            return callback(undefined, result);
+        }
+    );
 };
 
 /**
@@ -341,13 +426,14 @@ BlogBot._updateAccessToken = function (user) {
 BlogBot._retryPost = function (user, botRetry) {
     //check new post of dst that's because it was posted already.
 
-    log.info("retry post user="+user._id+" srcBotPosts="+botRetry.srcBotPosts.toString()+" dstBotPosts="+
+    log.debug("retry post user="+user._id+" srcBotPosts="+botRetry.srcBotPosts.toString()+" dstBotPosts="+
                 botRetry.dstBotPosts.toString());
 
     BlogBot._requestPostContent(user, botRetry.srcBotPosts, botRetry.dstBotPosts.providerName,
                 botRetry.dstBotPosts.blogId, function(err, user, newPosts) {
             if(err) {
-                log.error("Fail to post content");
+                log.warn("Fail to post content");
+                log.warn(err.toString());
                 return;
             }
 
@@ -359,12 +445,26 @@ BlogBot._retryPost = function (user, botRetry) {
 /**
  *
  * @param user
+ * @param callback
+ * @returns {*}
  * @private
  */
-BlogBot._retryPostings = function (user) {
+BlogBot._retryPostings = function (user, callback) {
+
+    var meta = {};
+    meta.cName = this.name;
+    meta.fName = "_retryPostings";
+    log.info('+', meta);
+
     var retryDb = BlogBot._findDbByUser(user, "retry");
     while(retryDb.queue.length) {
        BlogBot._retryPost(user, retryDb.queue.pop());
+    }
+
+    log.info('-', meta);
+    //just call to notify to finish async function.
+    if (callback) {
+        callback(undefined, undefined);
     }
 };
 
@@ -372,19 +472,45 @@ BlogBot._retryPostings = function (user) {
  *
  */
 BlogBot.task = function() {
-    var i;
-    var user;
     var meta = {};
-
     meta.cName = this.name;
     meta.fName = "task";
-    log.info("Start users=" + this.users.length, meta);
-    for (i=0; i<this.users.length; i+=1)  {
-        user = this.users[i].user;
-        BlogBot._updateAccessToken(user);
-        BlogBot._getAndPush(user);
-        BlogBot._retryPostings(user);
-    }
+    log.info('+ Start users=' + this.users.length, meta);
+
+    var asyncTasks = [];
+    this.users.forEach(function (userInfo) {
+        var user = userInfo.user;
+
+        asyncTasks.push(function (cB) {
+            BlogBot._updateAccessToken(user, function (err, data) {
+                return cB(err, data);
+            });
+        });
+
+        asyncTasks.push(function (cB) {
+            BlogBot._getAndPush(user, function (err, data) {
+                return cB(err, data);
+            });
+        });
+
+        asyncTasks.push(function (cB) {
+            BlogBot._retryPostings(user, function (err, data) {
+                return cB(err, data);
+            });
+        });
+    });
+
+    async.series(asyncTasks, function (err, data) {
+        if(err) {
+            return log.error(err.stack);
+        }
+        log.verbose(data);
+        log.info('-', meta);
+
+        return setTimeout(function() {
+            BlogBot.task();
+        }, 1000*60); //1min
+    });
 };
 
 /**
@@ -708,22 +834,24 @@ BlogBot._cbAddBlogsToDb = function (user, rcvBlogs) {
         return;
     }
 
-    var i;
-    var newBlogList = [];
+    //we will do when collect feedback milestone
+    //var newBlogList = [];
 
     var site = blogDb.findSiteByProvider(provider.providerName, provider.providerId);
     if (site) {
-        for (i=0; i<blogs.length; i+=1) {
+        for (var i=0; i<blogs.length; i+=1) {
             var blog = blogDb.findBlogFromSite(site, blogs[i].blog_id.toString());
             if (!blog) {
                 site.blogs.push(blogs[i]);
-                newBlogList.push(blogs[i]);
+
+                //newBlogList.push(blogs[i]);
             }
         }
     }
     else {
         blogDb.sites.push({"provider": provider, "blogs": blogs});
-        newBlogList = blogs;
+
+        //newBlogList = blogs;
     }
 
     blogDb.save(function(err) {
@@ -734,7 +862,6 @@ BlogBot._cbAddBlogsToDb = function (user, rcvBlogs) {
 
     log.debug("Provider Name=" + provider.providerName + " Id=" + provider.providerId, meta);
 
-    //we will do when collect feedback milestone
     //for (i=0; i<newBlogList.length; i+=1) {
     //    BlogBot._requestGetPostCount(user, provider.providerName, newBlogList[i].blog_id,
     //        function (err, user, rcvPostCount) {
@@ -1004,7 +1131,7 @@ BlogBot._recursiveGetPosts = function(user, providerName, blogId, options, callb
 
     BlogBot._requestGetPosts(user, providerName, blogId, options, function (err, user, rcvPosts) {
         if (err) {
-            log.error(err, meta);
+            log.warn(err, meta);
             return callback(err);
         }
 
