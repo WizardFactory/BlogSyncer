@@ -157,7 +157,7 @@ BlogBot._cbSendPostToBlogs = function (user, rcvPosts, callback) {
         },
         function (err, postingResultList) {
             if(err) {
-                log.error(err.stack);
+                log.warn(err.stack, meta);
                 return callback(err);
             }
             log.silly(postingResultList);
@@ -240,7 +240,7 @@ BlogBot._cbPushPostsToBlogs = function(user, rcvPosts, callback) {
         },
         function (err, listOfNewPosts) {
             if(err) {
-                log.error(err.stack);
+                log.warn(err.stack, meta);
                 return callback(err);
             }
             log.silly(listOfNewPosts);
@@ -328,8 +328,8 @@ BlogBot._getAndPush = function(user, callback) {
         },
         function (err, data) {
             if(err) {
-                log.error(err.stack);
-                return callback(err);
+                log.warn(err.stack, meta);
+                //return callback(err);
             }
             log.silly(data);
             log.info('-', meta);
@@ -500,11 +500,11 @@ BlogBot.task = function() {
         });
     });
 
-    async.series(asyncTasks, function (err, data) {
+    async.series(asyncTasks, function (err) {
         if(err) {
-            return log.error(err.stack);
+            log.warn(err.stack, meta);
         }
-        log.verbose(data);
+
         log.info('-', meta);
 
         return setTimeout(function() {
@@ -1474,7 +1474,13 @@ BlogBot._addHistory = function(user, srcBotPosts, postStatus, dstBotPosts) {
             dst.url = dstBotPosts.posts[0].url;
         }
         else {
-            BlogBot._addRetryPosting(user, {srcBotPosts:srcBotPosts, dstBotPosts:dstBotPosts});
+            if (postStatus === 403 ) {
+                // { code: 187, message: 'Status is a duplicate.' } in twitter
+               log.warn("403 code will not retry posting");
+            }
+            else {
+                BlogBot._addRetryPosting(user, {srcBotPosts:srcBotPosts, dstBotPosts:dstBotPosts});
+            }
         }
     }
     else {
@@ -1526,7 +1532,7 @@ BlogBot._requestPostContent = function (user, botPosts, providerName, blogId, ca
     log.verbose("Post url="+url, meta);
     request.postEx(url, opt, function (err, response, body) {
         if (err)  {
-            log.error(err, meta);
+            log.warn(err, meta);
             //addHistory에 blog정보 추가 해야 함.
             BlogBot._addHistory(user, botPosts, err.statusCode, {providerName: providerName, blogId: blogId});
             return callback(err);
