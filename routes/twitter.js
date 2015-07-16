@@ -437,7 +437,8 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
     var newPost = {};
 
-    bC.convertPostToPlainContent(botPost, 140, bC.convertShortenUrl, function (content) {
+    /* length가 정확하게 맞지 않음 #328 */
+    bC.convertPostToPlainContent(botPost, 136, bC.convertShortenUrl, function (content) {
         newPost.content = content;
 
         var encodedPost = encodeURIComponent(newPost.content);
@@ -446,12 +447,21 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
 
             //log.debug(encodedPost, meta);
 
-            var api_url = TWITTER_API_URL+"/statuses/update.json?status=" + encodedPost;
-            objOAuth.post(api_url, provider.token, provider.tokenSecret, newPost, 'application/json',
-                        function (error, body) {
-                if(error) {
+            var Twitter = require('twitter');
+
+            var client = new Twitter({
+                consumer_key: clientConfig.clientID,
+                consumer_secret: clientConfig.clientSecret,
+                access_token_key: provider.token,
+                access_token_secret: provider.tokenSecret
+            });
+
+            client.post('statuses/update', {status: newPost.content},  function(error, body, response) {
+               if(error) {
                     log.error(error, meta);
-                    res.status(error.statusCode).send(error);
+                    log.warn(newPost.content, meta);
+                    log.warn(encodedPost, meta);
+                    res.status(response.statusCode).send(error);
                     return;
                 }
 
@@ -460,9 +470,9 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 postUrl += '/' + blog_id + '/status';
 
                 var rcvBotPost = {};
-                var raw_post = JSON.parse(body);
 
                 try {
+                    var raw_post = body;
                     postUrl += '/' + raw_post.id_str;
 
                     rcvBotPost = new botFormat.BotTextPost(raw_post.id_str, raw_post.text, raw_post.created_at, postUrl,
@@ -471,6 +481,7 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
                 catch (e) {
                     log.error(e, meta);
                     log.error(newPost, meta);
+                    log.error(body, meta);
                     res.status(500).send(e);
                     return;
                 }
