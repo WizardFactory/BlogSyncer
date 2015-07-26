@@ -210,6 +210,11 @@ function _pushPostsFromKakao(posts, rawPosts, after) {
             }
         }
 
+        //스토리로 공유 하는 경우 content가 없을 수 있음. ex) https://story.kakao.com/wzdtester/IV7uAGXin10 by aleckim
+        if (!rawPost.content.length) {
+            rawPost.content = " ";
+        }
+
         var botPost;
         var replies = [];
         replies.push({'comment':rawPost.comment_count});
