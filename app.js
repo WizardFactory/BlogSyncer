@@ -144,6 +144,12 @@ app.use('/logout', function (req, res) {
     res.redirect("/#");
 });
 
+// for google or other search engines.
+app.use('/robots.txt', function (req, res) {
+    res.type('text/plain');
+    res.send("User-agent: *\nDisallow: /");
+});
+
 /// catch 404 and forward to error handler
 app.use(function(req, res, next) {
     var err = new Error("Not Found : "+req.url);
