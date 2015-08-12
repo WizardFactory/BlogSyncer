@@ -253,7 +253,7 @@ router.get('/bot_posts/:blog_id', function (req, res) {
         objOAuth.get(api_url, provider.token, provider.tokenSecret, function (error, body, response) {
             if(error) {
                 log.error(error, meta);
-                log.error(response, meta);
+                log.silly(response, meta);
                 res.status(error.statusCode).send(error);
                 return;
             }
