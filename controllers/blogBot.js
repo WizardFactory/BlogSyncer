@@ -54,8 +54,6 @@ BlogBot._findDbByUser = function (user, dbName) {
                     return this.users[i].historyDb;
                 case "post":
                     return this.users[i].postDb;
-                case "retry":
-                    return this.users[i].retryDb;
                 case "all":
                     return this.users[i];
                 default:
@@ -419,57 +417,6 @@ BlogBot._updateAccessToken = function (user, callback) {
 
 /**
  *
- * @param user
- * @param botRetry
- * @private
- */
-BlogBot._retryPost = function (user, botRetry) {
-    //check new post of dst that's because it was posted already.
-
-    log.debug("retry post user="+user._id+" srcBotPosts="+botRetry.srcBotPosts.toString()+" dstBotPosts="+
-                botRetry.dstBotPosts.toString());
-
-    BlogBot._requestPostContent(user, botRetry.srcBotPosts, botRetry.dstBotPosts.providerName,
-                botRetry.dstBotPosts.blogId, function(err, user, newPosts) {
-            if(err) {
-                log.warn("Fail to post content");
-                log.warn(err.toString());
-                return;
-            }
-
-            BlogBot._cbAddPostInfoToDb(user, newPosts);
-        }
-    );
-};
-
-/**
- *
- * @param user
- * @param callback
- * @returns {*}
- * @private
- */
-BlogBot._retryPostings = function (user, callback) {
-
-    var meta = {};
-    meta.cName = this.name;
-    meta.fName = "_retryPostings";
-    log.info('+', meta);
-
-    var retryDb = BlogBot._findDbByUser(user, "retry");
-    while(retryDb.queue.length) {
-       BlogBot._retryPost(user, retryDb.queue.pop());
-    }
-
-    log.info('-', meta);
-    //just call to notify to finish async function.
-    if (callback) {
-        callback(undefined, undefined);
-    }
-};
-
-/**
- *
  */
 BlogBot.task = function() {
     var meta = {};
@@ -489,12 +436,6 @@ BlogBot.task = function() {
 
         asyncTasks.push(function (cB) {
             BlogBot._getAndPush(user, function (err, data) {
-                return cB(err, data);
-            });
-        });
-
-        asyncTasks.push(function (cB) {
-            BlogBot._retryPostings(user, function (err, data) {
                 return cB(err, data);
             });
         });
@@ -643,9 +584,6 @@ BlogBot.start = function (user) {
             log.info("Make new postDb", meta);
         }
     });
-
-    userInfo.retryDb = {};
-    userInfo.retryDb.queue = [];
 
     this.users.push(userInfo);
 };
@@ -1433,11 +1371,6 @@ BlogBot.getHistories = function (user) {
     }
 };
 
-BlogBot._addRetryPosting = function (user, botRetry) {
-    var retryDb = BlogBot._findDbByUser(user, "retry");
-    retryDb.queue.push(botRetry);
-};
-
 /**
  *
  * @param user
@@ -1479,7 +1412,7 @@ BlogBot._addHistory = function(user, srcBotPosts, postStatus, dstBotPosts) {
                log.warn("403 code will not retry posting");
             }
             else {
-                BlogBot._addRetryPosting(user, {srcBotPosts:srcBotPosts, dstBotPosts:dstBotPosts});
+                log.info("It will retry next getAndPush");
             }
         }
     }
