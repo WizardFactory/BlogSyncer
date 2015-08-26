@@ -218,6 +218,9 @@ describe('blogConvert', function () {
             hashTags = bC.getHashTags(tD.testStringForHashTags3);
             assert.equal(hashTags.toString(), tD.testStringForHashTagsResult3, true, "Mismatch hashtags");
 
+            hashTags = bC.getHashTags(tD.testStringForHashTags4);
+            assert.equal(hashTags.toString(), tD.testStringForHashTagsResult4, true, "Mismatch hashtags");
+
             hashTags = bC.getHashTags(undefined);
             assert.equal(Array.isArray(hashTags), true, true, "Mismatch hashtags");
         });
