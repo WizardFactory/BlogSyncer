@@ -281,18 +281,20 @@ router.get('/bot_posts/:blog_id', function (req, res) {
             }
 
             if(response.statusCode === 304) {
-                return;
+                return res.status(304).send(body);
             }
 
             var botPostList = new botFormat.BotPostList(GOOGLE_PROVIDER, blogId, body.nextPageToken);
 
             try {
+                if(response.headers.etag !== undefined) {
+                    blogETags[blogId.toString()] = response.headers.etag;
+                }
+
                 if (!body.items) {
                     return res.send(botPostList);
                 }
-                if(res.headers.etag !== undefined) {
-                    blogETags[blogId.toString()] = res.headers.etag;
-                }
+
                 for (var i = 0; i<body.items.length; i+=1) {
                     var item = body.items[i];
 
@@ -489,16 +491,20 @@ router.post('/bot_posts/new/:blog_id', function (req, res) {
  * @param callback
  * @private
  */
-function _requestGet(url, accessToken, callback) {
+function _requestGet(url, accessToken, etags, callback) {
     var dynHeaders = {
         json: true,
         headers: {
             "authorization": "Bearer " + accessToken
         }
     };
-    if(arguments[2] !== undefined) {
-        dynHeaders.headers["If-None-Match"] = arguments[2];
+
+    if(typeof etags === "function") {
+        callback = etags;
+    } else {
+        dynHeaders.headers["If-None-Match"] = etags;
     }
+
     request.getEx(url,
         dynHeaders,
      function (err, response, body) {

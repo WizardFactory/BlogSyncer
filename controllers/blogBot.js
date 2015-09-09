@@ -1334,7 +1334,11 @@ BlogBot._requestGetPosts = function(user, providerName, blogId, options, callbac
 
         var rcvPosts;
         try {
-            rcvPosts = JSON.parse(body);
+            if(response.statusCode === 304) {
+                rcvPosts = new bF.BotPostList(providerName, blogId);
+            } else {
+                rcvPosts = JSON.parse(body);
+            }
         }
         catch(e) {
             e.exMessage = "Fail to parse body";
