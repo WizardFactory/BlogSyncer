@@ -157,19 +157,21 @@ router.get('/bot_bloglist', function (req, res) {
             }
 
             var botBlogList = new botFormat.BotBlogList(provider);
-            try {
-                var items = body.items;
-                log.debug("items length=" + items.length, meta);
+            if(body.items !== undefined) {
+                try {
+                    var items = body.items;
+                    log.debug("items length=" + items.length, meta);
 
-                for (var i = 0; i < items.length; i+=1) {
-                    var botBlog = new botFormat.BotBlog(items[i].id, items[i].name, items[i].url);
-                    botBlogList.blogs.push(botBlog);
+                    for (var i = 0; i < items.length; i += 1) {
+                        var botBlog = new botFormat.BotBlog(items[i].id, items[i].name, items[i].url);
+                        botBlogList.blogs.push(botBlog);
+                    }
                 }
-            }
-            catch(e) {
-                log.error(e, meta);
-                log.error(body, meta);
-                return res.status(500).send(e);
+                catch (e) {
+                    log.error(e, meta);
+                    log.error(body, meta);
+                    return res.status(500).send(e);
+                }
             }
 
             res.send(botBlogList);
