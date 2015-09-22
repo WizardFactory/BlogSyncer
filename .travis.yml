@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - "0.10"
+deploy:
+  provider: openshift
+  user: neoqmin@gmail.com
+  password:
+    secure: gngG3pTc9bCDG00Bc4yyxXh4DQOMdM4Xf3MV/P1yMdWOZbvE6gDiOnAAwcf5Xi4VBZAsP7qxuPiBL3KWoI1R+0Y8dqbnmyYG5ZFbypsb2l0F/pX68g49g7Jz1CAc67a0hhcW6ksBcaRnnnt9ACfnUzDg3pgwsmTcWE0oJsDFnyrwabQWCYssA/hMmvtWKoVnVbSgYwXwwJttC2X7SG2nRAgE/Y32Zm9pL44c5wRIyxJo09ZL0Y0PfZpyPMoNOGIeDHBAPtXt3bv1wDEQ4Pyf3AJrbhzPgC7p4F4Y5h1C/uBB+mOkZCU/0LsBhUEHO/0mgGzsT/dXi5wKR4Mht8+p0l2e3//9nh0TR4jhdOL2nj/U47GHA+J6urZdJqicQITwUXJU8UwJMJXvf9bZdEOsMGs/Hd5qWN2xfIu3IZoZmvkUgLEQh5NXq4J9IEv77XHDPN9uEisxdFU2AL30BvVqrI0KYE/AQ/NNUC7+FdkH6MD+vxIdmQs5YGB4vuWvL0xNts+SWkxabq24jXtiIRcgUwYozzfzdZDMvLdL6D2QOAVm2DCZjUOHd3+I+QZY+M3lV2+sUHoCVEXaH63LFTmOoCqviNbKrMVqo+hjkcKPMmxmy5URnuhIg8+Xy/OMCbEHnMT+jYYof8vTY8m/CQ/+JqEo8QAKCh6eplr8xUeX0RE=
+  app: blogsync
+  domain: neoqmin
+  on:
+    repo: neoqmin/BlogSyncer
+    branch: 337_blogger_without_blog
