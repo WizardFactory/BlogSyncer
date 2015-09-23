@@ -11,3 +11,5 @@ deploy:
   on:
     repo: neoqmin/BlogSyncer
     branch: 337_blogger_without_blog
+notifications:
+  slack: wizardfactory:1tZT9pmQe4HiOBqPET9AdabJ
