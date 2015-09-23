@@ -57,8 +57,8 @@
     "tumblr.js": "~0.0.4",
     "twitter": "^1.2.5",
     "winston": "~1.0.0"
-  }
+  },
    "devDependencies": {
-+    "mocha": "^2.3.3"
+    "mocha": "^2.3.3"
    }
 }
