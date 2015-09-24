@@ -4,7 +4,7 @@
 var debug = require('debug')('generated-express-app');
 var app = require('../app');
 
-app.set('port', process.env.OPENSHIFT_NODEJS_PORT || 8080);
+app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || 3000);
 app.set('ipaddress', process.env.OPENSHIFT_NODEJS_IP);
 
 var server = app.listen(app.get('port'), app.get('ipaddress'), function() {
