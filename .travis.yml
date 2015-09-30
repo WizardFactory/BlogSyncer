@@ -1,15 +1,16 @@
 language: node_js
 node_js:
+  - "0.12"
   - "0.10"
 deploy:
   provider: openshift
-  user: neoqmin@gmail.com
+  user: blogsync@wizardfactory.net
   password:
-    secure: gngG3pTc9bCDG00Bc4yyxXh4DQOMdM4Xf3MV/P1yMdWOZbvE6gDiOnAAwcf5Xi4VBZAsP7qxuPiBL3KWoI1R+0Y8dqbnmyYG5ZFbypsb2l0F/pX68g49g7Jz1CAc67a0hhcW6ksBcaRnnnt9ACfnUzDg3pgwsmTcWE0oJsDFnyrwabQWCYssA/hMmvtWKoVnVbSgYwXwwJttC2X7SG2nRAgE/Y32Zm9pL44c5wRIyxJo09ZL0Y0PfZpyPMoNOGIeDHBAPtXt3bv1wDEQ4Pyf3AJrbhzPgC7p4F4Y5h1C/uBB+mOkZCU/0LsBhUEHO/0mgGzsT/dXi5wKR4Mht8+p0l2e3//9nh0TR4jhdOL2nj/U47GHA+J6urZdJqicQITwUXJU8UwJMJXvf9bZdEOsMGs/Hd5qWN2xfIu3IZoZmvkUgLEQh5NXq4J9IEv77XHDPN9uEisxdFU2AL30BvVqrI0KYE/AQ/NNUC7+FdkH6MD+vxIdmQs5YGB4vuWvL0xNts+SWkxabq24jXtiIRcgUwYozzfzdZDMvLdL6D2QOAVm2DCZjUOHd3+I+QZY+M3lV2+sUHoCVEXaH63LFTmOoCqviNbKrMVqo+hjkcKPMmxmy5URnuhIg8+Xy/OMCbEHnMT+jYYof8vTY8m/CQ/+JqEo8QAKCh6eplr8xUeX0RE=
+    secure: i0ZA7VoDC4w2HbqgyAB1keOfIv037ZfujPVIID/4YcAV4c235N02ieWrymSILcULVbLDpYouAaDjext/crWyW57+4SrP/TpYgPBQFgKGrcVyaG6CIreJb5nSefUw3hImnMUvxmhjSLQbhyCPG48jWeFeFdjVu4thp26T7V17bnH3OUtQxCk9q5oWRtFosBrcOlWKCEPs8XieImE1J4g2vts4NiKTvAFJ+5N4Ar/JzEuhj4bqaDbKvvlXVpvKv/7Qmh6W7kFFeLtwzAGI9CGrhQjV8rqy+/gn1yp+XSYPbz5ok917FFgudRL32kxMF64uiyN8Nq4e30bjZxycRNsaFNGhRB+piqC6FPu4E5EJG1cDgEyOp9fFGCjcAB4mCt/W96kwyOvKlRm5RFX/+9sJW7MkhVW4BMH66qDUEUkx730jAzjX3qYGe9CRSChoPBud5eDuEgo4awjLp9Icq85Ap55g3gf2tPrG3U3krhjgzBoKdC00xky1kJXF/MylvFeBW42zNFSRQp1i1rW654zlvfHygZ5uCHdVWefajvDFtENELXCtrZ8NmMOSkA7GgrNSjjeNdjT4bv/SN/rPeZWoJibFIMvD4b/RvOphblyyAsk7m0DN0fLIkpXfdSF/yXswDd+ZAEbGyvuZ7Y8SXFlKcHOye1zFAoUAoi5MbtNyvbM=
   app: blogsync
-  domain: neoqmin
+  domain: wzdfac
   on:
-    repo: neoqmin/BlogSyncer
-    branch: 337_blogger_without_blog
+    repo: WizardFactory/BlogSyncer
+    branch: master
 notifications:
   slack: wizardfactory:1tZT9pmQe4HiOBqPET9AdabJ

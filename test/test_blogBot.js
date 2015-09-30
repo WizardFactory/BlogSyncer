@@ -31,7 +31,7 @@ bB.users = [{
 describe('blogBot', function () {
     describe('botTeaser', function () {
         it('get botTeaser', function (done) {
-            this.timeout(4000);
+            this.timeout(8000);
 
             bB.getTeaser(tD.testTeaserUrl, function (err, botTeaser) {
                 assert.equal(botTeaser.description, tD.testTeaserDescription, "Mismatch description");
