@@ -179,7 +179,12 @@ router.get('/bot_bloglist', function (req, res) {
             var botBlogList = new botFormat.BotBlogList(provider);
 
             try {
-                var item = JSON.parse(body).tistory.item;
+                var item = [];
+                if(typeof JSON.parse(body).tistory.item !== 'array') {
+                    item[0] = JSON.parse(body).tistory.item;
+                } else {
+                    item = JSON.parse(body).tistory.item;
+                }
                 log.debug('item length=' + item.length, meta);
 
                 for (var i = 0; i < item.length; i+=1) {
