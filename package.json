@@ -46,7 +46,7 @@
     "passport-facebook": "~2.0.0",
     "passport-google-oauth": "~0.1.5",
     "passport-kakao": "~0.0.2",
-    "passport-tistory": "~0.1.0",
+    "passport-tistory": "git+https://github.com/kimalec/passport-tistory.git",
     "passport-tumblr": "~0.1.2",
     "passport-twitter": "~1.0.2",
     "passport-wordpress": "~0.0.3",
