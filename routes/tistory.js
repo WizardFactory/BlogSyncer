@@ -657,7 +657,7 @@ function _getCategoryIds(target_api_url, accessToken, get, cb) {
         catch (e) {
             e.statusCode = 500;
             e.routerMessage = "Fail to get category info";
-            log.error(e);
+            log.warn(e);
             category = [];
             cb(e);
         }
