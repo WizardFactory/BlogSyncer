@@ -1443,7 +1443,7 @@ class Config:
 			try:
 				from win32com.shell import shellcon, shell
 				# use CSIDL_COMMON_APPDATA so that config files are always in the same location 
-				# whether run as user applicaiton or as a windows service
+				# whether run as user application or as a windows service
 				c_dir = shell.SHGetFolderPath(0, shellcon.CSIDL_COMMON_APPDATA, 0, 0)
 				#debug
 				#print c_dir
