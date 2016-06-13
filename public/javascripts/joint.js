@@ -18669,7 +18669,7 @@ var joint = {
                 // wrapping SVG element. This is because we want this "smart"
                 // connection points to work out of the box without the
                 // programmer to put magnet marks to any of the subelements.
-                // For example, we want the functoin to work on basic.Path elements
+                // For example, we want the function to work on basic.Path elements
                 // without any special treatment of such elements.
                 // The code below guesses the wrapping element based on 
                 // one simple assumption. The wrapping elemnet is the
@@ -22565,7 +22565,7 @@ joint.dia.LinkView = joint.dia.CellView.extend({
         this._z = this.model.get('z');
         this.model.toFront();
 
-        // Let the pointer propagate throught the link view elements so that
+        // Let the pointer propagate thought the link view elements so that
         // the `evt.target` is another element under the pointer, not the link itself.
         this.el.style.pointerEvents = 'none';
 
